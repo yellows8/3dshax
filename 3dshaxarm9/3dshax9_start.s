@@ -221,7 +221,7 @@ ldr r1, =FIRM_contentid_totalversions
 ldr r1, [r1]
 sub r3, r3, #27
 
-cmp r3, #16
+cmp r3, #17
 subge r3, r3, #3
 
 cmp r3, r1
