@@ -2928,7 +2928,7 @@ void thread_entry()
 	}
 
 	patch_pxidev_cmdhandler_cmd0((u32*)0x08028000, 0x080ff000-0x08028000);
-	//arm9_pxipmcmd1_getexhdr_writepatch_autolocate((u32*)0x08028000, 0x080ff000-0x08028000);
+	arm9_pxipmcmd1_getexhdr_writepatch_autolocate((u32*)0x08028000, 0x080ff000-0x08028000);
 
 	writepatch_arm11kernel_kernelpanicbkpt((u32*)0x1FF80000, 0x80000);
 
@@ -3249,7 +3249,7 @@ int main(void)
 			#ifdef ENABLE_ARM11KERNEL_DEBUG
 			write_arm11debug_patch();
 			#endif
-			//svcCreateThread(&threadhandle, thread_entry, 0, &thread_stack[THREAD_STACKSIZE>>2], 0x3f, ~1);
+			svcCreateThread(&threadhandle, thread_entry, 0, &thread_stack[THREAD_STACKSIZE>>2], 0x3f, ~1);
 		}
 	}
 

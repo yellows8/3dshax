@@ -94,7 +94,7 @@ pop {r4, r5, pc}
 #ifdef ENABLE_ARM11KERNEL_DEBUG
 
 //#define ARM11KERNEL_ENABLECMDLOG
-#define ENABLE_ARM11KERNEL_PROCSTARTHOOK
+//#define ENABLE_ARM11KERNEL_PROCSTARTHOOK
 #ifdef ENABLE_ARM11KERNEL_PROCSTARTHOOK
 #define ENABLE_NETDEBUG
 #endif
@@ -211,7 +211,7 @@ cmp r4, #0x2E
 cmpne r4, #0x30
 subeq r0, r0, r3
 cmp r4, #0x37
-ldreq r0, =0x1FFE9000
+ldreq r0, =0x1FFDD000
 pop {r4, pc}
 .pool
 

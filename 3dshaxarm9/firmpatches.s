@@ -149,7 +149,7 @@ str r2, [r0, #0]
 ldr r2, [r1, #4]
 str r2, [r0, #4]*/
 
-/*ldr r1, =FIRMLAUNCH_FWVER
+ldr r1, =FIRMLAUNCH_FWVER
 ldr r1, [r1]
 mov r0, #0
 cmp r1, #0x1F
@@ -189,7 +189,7 @@ ldr r2, =0x4770
 sub r0, r0, r4
 add r0, r0, r5
 strh r1, [r0] @ "mov r0, #0"
-strh r2, [r0, #2] @ "bx lr"*/
+strh r2, [r0, #2] @ "bx lr"
 
 patchfirm_arm9section_L2:
 /*#if FIRMLAUNCH_FWVER == 0x1F
