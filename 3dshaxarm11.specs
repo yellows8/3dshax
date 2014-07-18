@@ -1,0 +1,8 @@
+%rename link                old_link
+
+*link:
+%(old_link) -T ../3dshaxarm11.ld%s
+
+*startfile:
+../3dshax11_start%O%s crti%O%s crtbegin%O%s
+

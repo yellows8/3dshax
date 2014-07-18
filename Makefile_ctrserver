@@ -1,0 +1,27 @@
+PARAMS	:=	
+
+ifneq ($(strip $(DISABLEAES)),)
+	PARAMS	:=	$(PARAMS) DISABLEAES=1
+endif
+
+ifneq ($(strip $(DISABLENANDREDIR)),)
+	PARAMS	:=	$(PARAMS) DISABLENANDREDIR=1
+endif
+
+ifneq ($(strip $(DISABLE_ARM11KERNEL_DEBUG)),)
+	PARAMS	:=	$(PARAMS) DISABLE_ARM11KERNEL_DEBUG=1
+endif
+
+.PHONY: clean
+
+all:	3dshax_arm9.bin 3dshax_arm11_ctrserver.bin
+
+clean:
+	make clean -f Makefile.arm9
+	make clean -f Makefile_ctrserver.arm11
+
+3dshax_arm9.bin:
+	make -f Makefile.arm9 OUTPATH=$(OUTPATH) $(PARAMS)
+
+3dshax_arm11_ctrserver.bin:
+	make -f Makefile_ctrserver.arm11 OUTPATH=$(OUTPATH)
