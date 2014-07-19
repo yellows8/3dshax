@@ -107,6 +107,16 @@ Result pxidev_cmd0(u32 cmdid, u32 *buf, u32 *bufsize)
 {
 	Result ret=0;
 	u32 *cmdbuf = getThreadCommandBuffer();
+	u32 bufaddr = (u32)buf;
+
+	if(bufaddr < 0x1c000000)
+	{
+		bufaddr+= 0x0c000000;
+	}
+	else
+	{
+		bufaddr -= 0x10000000;
+	}
 
 	if(cmdid==0)
 	{
@@ -119,7 +129,7 @@ Result pxidev_cmd0(u32 cmdid, u32 *buf, u32 *bufsize)
 		cmdbuf[1] = 0x43565253;//"SRVC"
 		cmdbuf[2] = cmdid;
 		cmdbuf[3] = *bufsize;//(bufsize<<8) | 4;
-		cmdbuf[4] = ((u32)buf) + 0x0c000000;
+		cmdbuf[4] = bufaddr;
 	}
 
 	if((ret = svc_sendSyncRequest(pxidev_handle))!=0)return ret;
@@ -256,6 +266,7 @@ int net_kernelmode_handlecmd(u32 param)
 	u32* (*funcptr)() = (void*)0xfff51808;
 
 	if(*((u8*)0x1FF80002) < 35)funcptr = (void*)0xfff61808;
+	if(*((u8*)0x1FF80002) >= 44)funcptr = (void*)0xfff41808;
 
 	cmdid = net_kernelmode_paramblock[0];
 	buf = (u32*)net_kernelmode_paramblock[1];
