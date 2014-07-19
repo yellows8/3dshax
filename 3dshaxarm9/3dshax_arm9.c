@@ -3251,7 +3251,12 @@ int main(void)
 		{
 			//dumpmem(0x18600000-0x20000, 0x20000);
 
-			//loadrun_file("/x01ffb800.bin", (u32*)0x01ffb800, 0);
+			#ifdef ENABLENANDREDIR
+			#ifdef ENABLE_LOADA9_x01FFB800
+			loadrun_file("/x01ffb800.bin", (u32*)0x01ffb800, 0);
+			#endif
+			#endif
+
 			launch_firm();
 
 			//Change the configmem UPDATEFLAG value to 1, which then causes NS module to do a FIRM launch, once NS gets loaded.

@@ -20,6 +20,10 @@ ifneq ($(strip $(DISABLE_GETEXHDRHOOK)),)
 	PARAMS	:=	$(PARAMS) DISABLE_GETEXHDRHOOK=1
 endif
 
+ifneq ($(strip $(ENABLE_LOADA9_x01FFB800)),)
+	PARAMS	:=	$(PARAMS) ENABLE_LOADA9_x01FFB800=1
+endif
+
 .PHONY: clean
 
 all:	3dshax_arm9.bin 3dshax_arm11_ctrserver.bin

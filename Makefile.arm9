@@ -47,6 +47,10 @@ ifeq ($(strip $(DISABLE_GETEXHDRHOOK)),)
 	DEFINES	:=	$(DEFINES) -DENABLE_GETEXHDRHOOK
 endif
 
+ifneq ($(strip $(ENABLE_LOADA9_x01FFB800)),)
+	DEFINES	:=	$(DEFINES) -DENABLE_LOADA9_x01FFB800
+endif
+
 ARCH	:=	-mthumb -mthumb-interwork
 
 CFLAGS	:=	-g -Wall -Os\
