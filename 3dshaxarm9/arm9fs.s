@@ -398,7 +398,7 @@ ldr r0, [sp, #0]
 add sp, sp, #8
 pop {pc}
 
-archive_readsectors: @ r0=archiveclass*, r1=buffer, r2=sectorcount, r3=mediaoffset
+archive_readsectors: @ r0=archiveclass*, r1=buffer, r2=sectorcount, r3=mediaoffset/sector#
 push {r0, r1, r2, r3, r4, r5, lr}
 sub sp, sp, #24
 
@@ -415,7 +415,7 @@ ldr r1, [sp, #28]
 str r1, [r3, #4]
 mov r1, r3
 mov r2, #0
-ldr r3, [sp, #32]
+ldr r3, [sp, #36]
 
 ldr r4, [r0]
 ldr r4, [r4, #0x8]

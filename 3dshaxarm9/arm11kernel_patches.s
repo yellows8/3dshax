@@ -431,10 +431,10 @@ b arm11_undefhandler_start
 arm11kernel_patch_fwver:
 .word 0
 
+b arm11kernel_getdebugstateptr
+
 arm11kernel_patch_killprocessaddr:
 .word 0
-
-b arm11kernel_getdebugstateptr
 
 arm11_undefhandler_start:
 sub lr, lr, #4

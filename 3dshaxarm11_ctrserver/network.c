@@ -107,16 +107,7 @@ Result pxidev_cmd0(u32 cmdid, u32 *buf, u32 *bufsize)
 {
 	Result ret=0;
 	u32 *cmdbuf = getThreadCommandBuffer();
-	u32 bufaddr = (u32)buf;
-
-	if(bufaddr < 0x1c000000)
-	{
-		bufaddr+= 0x0c000000;
-	}
-	else
-	{
-		bufaddr -= 0x10000000;
-	}
+	u32 bufaddr;
 
 	if(cmdid==0)
 	{
@@ -125,6 +116,16 @@ Result pxidev_cmd0(u32 cmdid, u32 *buf, u32 *bufsize)
 	}
 	else
 	{
+		bufaddr = (u32)buf;
+		if(bufaddr < 0x1c000000)
+		{
+			bufaddr+= 0x0c000000;
+		}
+		else
+		{
+			bufaddr -= 0x10000000;
+		}
+
 		cmdbuf[0] = 0x00000100;
 		cmdbuf[1] = 0x43565253;//"SRVC"
 		cmdbuf[2] = cmdid;
