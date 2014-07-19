@@ -1723,7 +1723,7 @@ void launch_firm()
 {
 	u32 *ptr;
 	u32 *arm9_patchaddr; //= (u32*)0x8086b98;
-	//u32 pos;
+	u32 pos;
 
 	/*void (*funcptr)() = (void*)0x8086a7c;
 	void (*funcptr2)(u32) = (void*)0x8087680;
@@ -1738,23 +1738,36 @@ void launch_firm()
 	ptr = (u32*)0x08086a7c;//FWVER 0x1F
 	if(RUNNINGFWVER==0x2E)ptr = (u32*)0x080854d8;
 	if(RUNNINGFWVER==0x30)ptr = (u32*)0x080854dc;
+	if(RUNNINGFWVER==0x37)ptr = (u32*)0x080857a4;
 
 	arm9_patchaddr = (u32*)&ptr[0x11c>>2];
+	if(RUNNINGFWVER==0x37)arm9_patchaddr = (u32*)&ptr[0x124>>2];
 
 	arm9_patchaddr[0] = arm9_stub[0];
 	arm9_patchaddr[1] = arm9_stub[1];
 	arm9_patchaddr[2] = arm9_stub[2];
 
+	pos = 0;
+	if(RUNNINGFWVER==0x37)pos = 8;
+
 	//*((u32*)0x8086b7c) = 0xe3a00000;//0xe3e00000;//patch the launch_firm fs_openfile() blx to "mov r0, #0".
-	ptr[0x140>>2] = 0xe3a00000;//patch the fileread blx for the 0x100-byte FIRM header to "mov r0, #0".
-	ptr[0x154>>2] = 0xe3a00000;//patch the bne branch after the fileread call.
-	ptr[0x170>>2] = 0xe3a00000;//patch the FIRM signature read.
-	ptr[0x17C>>2] = 0xe3a00c01;//"mov r0, #0x100".
+	ptr[(0x140 + pos)>>2] = 0xe3a00000;//patch the fileread blx for the 0x100-byte FIRM header to "mov r0, #0".
+	ptr[(0x154 + pos)>>2] = 0xe3a00000;//patch the bne branch after the fileread call.
+	ptr[(0x170 + pos)>>2] = 0xe3a00000;//patch the FIRM signature read.
+	ptr[(0x17C + pos)>>2] = 0xe3a00c01;//"mov r0, #0x100".
 	//*((u32*)0x8086c0c) = 0xe1a00000;//nop the fs_closefile() call, this patch isn't needed since this function won't really do anything since the file ctx wasn't initialized via fs_openfile.
-	ptr[0x3D8>>2] = 0xe3a00000;//patch the RSA signature verification func call.
-	ptr[0x594>>2] = 0xe3a00000;//patch the func-call which reads the encrypted ncch firm data.
+
+	pos = 0;
+	if(RUNNINGFWVER==0x37)pos = 0x14;	
+
+	ptr[(0x3D8 + pos)>>2] = 0xe3a00000;//patch the RSA signature verification func call.
+
+	pos = 0;
+	if(RUNNINGFWVER==0x37)pos = 0x18;
+
+	ptr[(0x594 + pos)>>2] = 0xe3a00000;//patch the func-call which reads the encrypted ncch firm data.
 	//*((u32*)0x8087048) = 0xe1a00000;//patch out the fs_closefile() func-call.
-	ptr[0x5D0>>2] = 0xe1a00000;//patch out the func-call which is immediately after the fs_closefile call. (FS shutdown stuff)
+	ptr[(0x5D0 + pos)>>2] = 0xe1a00000;//patch out the func-call which is immediately after the fs_closefile call. (FS shutdown stuff)
 
 	svcFlushProcessDataCache(ptr, 0x630);
 
@@ -3239,15 +3252,12 @@ int main(void)
 			//dumpmem(0x18600000-0x20000, 0x20000);
 
 			//loadrun_file("/x01ffb800.bin", (u32*)0x01ffb800, 0);
-			if(RUNNINGFWVER<0x37)
-			{
-				launch_firm();
+			launch_firm();
 
-				//Change the configmem UPDATEFLAG value to 1, which then causes NS module to do a FIRM launch, once NS gets loaded.
-				ptr = NULL;
-				while(ptr == NULL)ptr = (u32*)mmutable_convert_vaddr2physaddr(get_kprocessptr(0x697870, 0, 1), 0x1FF80004);
-				*ptr = 1;
-			}
+			//Change the configmem UPDATEFLAG value to 1, which then causes NS module to do a FIRM launch, once NS gets loaded.
+			ptr = NULL;
+			while(ptr == NULL)ptr = (u32*)mmutable_convert_vaddr2physaddr(get_kprocessptr(0x697870, 0, 1), 0x1FF80004);
+			*ptr = 1;
 		}
 		else if((*((vu16*)0x10146000) & 0x100))//button R not pressed
 		{
