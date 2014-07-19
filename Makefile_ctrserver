@@ -12,6 +12,14 @@ ifneq ($(strip $(DISABLE_ARM11KERNEL_DEBUG)),)
 	PARAMS	:=	$(PARAMS) DISABLE_ARM11KERNEL_DEBUG=1
 endif
 
+ifneq ($(strip $(DISABLE_ARM11KERNEL_PROCSTARTHOOK)),)
+	PARAMS	:=	$(PARAMS) DISABLE_ARM11KERNEL_PROCSTARTHOOK=1
+endif
+
+ifneq ($(strip $(DISABLE_GETEXHDRHOOK)),)
+	PARAMS	:=	$(PARAMS) DISABLE_GETEXHDRHOOK=1
+endif
+
 .PHONY: clean
 
 all:	3dshax_arm9.bin 3dshax_arm11_ctrserver.bin

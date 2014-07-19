@@ -94,7 +94,6 @@ pop {r4, r5, pc}
 #ifdef ENABLE_ARM11KERNEL_DEBUG
 
 //#define ARM11KERNEL_ENABLECMDLOG
-//#define ENABLE_ARM11KERNEL_PROCSTARTHOOK
 #ifdef ENABLE_ARM11KERNEL_PROCSTARTHOOK
 #define ENABLE_NETDEBUG
 #endif
@@ -281,7 +280,7 @@ add r0, r7, r6
 mov r1, r4
 mov r2, #0
 bl generate_branch
-//str r0, [r5, r6]
+str r0, [r5, r6]
 
 adr r1, arm11_undefhandler
 adr r3, arm11_prefetchhandler
@@ -307,7 +306,7 @@ add r0, r7, r6
 mov r1, r4
 mov r2, #0
 bl generate_branch
-//str r0, [r5, r6]
+str r0, [r5, r6]
 
 adr r1, arm11_prefetchhandler
 adr r3, arm11_daborthandler
@@ -333,7 +332,7 @@ add r0, r7, r6
 mov r1, r4
 mov r2, #0
 bl generate_branch
-//str r0, [r5, r6]
+str r0, [r5, r6]
 
 #ifdef ARM11KERNEL_ENABLECMDLOG
 adr r1, arm11kernel_patch
@@ -597,9 +596,14 @@ mov r2, #0
 mov r3, r2
 mov r5, r2
 ldr r1, =0xffff9004 @ Load the process-name from the current KProcess' KCodeSet.
-ldr r1, [r1]
+ldr r1, [r1] @ r1 = current KProcess*
 cmp r1, #0
 beq arm11kernel_exceptionregdump_writeprocname
+
+ldr r3, arm11kernel_patch_fwver
+cmp r3, #0x37
+addge r1, r1, #8
+mov r3, #0
 
 ldr r5, [r1, #0x54]
 ldr r1, [r1, #0xa8]
@@ -1050,6 +1054,11 @@ str r0, [r4, #12] @ Total used pages for .text + .rodata + .data + .bss.
 ldr r0, =0xffff9004
 ldr r0, [r0]
 add r0, r0, #0x54
+
+ldr r3, arm11kernel_patch_fwver
+cmp r3, #0x37
+addge r0, r0, #8
+
 ldr r1, [sp, #8] @ r1=inr2
 bl KProcessmem_getphysicaladdr
 str r0, [r4, #16] @ text_mapadr converted to a physical address.

@@ -1859,7 +1859,7 @@ void dump_arm11debuginfo()
 	//u32 i;
 	u16 filepath[64];
 	char *path = (char*)"/3dshax_debug.bin";
-	u32 *ptr, val=0;
+	//u32 *ptr, val=0;
 
 	debuginfo_ptr = (vu32*)((u32)get_arm11debuginfo_physaddr() + 0x200);
 
@@ -1956,11 +1956,12 @@ u32 *get_kprocessptr(u64 procname, u32 num, u32 get_mmutableptr)
 	u32 *kprocess = NULL;
 	u32 slabheap_physaddr = 0x1FFA0000;
 	u32 kernelfcram_phys2vaddr_value = 0xd0000000;
+	u32 kprocess_adjustoffset = 0;
 
-	if(RUNNINGFWVER==0x37)
+	if(RUNNINGFWVER>=0x37)
 	{
-		slabheap_physaddr = 0x1FFAC000;
 		kernelfcram_phys2vaddr_value = 0xc0000000;
+		kprocess_adjustoffset = 8;
 	}
 
 	for(pos=0; pos<(0x80000>>2)-1; pos++)//kcodeset_adr = KCodeSet object arm11 kernel vaddr for the specified process name.
@@ -1985,7 +1986,7 @@ u32 *get_kprocessptr(u64 procname, u32 num, u32 get_mmutableptr)
 			}
 			else
 			{
-				kprocess = &wram[pos - (0xa8>>2)];
+			kprocess = &wram[pos - ((0xa8+kprocess_adjustoffset)>>2)];
 				break;
 			}
 		}
@@ -1993,7 +1994,7 @@ u32 *get_kprocessptr(u64 procname, u32 num, u32 get_mmutableptr)
 
 	if(kprocess==NULL)return NULL;
 
-	if(get_mmutableptr)return (u32*)(kprocess[0x54>>2] - kernelfcram_phys2vaddr_value);
+	if(get_mmutableptr)return (u32*)(kprocess[(0x54+kprocess_adjustoffset)>>2] - kernelfcram_phys2vaddr_value);
 	return kprocess;
 }
 
@@ -2118,12 +2119,14 @@ void dump_fcramaxiwram()
 
 u32 nand_readsector(u32 sector, u32 *outbuf, u32 sectorcount)
 {
+	u32 val;
 	u32 *state;// = (u32*)0x080d77e0;//FWVER 0x1F
 	//u32 (*funcptr)(u32*, u32*, u32, u32, u32);
 	//u32 outclass[2];
 
 	//if(RUNNINGFWVER>=0x2E)state = (u32*)0x080d6f40;
-	state = *((u32*)(((u32)pxifs_state) - 8));
+	val = ((u32)pxifs_state) - 8;
+	state = (u32*)(*((u32*)val));
 
 	/*funcptr = (void*)*((u32*)((*state) + 8));
 
@@ -2649,12 +2652,12 @@ void pxipmcmd1_getexhdr(u32 *exhdr)
 		memset(servlist, 0, 0x100);
 		memcpy(servlist, arm11codeload_servaccesscontrol, sizeof(arm11codeload_servaccesscontrol));
 
-		for(pos=0x248; pos<0x248+0x7; pos++)exhdr8[pos] = 0xFF;//Set fs-module accessinfo to all 0xFF.
+		for(pos=0x248; pos<0x248+0x7; pos++)exhdr8[pos] = 0xFF;//Set FS accessinfo to all 0xFF.
 	}
 
 	if(exhdr[0]==0x45454154)//"TAEE", NES VC for TLoZ.
 	{
-		for(pos=0x248; pos<0x248+0x7; pos++)exhdr8[pos] = 0xFF;//Set fs-module accessinfo to all 0xFF.
+		for(pos=0x248; pos<0x248+0x7; pos++)exhdr8[pos] = 0xFF;//Set FS accessinfo to all 0xFF.
 	}
 }
 
@@ -2845,7 +2848,7 @@ void thread_entry()
 {
 	u32 pos=0;
 	//u32 *axiwram = (u32*)0x1FF80000;
-	u32 *menutextphys;// = (u32*)0x2696e000;
+	//u32 *menutextphys;// = (u32*)0x2696e000;
 	/*u32 *nwm_physaddr;// = (u32*)0x276cf000;
 	u32 *cecd_physaddr;
 	u32 *nim_physaddr;
@@ -2854,7 +2857,7 @@ void thread_entry()
 	u32 *gsp_physaddr;*/
 	//u32 *ptr;
 	u32 debuginitialized = 0;
-	u32 totalmenu_textoverwrite = 0;
+	//u32 totalmenu_textoverwrite = 0;
 
 	//dumpmem((u32*)0x08000000, 0x100000);
 	//dumpmem((u32*)0x20000000, 0x100000);
@@ -2928,7 +2931,9 @@ void thread_entry()
 	}
 
 	patch_pxidev_cmdhandler_cmd0((u32*)0x08028000, 0x080ff000-0x08028000);
+	#ifdef ENABLE_GETEXHDRHOOK
 	arm9_pxipmcmd1_getexhdr_writepatch_autolocate((u32*)0x08028000, 0x080ff000-0x08028000);
+	#endif
 
 	writepatch_arm11kernel_kernelpanicbkpt((u32*)0x1FF80000, 0x80000);
 
@@ -3022,14 +3027,14 @@ void thread_entry()
 
 		//if((*((vu16*)0x10146000) & 2) == 0)break;
 
-		if((*((vu16*)0x10146000) & 2) == 0 && totalmenu_textoverwrite < 2 && FIRMLAUNCH_RUNNINGTYPE==0)//button B
+		/*if((*((vu16*)0x10146000) & 2) == 0 && totalmenu_textoverwrite < 2 && FIRMLAUNCH_RUNNINGTYPE==0)//button B
 		{
 			//menutextphys = patch_mmutables(0x756e656d, 0, 0);
 
 			memset(menutextphys, ~0, 0x106000);
 			while((*((vu16*)0x10146000) & 2) == 0);
 			totalmenu_textoverwrite++;
-		}
+		}*/
 
 		#ifdef ENABLE_ARM11KERNEL_DEBUG
 		dump_arm11debuginfo();
