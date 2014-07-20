@@ -708,6 +708,18 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 
 	if(cmdid==0x58)
 	{
+		if(*bufsize != 0xc || gxCmdBuf==NULL)
+		{
+			*bufsize = 0;
+			return 0;
+		}
+		*bufsize = 4;
+		buf[0] = GX_RequestDma(gxCmdBuf, (u32*)buf[0], (u32*)buf[1], buf[2]);
+		return 0;
+	}
+
+	if(cmdid==0x5c)
+	{
 		if(*bufsize != 0x18 || gxCmdBuf==NULL)
 		{
 			*bufsize = 0;
