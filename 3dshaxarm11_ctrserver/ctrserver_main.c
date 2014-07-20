@@ -22,21 +22,41 @@ extern u32 *fake_heap_end;
 
 extern Handle srvHandle;
 
-/*Result srv_cmd6(Handle *handleptr, char *str, u32 len, Handle handle)
+u32* gxCmdBuf = NULL;
+
+Handle gspEvent, gspSharedMemHandle;
+
+void gspGpuInit()
 {
-	if(!handleptr)handleptr=&srvHandle;
-	u32* cmdbuf=getThreadCommandBuffer();
-	cmdbuf[0]=0x000600c2; //request header code
-	strncpy((char*)&cmdbuf[1], str, 8);
-	cmdbuf[3] = len;
-	cmdbuf[4] = 0;
-	cmdbuf[5] = handle;
+	gspInit();
 
-	Result ret=0;
-	if((ret=svc_sendSyncRequest(*handleptr)))return ret;
+	GSPGPU_AcquireRight(NULL, 0x0);
+	GSPGPU_SetLcdForceBlack(NULL, 0x0);
 
-	return cmdbuf[1];
-}*/
+	//setup our gsp shared mem section
+	u8 threadID;
+	svc_createEvent(&gspEvent, 0x0);
+	GSPGPU_RegisterInterruptRelayQueue(NULL, gspEvent, 0x1, &gspSharedMemHandle, &threadID);
+	svc_mapMemoryBlock(gspSharedMemHandle, 0x10002000, 0x3, 0x10000000);
+
+	//wait until we can write stuff to it
+	svc_waitSynchronization1(gspEvent, 0x55bcb0);
+
+	//GSP shared mem : 0x2779F000
+	gxCmdBuf=(u32*)(0x10002000+0x800+threadID*0x200);
+}
+
+void gspGpuExit()
+{
+	GSPGPU_UnregisterInterruptRelayQueue(NULL);
+
+	//unmap GSP shared mem
+	svc_unmapMemoryBlock(gspSharedMemHandle, 0x10002000);
+	svc_closeHandle(gspSharedMemHandle);
+	svc_closeHandle(gspEvent);
+	
+	gspExit();
+}
 
 int main(int argc, char **argv)
 {
@@ -47,7 +67,6 @@ int main(int argc, char **argv)
 	u32 heap_size = 0;
 	u32 tmp=0;
 	u32 i;
-	//u64 name = 0x4141414141414141ULL;
 
 	if(PROCESSNAME == 0x706c64)svc_sleepThread(10000000000LL);//Delay 10 seconds when running under the dlp module.
 
@@ -57,14 +76,15 @@ int main(int argc, char **argv)
 		((u32*)0x94000000)[0x800>>2] = ret;
 	}
 
-	ret = gspInit();
-	if(ret!=0)*((u32*)0x58000500) = ret;
+	/*ret = gspInit();
+	if(ret!=0)*((u32*)0x58000500) = ret;*/
 
 	if(PROCESSNAME != 0x454d414e434f5250LL)//This is only executed when the PROCESSNAME is not set to the default "PROCNAME" string.
 	{
 		if(PROCESSNAME == 0x706c64)//"dlp"
 		{
 			gspheap_size = 0x1000;
+			gspInit();
 		}
 		else
 		{
@@ -73,6 +93,7 @@ int main(int argc, char **argv)
 			//aptSetupEventHandler();
 
 			GSPGPU_AcquireRight(NULL, 0);
+			gspGpuInit();
 		}
 	}
 	else
@@ -81,7 +102,8 @@ int main(int argc, char **argv)
 		aptInit(APPID_APPLICATION);
 		//aptSetupEventHandler();
 
-		GSPGPU_AcquireRight(NULL, 0);
+		//GSPGPU_AcquireRight(NULL, 0);
+		gspGpuInit();
 	}
 
 	ret = svc_controlMemory((u32*)&gspheap, 0, 0, gspheap_size, 0x10003, 3);
@@ -94,12 +116,6 @@ int main(int argc, char **argv)
 
 	fake_heap_start = (u32*)0x08048000;
 	fake_heap_end = (u32*)(0x08000000 + heap_size);
-
-	/*for(i=0; i<0x1000; i++)
-	{
-		((u32*)0x08060000)[i] = srv_cmd6(&srvHandle, (char*)&name, 8, srvHandle);
-		name++;
-	}*/
 
 	ACU_WaitInternetConnection();
 

@@ -6,6 +6,7 @@
 #include <ctr/svc.h>
 #include <ctr/srv.h>
 #include <ctr/GSP.h>
+#include <ctr/GX.h>
 #include <ctr/SOC.h>
 #include <ctr/APT.h>
 #include <ctr/CSND.h>
@@ -79,6 +80,8 @@ extern Handle CFGNOR_handle;
 extern Handle hidHandle;
 extern Handle CSND_handle;
 extern Handle SOCU_handle;
+
+extern u32* gxCmdBuf;
 
 int ctrserver_recvdata(ctrserver *server, u8 *buf, int size);
 int ctrserver_senddata(ctrserver *server, u8 *buf, int size);
@@ -700,6 +703,18 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		if(*bufsize != 8)return 0;
 		memcpy(namebuf, buf, 8);
 		buf[0] = svc_connectToPort(&buf[1], namebuf);
+		return 0;
+	}
+
+	if(cmdid==0x58)
+	{
+		if(*bufsize != 0x18 || gxCmdBuf==NULL)
+		{
+			*bufsize = 0;
+			return 0;
+		}
+		*bufsize = 4;
+		buf[0] = GX_SetTextureCopy(gxCmdBuf, (u32*)buf[0], buf[2], (u32*)buf[1], buf[3], buf[4], buf[5]);
 		return 0;
 	}
 
