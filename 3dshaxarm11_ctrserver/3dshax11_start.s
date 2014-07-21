@@ -6,10 +6,12 @@
 .global _init
 .global launchcode_kernelmode
 .global call_arbitaryfuncptr
+.global svcControlProcessMemory
 
 .type _init STT_FUNC
 .type launchcode_kernelmode STT_FUNC
 .type call_arbitaryfuncptr STT_FUNC
+.type svcControlProcessMemory STT_FUNC
 
 .global PROCESSNAME
 
@@ -127,4 +129,23 @@ ldm r8, {r0, r1, r2, r3, r4, r5, r6}
 blx r7
 stm r8, {r0, r1, r2, r3, r4, r5, r6}
 pop {r4, r5, r6, r7, r8, pc}
+
+svcControlProcessMemory:
+push {r0, r1, r2, r3, r4, r5, lr}
+cmp r0, #0
+bne svcControlProcessMemory_start
+
+ldr r1, =0xFFFF8001
+svc 0x27
+mov r0, r1
+ldr r1, [sp, #4]
+ldr r2, [sp, #8]
+ldr r3, [sp, #12]
+
+svcControlProcessMemory_start:
+ldr r4, [sp, #28]
+ldr r5, [sp, #32]
+svc 0x70
+add sp, sp, #16
+pop {r4, r5, pc}
 

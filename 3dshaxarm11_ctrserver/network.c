@@ -88,6 +88,7 @@ int ctrserver_senddata(ctrserver *server, u8 *buf, int size);
 
 u32 launchcode_kernelmode(void*, u32 param);
 void call_arbitaryfuncptr(void* funcptr, u32 *regdata);
+Result svcControlProcessMemory(Handle kprocess, u32 addr0, u32 addr1, u32 size, u32 type, u32 permissions);
 
 Result am_init()
 {
@@ -727,6 +728,19 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		}
 		*bufsize = 4;
 		buf[0] = GX_SetTextureCopy(gxCmdBuf, (u32*)buf[0], buf[2], (u32*)buf[1], buf[3], buf[4], buf[5]);
+		return 0;
+	}
+
+	if(cmdid==0x60)
+	{
+		if(*bufsize != 0x18)
+		{
+			*bufsize = 0;
+			return 0;
+		}
+
+		*bufsize = 4;
+		buf[0] = svcControlProcessMemory(buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]);
 		return 0;
 	}
 
