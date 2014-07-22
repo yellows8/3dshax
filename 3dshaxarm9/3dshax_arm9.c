@@ -1396,7 +1396,8 @@ u32 ctrcard_cmdc6(u32 *outbuf)
 	return funcptr(ctx, outbuf);
 }
 
-/*u32 gamecard_initarchiveobj()
+#ifdef ENABLE_GAMECARD
+u32 gamecard_initarchiveobj()
 {
 	u32 lowpath[3];
 	u32 lowpathdata[4];
@@ -1429,7 +1430,8 @@ u32 gamecard_readsectors(u32 *outbuf, u32 sector, u32 sectorcount)
 	ptr = (u32*)*ptr;
 
 	return archive_readsectors(ptr, outbuf, sectorcount, sector);
-}*/
+}
+#endif
 
 /*u32 read_gamecardsector(u64 mediaoffset, u32 *outbuf, u32 readsize, u16 total_datablocks)
 {
@@ -2526,6 +2528,7 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 		return 0;
 	}
 
+	#ifdef ENABLE_GAMECARD
 	if(cmdid==0xc3)
 	{
 		if(*bufsize != 8)
@@ -2539,7 +2542,7 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 		bufpos = 0;
 
 		*bufsize = (size * 0x200) + 4;
-		//buf[0] = gamecard_readsectors(&buf[1], buf[0], buf[1]);//buf[0]=sector#, buf[1]=sectorcount
+		buf[0] = gamecard_readsectors(&buf[1], buf[0], buf[1]);//buf[0]=sector#, buf[1]=sectorcount
 		//buf[0] = SendReadCommand(buf[0]*0x200, 0x200, buf[1], &buf[1]);
 		/*while(size)
 		{
@@ -2556,6 +2559,7 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 
 		return 0;
 	}
+	#endif
 
 	if(cmdid==0xd0)
 	{
@@ -2648,8 +2652,9 @@ void pxidev_cmdhandler_cmd0handler(u32 *cmdbuf)
 
 	if(type==0x43565253)//"SRVC"
 	{
-		cmdbuf[0] = 0x00000080;
+		cmdbuf[0] = 0x00000081;
 		cmdbuf[2] = payloadsize;
+		cmdbuf[3] = 4;
 	}
 }
 

@@ -431,15 +431,14 @@ sub sp, sp, #24
 
 ldr r2, =RUNNINGFWVER
 ldr r2, [r2]
-ldr r0, =0x1f
-ldr r1, =0x2e
-cmp r2, r0
+cmp r2, #0x1F
 ldreq r4, =0x0805d8fd @ pxifs_openarchive
-cmp r2, r1
+cmp r2, #0x2E
 ldreq r4, =0x0805b835
-mov r1, #0x30
-cmp r2, r1
+cmp r2, #0x30
 ldreq r4, =0x0805b839
+cmp r2, #0x37
+ldreq r4, =0x0805ba1d
 ldr r0, =0x29
 add r1, r0, #1
 cmp r2, r0
