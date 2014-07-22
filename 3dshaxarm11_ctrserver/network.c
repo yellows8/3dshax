@@ -121,20 +121,21 @@ Result pxidev_cmd0(u32 cmdid, u32 *buf, u32 *bufsize)
 	else
 	{
 		bufaddr = (u32)buf;
-		if(bufaddr < 0x1c000000)
+		/*if(bufaddr < 0x1c000000)
 		{
 			bufaddr+= 0x0c000000;
 		}
 		else
 		{
 			bufaddr -= 0x10000000;
-		}
+		}*/
 
-		cmdbuf[0] = 0x00000100;
+		cmdbuf[0] = 0x000000c2;
 		cmdbuf[1] = 0x43565253;//"SRVC"
 		cmdbuf[2] = cmdid;
-		cmdbuf[3] = *bufsize;//(bufsize<<8) | 4;
-		cmdbuf[4] = bufaddr;
+		cmdbuf[3] = *bufsize;
+		cmdbuf[4] = (net_payload_maxsize<<8) | 4;
+		cmdbuf[5] = bufaddr;
 	}
 
 	if((ret = svc_sendSyncRequest(pxidev_handle))!=0)return ret;

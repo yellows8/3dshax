@@ -2305,7 +2305,7 @@ int ctrserver_process_aescontrol(aescontrol *control)
 	return Key;
 }*/
 
-int ctrserver_processcmd(u32 cmdid, u32 *buf, u32 *bufsize)
+int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 {
 	int ret=0;
 	u32 rw, openflags;
@@ -2317,6 +2317,7 @@ int ctrserver_processcmd(u32 cmdid, u32 *buf, u32 *bufsize)
 	u32 bufpos = 0;
 	u64 tmpsize64=0;
 	u32 *mmutable;
+	u32 *buf = (u32*)pxibuf[0];
 	u8 *buf8 = (u8*)buf;
 	u32 fsfile_ctx[8];
 	u16 filepath[0x100];
@@ -2636,10 +2637,10 @@ void pxidev_cmdhandler_cmd0handler(u32 *cmdbuf)
 
 	type = cmdbuf[1];
 
-	if(type==0x43565253)//"SRVC"
+	if(type==0x43565253 && cmdbuf[0]==0x000000c2)//"SRVC"
 	{
 		payloadsize = cmdbuf[3];
-		ret = ctrserver_processcmd(cmdbuf[2], (u32*)cmdbuf[4], &payloadsize);
+		ret = ctrserver_processcmd(cmdbuf[2], (u32*)cmdbuf[5], &payloadsize);
 	}
 
 	cmdbuf[0] = 0x00000040;
