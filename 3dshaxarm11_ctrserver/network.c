@@ -615,13 +615,14 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 
 	if(cmdid==0x53)
 	{
-		size = *bufsize - 4;
+		size = (*bufsize) - 4;
 
-		ret = GSPGPU_FlushDataCache(NULL, (u8*)&buf[1], *bufsize);
+		ret = GSPGPU_FlushDataCache(NULL, (u8*)&buf[1], size);
 		if(ret<0)return ret;
 
-		CSND_playsound(0x8, (buf[0]>>24) & 0xff, buf[0] & 0xff, 44100, &buf[1], NULL, size, (buf[0]>>8) & 0xff, (buf[0]>>16) & 0xff);//(u32*)((u32)buf+size)
 		*bufsize = 0;
+
+		CSND_playsound(0x8, (buf[0]>>24) & 0xff, buf[0] & 0xff, 44100, &buf[1], NULL, size, (buf[0]>>8) & 0xff, (buf[0]>>16) & 0xff);//(u32*)((u32)buf+size)
 
 		return 0;
 	}
