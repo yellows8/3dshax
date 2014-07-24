@@ -2948,6 +2948,11 @@ void thread_entry()
 
 		//axiwram[0x1af28>>2] = 0xE1200070;//ARM11 kernelpanic function patch.
 	}
+	else if(RUNNINGFWVER==0x37)
+	{
+		*((u16*)0x0803e674) = 0x2002;
+		svcFlushProcessDataCache((u32*)0x0803e674, 0x4);//pxipm opentitle sd-flag check patch
+	}
 
 	patch_pxidev_cmdhandler_cmd0((u32*)0x08028000, 0x080ff000-0x08028000);
 	#ifdef ENABLE_GETEXHDRHOOK
