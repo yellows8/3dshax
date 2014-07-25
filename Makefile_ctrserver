@@ -32,6 +32,10 @@ ifneq ($(strip $(ENABLE_CMDLOGGING)),)
 	PARAMS	:=	$(PARAMS) ENABLE_CMDLOGGING=1
 endif
 
+ifneq ($(strip $(ENABLE_DUMP_NANDIMAGE)),)
+	PARAMS	:=	$(PARAMS) ENABLE_DUMP_NANDIMAGE=1
+endif
+
 .PHONY: clean
 
 all:	3dshax_arm9.bin 3dshax_arm11_ctrserver.bin

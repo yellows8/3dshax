@@ -2154,6 +2154,7 @@ u32 nand_readsector(u32 sector, u32 *outbuf, u32 sectorcount)
 	return archive_readsectors(state, outbuf, sectorcount, sector);
 }
 
+#ifdef ENABLE_DUMP_NANDIMAGE
 void dump_nandimage()
 {
 	u32 ret = 0;
@@ -2175,6 +2176,7 @@ void dump_nandimage()
 		if(filewrite(fileobj, (u32*)0x20000000, 0x100000, pos)!=0)return;
 	}
 }
+#endif
 
 void loadrun_file(char *path, u32 *addr, int execute)
 {
@@ -2974,7 +2976,9 @@ void thread_entry()
 
 			//read_gamecard();
 
-			//dump_nandimage();
+			#ifdef ENABLE_DUMP_NANDIMAGE
+			dump_nandimage();
+			#endif
 
 			//memset((u32*)0x18000000, pos | (pos<<8) | (pos<<16) | (pos<<24), 0x00600000);
 			////memset(&framebuf_addr[(0x46500)>>2], 0x88888888, 0x46500);

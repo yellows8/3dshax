@@ -59,6 +59,10 @@ ifneq ($(strip $(ENABLE_CMDLOGGING)),)
 	DEFINES	:=	$(DEFINES) -DARM11KERNEL_ENABLECMDLOG
 endif
 
+ifneq ($(strip $(ENABLE_DUMP_NANDIMAGE)),)
+	DEFINES	:=	$(DEFINES) -DENABLE_DUMP_NANDIMAGE
+endif
+
 ARCH	:=	-mthumb -mthumb-interwork
 
 CFLAGS	:=	-g -Wall -Os\
