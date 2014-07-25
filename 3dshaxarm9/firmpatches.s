@@ -54,13 +54,18 @@ sub sp, sp, #4
 
 mov r4, r1
 
-#ifdef ENABLENANDREDIR
+/*#ifdef ENABLENANDREDIR
 #ifdef ENABLE_LOADA9_x01FFB800
-ldr r1, =FIRMLAUNCH_FWVER
+ldr r1, =FIRMLAUNCH_RUNNINGTYPE
 ldr r1, [r1]
-cmp r1, #0x2E
-cmpne r1, #0x30
-cmpne r1, #0x37
+cmp r1, #3
+beq patchfirm_arm9section_locateprocess9_start
+
+ldr r5, =FIRMLAUNCH_FWVER
+ldr r5, [r5]
+cmp r5, #0x2E
+cmpne r5, #0x30
+cmpne r5, #0x37
 bne patchfirm_arm9section_locateprocess9_start
 ldr r1, =0x0801b43c
 ldr r2, =0x08006800
@@ -68,9 +73,12 @@ sub r2, r1, r2
 add r2, r2, r0
 mov r3, #0
 str r3, [r2, #0] @ Patch the arm9 kernel crt0 code so that it always does the TWL console-unique keyslot keydata-init.
+ldr r3, =0xe3a01000 @ "mov r1, #0"
+cmp r5, #0x37
+ldrge r3, =0xe3a02000 @ "mov r2, #0"
 str r3, [r2, #16]
 #endif
-#endif
+#endif*/
 
 patchfirm_arm9section_locateprocess9_start:
 ldr r1, =0x636f7250 @ "Process9"
