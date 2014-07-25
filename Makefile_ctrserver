@@ -28,6 +28,10 @@ ifneq ($(strip $(ENABLE_GAMECARD)),)
 	PARAMS	:=	$(PARAMS) ENABLE_GAMECARD=1
 endif
 
+ifneq ($(strip $(ENABLE_CMDLOGGING)),)
+	PARAMS	:=	$(PARAMS) ENABLE_CMDLOGGING=1
+endif
+
 .PHONY: clean
 
 all:	3dshax_arm9.bin 3dshax_arm11_ctrserver.bin

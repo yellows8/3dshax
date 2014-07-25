@@ -93,7 +93,6 @@ pop {r4, r5, pc}
 
 #ifdef ENABLE_ARM11KERNEL_DEBUG
 
-//#define ARM11KERNEL_ENABLECMDLOG
 #ifdef ENABLE_ARM11KERNEL_PROCSTARTHOOK
 #define ENABLE_NETDEBUG
 #endif
@@ -350,6 +349,8 @@ cmp r8, #0x2E
 ldreq r6, =0x20254//=0x20d6c
 cmp r8, #0x30
 ldreq r6, =0x20250
+cmp r8, #0x37
+ldreq r6, =0x20500
 cmp r6, #0
 beq write_arm11debug_patch_cmdhookend
 
@@ -361,6 +362,8 @@ cmp r8, #0x2E
 ldreq r6, =0x5f254//=0x5fd6c
 cmp r8, #0x30
 ldreq r6, =0x5f250
+cmp r8, #0x37
+ldreq r6, =0x5e500
 str r0, [r5, r6]
 
 /*ldr r6, =0x1fe84
@@ -809,6 +812,11 @@ ldrge r7, [sp, #0x10]
 ldr r0, [r6, #0x80] @ r6/r7 = src/dst KThread's KProcess
 ldr r1, [r7, #0x80]
 
+ldr r3, arm11kernel_patch_fwver
+cmp r3, #0x37
+addge r0, r0, #8
+addge r1, r1, #8
+
 ldr r0, [r0, #0xa8] @ r0/r1 = src/dst KProcess' KCodeSet
 ldr r1, [r1, #0xa8]
 
@@ -847,7 +855,7 @@ str r3, [r4, #28]
 //ldr r1, =0x44727245 @ "ErrD"
 //ldr r1, =0x7366 @ "fs"
 //ldr r1, =0x707367 @ "gsp"
-//ldr r1, =0x756e656d @ "menu"
+ldr r1, =0x756e656d @ "menu"
 //ldr r1, =0x44524147 @ "GARD"
 //ldr r1, =0x736e @ "ns"
 //ldr r1, =0x6f72 @ "ro"
@@ -863,7 +871,7 @@ str r3, [r4, #28]
 //ldr r1, =0x656d6f48 @ "Home"
 //ldr r1, =0x45454154
 //ldr r1, =0x69746579 @ "yeti"
-ldr r1, =0x656c6946 @ "File"
+//ldr r1, =0x656c6946 @ "File"
 
 //ldr r3, =0x707364 @ "dsp"
 //ldr r3, =0x736e @ "ns"
@@ -982,6 +990,11 @@ moveq r0, r1
 beq arm11kernel_convertcmd_vaddr2phys_getphysend
 
 add r0, r4, #0x54
+
+ldr r3, arm11kernel_patch_fwver
+cmp r3, #0x37
+addge r0, r0, #8
+
 bl KProcessmem_getphysicaladdr
 
 arm11kernel_convertcmd_vaddr2phys_getphysend:
