@@ -837,6 +837,12 @@ ldr r2, [r1, #0x50] @ Write the dst process-name to out+16.
 ldr r3, [r1, #0x54]
 str r2, [r4, #24]
 str r3, [r4, #28]
+
+ldr r3, =0xFFFC2000
+ldrh r3, [r3]
+tst r3, #0x200 @ L button
+bne arm11kernel_processcmd_patchend @ Only do logging / check procname when above button is pressed.
+
 //ldr r1, =0x70747468 @ "http"
 //ldr r1, =0x6361 @ "ac"
 //ldr r1, =0x6b636f73 @ "sock"

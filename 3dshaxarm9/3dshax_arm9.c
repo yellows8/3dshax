@@ -2950,7 +2950,7 @@ void thread_entry()
 	}
 	else if(RUNNINGFWVER==0x37)
 	{
-		*((u16*)0x0803e674) = 0x2002;
+		*((u16*)0x0803e676) = 0x2002;
 		svcFlushProcessDataCache((u32*)0x0803e674, 0x4);//pxipm opentitle sd-flag check patch
 	}
 
