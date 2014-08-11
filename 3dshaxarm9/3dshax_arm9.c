@@ -177,7 +177,7 @@ static char arm11codeload_servaccesscontrol[][8] = { //Service-access-control co
 "frd:u"
 };
 
-typedef struct {
+/*typedef struct {
 	u8 ID_size;
 	u8 palettetype;//0=none, 1=palette used
 	u8 colortype;//2=rgb, etc
@@ -192,7 +192,7 @@ typedef struct {
 	u16 height;
 	u8 bpp;
 	u8 descriptor;//bit4 set=horizontal flip, bit5 set=vertical flip
-} PACKED tga_header;
+} PACKED tga_header;*/
 
 #ifdef ENABLEAES
 void aes_mutexenter()
