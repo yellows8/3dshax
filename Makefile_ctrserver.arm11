@@ -6,6 +6,10 @@ ifeq ($(strip $(DEVKITARM)),)
 $(error "Please set DEVKITARM in your environment. export DEVKITARM=<path to>devkitARM")
 endif
 
+ifeq ($(strip $(CTRULIB)),)
+$(error "Please set CTRULIB in your environment, or set it via a make parameter. export CTRULIB=<path to>ctrulib/libctru")
+endif
+
 include $(DEVKITARM)/ds_rules
 
 #---------------------------------------------------------------------------------
@@ -50,7 +54,7 @@ LIBS	:= 	-lctru
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
-LIBDIRS	:=	$(LIBNDS) $(HOME)/Downloads/ctrulib/libctru
+LIBDIRS	:=	$(LIBNDS) $(CTRULIB)
  
 #---------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional
