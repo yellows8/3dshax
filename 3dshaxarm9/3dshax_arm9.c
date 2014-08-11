@@ -54,7 +54,6 @@ extern int arm9_fwrite(u32 *handle, u32 *bytes_written, u32 *buf, u32 size, u32 
 extern int arm9_fread(u32 *handle, u32 *bytes_read, u32 *buf, u32 size);
 extern int arm9_GetFSize(u32 *handleptr, u64 *size);
 
-u32 *patch_mmutables(u64 procname, u32 patch_permissions, u32 num);
 u32 svcSignalEvent();
 void svcFlushProcessDataCache(u32*, u32);
 u64 svcGetSystemTick();
@@ -76,6 +75,8 @@ void AES_Wait();
 
 u32 *get_kprocessptr(u64 procname, u32 num, u32 get_mmutableptr);
 u8 *mmutable_convert_vaddr2physaddr(u32 *mmutable, u32 vaddr);
+u32 *patch_mmutables(u64 procname, u32 patch_permissions, u32 num);
+void writepatch_arm11kernel_kernelpanicbkpt(u32 *ptr, u32 size);
 
 extern u32 *pxifs_state;
 extern u32 *sdarchive_obj;
@@ -2659,31 +2660,6 @@ void arm9_pxipmcmd1_getexhdr_writepatch_autolocate(u32 *startptr, u32 size)
 	ptr = (u32*)parse_branch((u32)ptr, 0);
 
 	arm9_pxipmcmd1_getexhdr_writepatch((u32)&ptr[0x24>>2]);
-}
-
-void writepatch_arm11kernel_kernelpanicbkpt(u32 *ptr, u32 size)
-{
-	u32 pos, i;
-
-	pos = 0;
-	while(size)
-	{
-		if(ptr[pos] == 0xffff9004 && ptr[pos+1] == 0x010000ff)//Locate the kernelpanic() function(s) via the .pool data. Note that older kernel versions had two kernelpanic() functions.
-		{
-			for(i=0; i<(0x400/4); i++)
-			{
-				if(ptr[pos-i] == 0xe92d4010)//"push {r4, lr}"
-				{
-					//The actual start of the function is this instruction, immediately before the push instruction: "ldr r0, [pc, <offset>]"
-					ptr[pos-i-1] = 0xE1200070;//"bkpt #0"
-					break;
-				}
-			}
-		}
-
-		pos++;
-		size-= 4;
-	}
 }
 
 /*u32 mountcontent_openfile_hook_opensd(u32 *archiveclass, u32 **fileobj, u32 unk0, u32 *lowpath, u32 openflags, u32 unk1)

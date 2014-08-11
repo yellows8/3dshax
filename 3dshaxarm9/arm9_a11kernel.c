@@ -116,3 +116,28 @@ u8 *mmutable_convert_vaddr2physaddr(u32 *mmutable, u32 vaddr)
 	return page_physaddr;
 }*/
 
+void writepatch_arm11kernel_kernelpanicbkpt(u32 *ptr, u32 size)
+{
+	u32 pos, i;
+
+	pos = 0;
+	while(size)
+	{
+		if(ptr[pos] == 0xffff9004 && ptr[pos+1] == 0x010000ff)//Locate the kernelpanic() function(s) via the .pool data. Note that older kernel versions had two kernelpanic() functions.
+		{
+			for(i=0; i<(0x400/4); i++)
+			{
+				if(ptr[pos-i] == 0xe92d4010)//"push {r4, lr}"
+				{
+					//The actual start of the function is this instruction, immediately before the push instruction: "ldr r0, [pc, <offset>]"
+					ptr[pos-i-1] = 0xE1200070;//"bkpt #0"
+					break;
+				}
+			}
+		}
+
+		pos++;
+		size-= 4;
+	}
+}
+
