@@ -9,6 +9,7 @@
 #include "ctrclient.h"
 
 #include "arm9fs.h"
+#include "arm9_FS.h"
 #include "a9_memfs.h"
 #include "arm9_nand.h"
 #include "ctr-gamecard.h"
@@ -33,12 +34,6 @@ u32 parse_branch_thumb(u32 branchaddr, u32 branchval);
 void writearm11_firmlaunch_usrpatch();
 
 void call_arbitaryfuncptr(void* funcptr, u32 *regdata);
-
-extern int arm9_fopen(u32 *handle, u8 *path, u32 openflags);
-extern int arm9_fclose(u32 *handle);
-extern int arm9_fwrite(u32 *handle, u32 *bytes_written, u32 *buf, u32 size, u32 flushflag);
-extern int arm9_fread(u32 *handle, u32 *bytes_read, u32 *buf, u32 size);
-extern int arm9_GetFSize(u32 *handleptr, u64 *size);
 
 u32 svcSignalEvent();
 void svcFlushProcessDataCache(u32*, u32);
