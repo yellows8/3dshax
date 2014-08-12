@@ -23,7 +23,6 @@ u32 init_arm9patchcode3();
 void arm9_launchfirm();
 u32 getsp();
 u32 getcpsr();
-void patch_nandredir(u32 readfunc_patchadr, u32 writefunc_patchadr);
 void arm9_pxipmcmd1_getexhdr_writepatch(u32 addr);
 void arm9general_debughook_writepatch(u32 addr);
 u32 generate_branch(u32 branchaddr, u32 targetaddr, u32 flag);//branchaddr = addr of branch instruction, targetaddr = addr to branch to, flag = 0 for regular branch, non-zero for bl. (ARM-mode)
@@ -1265,9 +1264,6 @@ int main(void)
 	//dumpmem((u32*)0x20000000, 0x100000);
 
 	//dump_movablesed();
-
-	//patch_nandredir(0x8078c6e, 0x8078c2e);//FW1F
-	//patch_nandredir(0x807846e, 0x807842e);//FW2E
 
 	//dump_nandfile("/rw/sys/native.log");
 
