@@ -8,6 +8,9 @@
 
 #include "ctrclient.h"
 
+#include "arm9fs.h"
+#include "a9_memfs.h"
+
 /*#define REG_AESCNT *((vu32*)0x10009000)
 #define REG_AESWRFIFO *((vu32*)0x10009008)
 #define REG_AESRDFIFO *((vu32*)0x1000900C)
@@ -19,19 +22,6 @@
 #define REG_AESKEYYFIFO *((vu32*)0x10009108)*/
 
 #define AES_CHUNKSIZE 0x10000//0x10000//0x10000
-
-u32 dumpmem(u32 *addr, u32 size);
-u32 loadfile(u32 *addr, u32 size, u16 *path, u32 pathsize);
-u32 openfile(u32 *archiveobj, u32 lowpathtype, void* path, u32 pathsize, u32 openflags, u32 **fileobj);
-u32 fileread(u32 *fileobj, u32 *buf, u32 size, u32 filepos);
-u32 filewrite(u32 *fileobj, u32 *buf, u32 size, u32 filepos);
-u32 getfilesize(u32 *fileobj);
-u32 archive_readsectors(u32 *archiveobj, u32 *buf, u32 sectorcount, u32 mediaoffset);
-u32 pxifs_openarchive(u32 **archiveobj, u32 archiveid, u32 *lowpath);//lowpath is a ptr to the following structure: +0 = lowpathtype, +4 = dataptr, +8 = datasize
-
-void dump_fcramvram();
-void dump_fcramaxiwram();
-void loadrun_file(char *path, u32 *addr, int execute);
 
 void dump_nandfile(char *path);
 u32 nand_readsector(u32 sector, u32 *outbuf, u32 sectorcount);
@@ -89,12 +79,6 @@ u32 *get_kprocessptr(u64 procname, u32 num, u32 get_mmutableptr);
 u8 *mmutable_convert_vaddr2physaddr(u32 *mmutable, u32 vaddr);
 u32 *patch_mmutables(u64 procname, u32 patch_permissions, u32 num);
 void writepatch_arm11kernel_kernelpanicbkpt(u32 *ptr, u32 size);
-
-extern u32 *pxifs_state;
-extern u32 *sdarchive_obj;
-extern u32 *nandarchive_obj;
-extern u16 input_filepath[];
-extern u16 dump_filepath[];
 
 extern u32 arm9_stub[];
 extern u32 arm9_stub2[];
