@@ -1,3 +1,5 @@
+//u32 pxibuf[0x200>>2];
+
 /*void dump_movablesed()
 {
 	void (*readmovablesed)(u32*, u32*) = (void*)0x8060c65;

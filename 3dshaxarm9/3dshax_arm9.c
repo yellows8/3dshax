@@ -52,13 +52,6 @@ u32 input_filesize = 0;
 
 u32 *framebuf_addr = NULL;
 
-//u32 pxibuf[0x200>>2];
-
-//u32 debuginfo[0x200>>2];
-
-//u32 debuglogbuf[0x200>>2];
-//u32 debuglogbuf_cursz = 0;
-
 u32 *fileobj_debuginfo = NULL;
 u32 debuginfo_pos = 0;
 
