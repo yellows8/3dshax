@@ -4,9 +4,8 @@
 
 #include <nds/ndstypes.h>
 
+#include "arm9_svc.h"
 #include "arm9fs.h"
-
-void svcFlushProcessDataCache(u32*, u32);
 
 /*void dump_fcramvram()
 {

@@ -4,10 +4,7 @@
 
 #include <nds/ndstypes.h>
 
-#include "aes.h"
-
-#include "ctrclient.h"
-
+#include "arm9_svc.h"
 #include "arm9fs.h"
 #include "arm9_FS.h"
 #include "a9_memfs.h"
@@ -15,6 +12,8 @@
 #include "ctr-gamecard.h"
 #include "arm9_a11kernel.h"
 #include "yls8_aes.h"
+
+#include "ctrclient.h"
 
 void launchcode_kernelmode(void*);
 void changempu_memregions();
@@ -34,13 +33,6 @@ u32 parse_branch_thumb(u32 branchaddr, u32 branchval);
 void writearm11_firmlaunch_usrpatch();
 
 void call_arbitaryfuncptr(void* funcptr, u32 *regdata);
-
-u32 svcSignalEvent();
-void svcFlushProcessDataCache(u32*, u32);
-u64 svcGetSystemTick();
-u32 svcCreateThread(u32 *threadhandle, void* entrypoint, u32 arg, u32 *stacktop, s32 threadpriority, s32 processorid);
-void svcExitThread();
-void svcSleepThread(s64 nanoseconds);
 
 extern u32 arm9_stub[];
 extern u32 arm9_stub2[];

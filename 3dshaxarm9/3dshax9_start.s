@@ -4,7 +4,6 @@
 .fpu softvfp
 
 .global _start
-.global launchcode_kernelmode
 .global ioDelay
 
 .global changempu_memregions
@@ -24,14 +23,6 @@
 
 .global call_arbitaryfuncptr
 
-.global svcSignalEvent
-.global svcFlushProcessDataCache
-.global svcGetSystemTick
-.global svcCreateThread
-.global svcExitThread
-.global svcSleepThread
-.global svcCloseHandle
-
 .global pxifs_state
 .global sdarchive_obj
 .global nandarchive_obj
@@ -47,7 +38,6 @@
 .global FIRM_sigword0_array
 .global FIRM_contentid_totalversions
 
-.type launchcode_kernelmode STT_FUNC
 .type ioDelay STT_FUNC
 .type changempu_memregions STT_FUNC
 .type mountcontent_nandsd_writehookstub STT_FUNC
@@ -62,13 +52,6 @@
 
 .type getsp STT_FUNC
 .type getcpsr STT_FUNC
-.type svcSignalEvent STT_FUNC
-.type svcFlushProcessDataCache STT_FUNC
-.type svcGetSystemTick STT_FUNC
-.type svcCreateThread STT_FUNC
-.type svcExitThread STT_FUNC
-.type svcSleepThread STT_FUNC
-.type svcCloseHandle STT_FUNC
 
 .section .init
 
@@ -153,7 +136,7 @@ b _start_endlp
 _start_codebegin_fail:
 .word 0xffffffff
 
-startcode_type3: @ This is jumped to when _start was called via a hook for the FIRM ARM9-kernel entrypoint. Returning from here results in jumping to the actual kernel entrypoint.
+startcode_type3:
 @b startcode_type3
 push {r4, lr}
 
@@ -229,26 +212,6 @@ mov r0, #0
 bx lr
 .pool
 
-launchcode_kernelmode_stub:
-mov r0, sp
-push {r0, r5, lr}
-mrs r5, CPSR
-orr r2, r5, #0x80
-msr CPSR_c, r2
-blx r4
-msr CPSR_c, r5
-pop {r0, r5, lr}
-mov sp, r0
-bx lr
-
-launchcode_kernelmode:
-push {r4}
-mov r4, r0
-adr r0, launchcode_kernelmode_stub
-svc 0x7b
-pop {r4}
-bx lr
-
 ioDelay:
   subs r0, #1
   bgt ioDelay
@@ -286,45 +249,6 @@ ldm r8, {r0, r1, r2, r3, r4, r5, r6}
 blx r7
 stm r8, {r0, r1, r2, r3, r4, r5, r6}
 pop {r4, r5, r6, r7, r8, pc}
-
-svcSignalEvent:
-svc 0x18
-bx lr
-
-svcFlushProcessDataCache:
-mov r2, r1
-mov r1, r0
-ldr r0, =0xffff8001
-svc 0x54
-bx lr
-.pool
-
-svcGetSystemTick:
-svc 0x28
-bx lr
-
-svcCreateThread:
-push {r0, r4}
-ldr r0, [sp, #8]
-ldr r4, [sp, #12]
-svc 0x08
-ldr r2, [sp, #0]
-str r1, [r2]
-add sp, sp, #4
-pop {r4}
-bx lr
-
-svcExitThread:
-svc 0x9
-bx lr
-
-svcSleepThread:
-svc 0xa
-bx lr
-
-svcCloseHandle:
-svc 0x23
-bx lr
 
 pxidev_cmdhandler_cmd0: @ This is code which the pxidev cmdhandler will jump to for handling cmdid 0x0000, when that switch statement addr was patched.
 mov r0, r4
