@@ -16,21 +16,25 @@
 #include "ctrclient.h"
 
 void changempu_memregions();
-u32 *get_arm11debuginfo_physaddr();
-void write_arm11debug_patch();
-void writepatch_arm11kernel_svcaccess();
 u32 init_arm9patchcode3();
 void arm9_launchfirm();
 u32 getsp();
 u32 getcpsr();
-void arm9_pxipmcmd1_getexhdr_writepatch(u32 addr);
-void arm9general_debughook_writepatch(u32 addr);
+
 u32 generate_branch(u32 branchaddr, u32 targetaddr, u32 flag);//branchaddr = addr of branch instruction, targetaddr = addr to branch to, flag = 0 for regular branch, non-zero for bl. (ARM-mode)
 u32 parse_branch(u32 branchaddr, u32 branchval);
 u32 parse_branch_thumb(u32 branchaddr, u32 branchval);
-void writearm11_firmlaunch_usrpatch();
 
 void call_arbitaryfuncptr(void* funcptr, u32 *regdata);
+
+u32 *get_arm11debuginfo_physaddr();
+void write_arm11debug_patch();
+void writepatch_arm11kernel_svcaccess();
+
+void arm9_pxipmcmd1_getexhdr_writepatch(u32 addr);
+void arm9general_debughook_writepatch(u32 addr);
+
+void writearm11_firmlaunch_usrpatch();
 
 extern u32 arm9_stub[];
 extern u32 arm9_stub2[];
