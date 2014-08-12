@@ -408,31 +408,6 @@ int ctrserver_process_aescontrol(aescontrol *control)
 }
 #endif
 
-/*u8* AesKeyScrambler(u8 *Key, u8 *KeyX, u8 *KeyY, u32 flags)//From makerom, not correct after the first loop.
-{
-	int i;
-
-	// Process KeyX/KeyY to get raw normal key
-	for(i = 0; i < 16; i++)
-	{
-		if(flags & 2)Key[i] = KeyX[i] ^ ((KeyY[i] >> 2) | ((KeyY[i < 15 ? i+1 : 0] & 3) << 6));
-		if((flags & 2) == 0)Key[i] = KeyX[i] ^ ((KeyY[i] >> 2) | ((KeyY[i == 0 ? 15 : i-1] & 3) << 6));
-	}
-
-	if(flags & 1)
-	{
-	//#ifndef PUBLIC_BUILD
-	const u8 SCRAMBLE_SECRET[16] = {0x51, 0xD7, 0x5D, 0xBE, 0xFD, 0x07, 0x57, 0x6A, 0x1C, 0xFC, 0x2A, 0xF0, 0x94, 0x4B, 0xD5, 0x6C};
-
-	// Apply Secret to get final normal key
-	for(i = 0; i < 16; i++)
-		Key[i] = Key[i] ^ SCRAMBLE_SECRET[i];
-	//#endif
-	}
-
-	return Key;
-}*/
-
 int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 {
 	int ret=0;
@@ -449,7 +424,6 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 	u8 *buf8 = (u8*)buf;
 	u32 fsfile_ctx[8];
 	u16 filepath[0x100];
-	//u8 tmpkey[0x10];
 
 	#ifdef ENABLEAES
 	if(cmdid==CMD_AESCONTROL)
@@ -549,12 +523,6 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 
 		return 0;
 	}
-
-	/*if(cmdid>=0xc0)
-	{
-		if(cmdid==0xc0)dumpmem((u32*)payload[0], payload[1]);
-		return 0;
-	}*/
 
 	if(cmdid==0xc1)
 	{
@@ -694,23 +662,6 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 		buf[0] = ctrcard_cmdc6(&buf[1]);
 		return 0;
 	}
-
-	/*if(cmdid==0xe0)
-	{
-		*bufsize = 16;
-		aestiming_test(buf);
-		return 0;
-	}*/
-
-	/*if(cmdid==0xe1)
-	{
-		*bufsize = 16;
-		memset(tmpkey, 0, 16);
-		AesKeyScrambler(tmpkey, &buf[1], &buf[5], buf[0]);
-		memcpy(buf, tmpkey, 16);
-
-		return 0;
-	}*/
 
 	#ifdef ENABLEAES
 	if(cmdid==0xe2)
