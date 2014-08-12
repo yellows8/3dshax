@@ -181,17 +181,11 @@ void load_arm11code(u32 *loadptr, u32 maxloadsize, u64 procname)
 	funcptr(keyslot, bitsize, modulo, pubexponent);
 }*/
 
-void launch_firm()
+void patch_proc9_launchfirm()
 {
 	u32 *ptr;
 	u32 *arm9_patchaddr; //= (u32*)0x8086b98;
 	u32 pos;
-
-	/*void (*funcptr)() = (void*)0x8086a7c;
-	void (*funcptr2)(u32) = (void*)0x8087680;
-	void (*funcptr3)() = (void*)0x8028089;
-
-	void (*funcptr_signalfirmlaunch)(u32*) = (void*)0x8088560;*/
 
 	//*((u32*)0x080c4afc) = 0x0809796c;
 	//*((u32*)0x10010000) = 1;
@@ -240,24 +234,12 @@ void launch_firm()
 
 	init_arm9patchcode3();
 
-	//rsaengine_setpubk(0, 2048, rsamodulo_slot0, 0x00010001);
+	//rsaengine_setpubk(0, 2048, rsamodulo_slot0, 0x00010001);//This was only for testing using modulo data already stored in memory, for the RSA slot0 v6.0 save crypto / v7.0 NCCH crypto.
 	//if(*((u32*)0x01ffcd00) == 0)*((u32*)0x01ffcd00) |= 1;
 
 	svcFlushProcessDataCache((u32*)0x80ff000, 0xc00);
 
 	//memset(framebuf_addr, 0x80808080, 0x46500*2);
-
-	//*((u32*)0x1ff86e74) = generate_branch(0xfff66e74, 0xfff748c0, 0);//Patch the arm11kernel svcSendSyncRequest code so that it branches to the svc7c code, which then triggers FIRM launch.
-	//funcptr_signalfirmlaunch((u32*)0x80C4AFC);
-
-	//funcptr2(0x08097969);//called by wait_firmevent().
-	//funcptr3();
-
-	//funcptr();//launch_firm()
-
-	//while(1);
-
-	//arm9_launchfirm();
 }
 
 /*void get_kernelmode_sp()
@@ -1331,7 +1313,7 @@ int main(void)
 		if((*((vu16*)0x10146000) & 0x100) == 0)//button R
 		{
 			loadrun_file("/x01ffb800.bin", (u32*)0x01ffb800, 0);
-			launch_firm();
+			patch_proc9_launchfirm();
 			//load_arm11code(NULL, 0, 0x707041727443LL);
 
 			writearm11_firmlaunch_usrpatch();
@@ -1365,7 +1347,7 @@ int main(void)
 			#endif
 			#endif
 
-			launch_firm();
+			patch_proc9_launchfirm();
 
 			//Change the configmem UPDATEFLAG value to 1, which then causes NS module to do a FIRM launch, once NS gets loaded.
 			ptr = NULL;
@@ -1435,8 +1417,6 @@ int main(void)
 
 	loadfile(((u32*)(0x203A02b0)), 0x38400, subgfxbin_filepath, 0x18);
 	loadfile(((u32*)(0x203A02b0+0x38400+0x10)), 0x38400, subgfx_filepath, 0x18);*/
-
-	//launch_firm();
 
 	//pxirecv();
 
