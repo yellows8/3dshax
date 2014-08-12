@@ -4,6 +4,8 @@
 
 #include <nds/ndstypes.h>
 
+#include "arm9_svc.h"
+
 #include "aes.h"
 
 /*#define REG_AESCNT *((vu32*)0x10009000)
@@ -27,8 +29,6 @@ u32 aesiv[4];
 
 extern u32 aes_keystate0, aes_keystate1, aes_keystate2, aes_keystate3;
 extern u64 aes_time0, aes_time1;
-
-void launchcode_kernelmode(void*);
 
 void aesengine_waitdone();
 

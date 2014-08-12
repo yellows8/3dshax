@@ -15,7 +15,6 @@
 
 #include "ctrclient.h"
 
-void launchcode_kernelmode(void*);
 void changempu_memregions();
 u32 *get_arm11debuginfo_physaddr();
 void write_arm11debug_patch();

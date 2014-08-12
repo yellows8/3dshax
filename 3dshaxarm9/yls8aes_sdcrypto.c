@@ -4,6 +4,8 @@
 
 #include <nds/ndstypes.h>
 
+#include "arm9_svc.h"
+
 #ifdef ENABLEAES
 //Most of this code is old/unused, or one-off. Note that this currently won't build under this seperate .c file.
 

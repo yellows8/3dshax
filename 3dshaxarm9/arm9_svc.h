@@ -1,6 +1,8 @@
 #ifndef ARM9_SVC_H
 #define ARM9_SVC_H
 
+void launchcode_kernelmode(void*);
+
 u32 svcSignalEvent();
 void svcFlushProcessDataCache(u32*, u32);
 u64 svcGetSystemTick();
