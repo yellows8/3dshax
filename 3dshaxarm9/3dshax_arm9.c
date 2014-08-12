@@ -10,6 +10,9 @@
 
 #include "arm9fs.h"
 #include "a9_memfs.h"
+#include "arm9_nand.h"
+#include "ctr-gamecard.h"
+#include "arm9_a11kernel.h"
 
 /*#define REG_AESCNT *((vu32*)0x10009000)
 #define REG_AESWRFIFO *((vu32*)0x10009008)
@@ -22,10 +25,6 @@
 #define REG_AESKEYYFIFO *((vu32*)0x10009108)*/
 
 #define AES_CHUNKSIZE 0x10000//0x10000//0x10000
-
-void dump_nandfile(char *path);
-u32 nand_readsector(u32 sector, u32 *outbuf, u32 sectorcount);
-void dump_nandimage();
 
 void launchcode_kernelmode(void*);
 void changempu_memregions();
@@ -45,10 +44,6 @@ u32 parse_branch_thumb(u32 branchaddr, u32 branchval);
 void writearm11_firmlaunch_usrpatch();
 
 void call_arbitaryfuncptr(void* funcptr, u32 *regdata);
-
-u32 ctrcard_cmdc6(u32 *outbuf);
-u32 gamecard_readsectors(u32 *outbuf, u32 sector, u32 sectorcount);
-void read_gamecard();
 
 extern int arm9_fopen(u32 *handle, u8 *path, u32 openflags);
 extern int arm9_fclose(u32 *handle);
@@ -74,11 +69,6 @@ void AES_CtrCrypt(unsigned int* input, unsigned int* output, unsigned int* count
 void AES_CbcDecrypt(unsigned int* input, unsigned int* output, unsigned int* iv, unsigned int blockcount);
 void AES_CbcEncrypt(unsigned int* input, unsigned int* output, unsigned int* iv, unsigned int blockcount);
 void AES_Wait();
-
-u32 *get_kprocessptr(u64 procname, u32 num, u32 get_mmutableptr);
-u8 *mmutable_convert_vaddr2physaddr(u32 *mmutable, u32 vaddr);
-u32 *patch_mmutables(u64 procname, u32 patch_permissions, u32 num);
-void writepatch_arm11kernel_kernelpanicbkpt(u32 *ptr, u32 size);
 
 extern u32 arm9_stub[];
 extern u32 arm9_stub2[];

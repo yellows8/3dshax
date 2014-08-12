@@ -4,11 +4,7 @@
 
 #include <nds/ndstypes.h>
 
-u32 archive_readsectors(u32 *archiveobj, u32 *buf, u32 sectorcount, u32 mediaoffset);
-
-extern u32 *pxifs_state;
-extern u32 *sdarchive_obj;
-extern u32 *nandarchive_obj;
+#include "arm9fs.h"
 
 /*void dump_nandfile(char *path)
 {
