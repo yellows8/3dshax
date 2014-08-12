@@ -1263,7 +1263,7 @@ int main(void)
 	{
 		if((*((vu16*)0x10146000) & 0x100) == 0)//button R
 		{
-			loadrun_file("/x01ffb800.bin", (u32*)0x01ffb800, 0);
+			loadfile_charpath("/x01ffb800.bin", (u32*)0x01ffb800, 0x4800);
 			patch_proc9_launchfirm();
 			//load_arm11code(NULL, 0, 0x707041727443LL);
 
@@ -1294,7 +1294,7 @@ int main(void)
 
 			#ifdef ENABLENANDREDIR
 			#ifdef ENABLE_LOADA9_x01FFB800
-			loadrun_file("/x01ffb800.bin", (u32*)0x01ffb800, 0);
+			loadfile_charpath("/x01ffb800.bin", (u32*)0x01ffb800, 0x4800);
 			#endif
 			#endif
 

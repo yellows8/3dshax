@@ -39,14 +39,13 @@ void dump_fcramaxiwram()
 	if(filewrite(fileobj, (u32*)0x1FF80000, 0x80000, 0)!=0)return;
 }
 
-void loadrun_file(char *path, u32 *addr, int execute)
+void loadfile_charpath(char *path, u32 *addr, u32 maxsize)
 {
 	u32 ret=0;
 	u32 pos=0;
 	u32 filesize = 0;
 	u16 filepath[256];
 	u32 *fileobj = NULL;
-	u32 (*funcptr)(void) = (void*)addr;
 
 	memset(filepath, 0, 256*2);
 	for(pos=0; pos<strlen(path); pos++)filepath[pos] = (u16)path[pos];
@@ -55,14 +54,15 @@ void loadrun_file(char *path, u32 *addr, int execute)
 	{
 		return;
 	}
+
 	filesize = getfilesize(fileobj);
+	if(filesize > maxsize)filesize = maxsize;
+
 	if((ret = fileread(fileobj, addr, filesize, 0))!=0)
 	{
 		return;
 	}
 
 	svcFlushProcessDataCache(addr, filesize);
-
-	if(execute)funcptr();
 }
 
