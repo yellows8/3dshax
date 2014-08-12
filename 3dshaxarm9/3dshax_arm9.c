@@ -184,7 +184,7 @@ void load_arm11code(u32 *loadptr, u32 maxloadsize, u64 procname)
 void patch_proc9_launchfirm()
 {
 	u32 *ptr;
-	u32 *arm9_patchaddr; //= (u32*)0x8086b98;
+	u32 *arm9_patchaddr;
 	u32 pos;
 
 	//*((u32*)0x080c4afc) = 0x0809796c;
