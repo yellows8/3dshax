@@ -9,6 +9,10 @@
 #ifdef ENABLEAES
 //Most of this code is old/unused, or one-off. Note that this currently won't build under this seperate .c file.
 
+/*u32 inbuf[0x20>>2];
+u32 metadata[0x24>>2];
+u32 calcmac[4];*/
+
 /*void aes_blockrotate(u8 *blk)
 {
 	int i, carry = 0;
