@@ -1,3 +1,5 @@
+//Most of this code is by smea.
+
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
@@ -92,6 +94,8 @@ Result AM_FinalizeTitlesInstall(Handle handle, u8 mediatype, u32 total_titles, u
  
         return cmdbuf[1];
 }
+
+//End of code by smea.
 
 Result AM_DeleteApplicationTitle(Handle handle, u8 mediatype, u64 titleid)
 {

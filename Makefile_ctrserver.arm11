@@ -24,7 +24,7 @@ TARGET		:=	3dshax_arm11_ctrserver
 BUILD		:=	build11
 SOURCES		:=	3dshaxarm11_ctrserver 3dshax11_common 3dshax_common
 INCLUDES	:=	include 3dshax11_common 3dshax_common
-DATA		:=	data
+DATA		:=	3dshaxarm11_ctrserver_data
 
 #---------------------------------------------------------------------------------
 # options for code generation

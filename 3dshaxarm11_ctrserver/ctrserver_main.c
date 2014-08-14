@@ -66,18 +66,14 @@ int main(int argc, char **argv)
 	u32 gspheap_size=0;
 	u32 heap_size = 0;
 	u32 tmp=0;
-	u32 i;
 
 	if(PROCESSNAME == 0x706c64)svc_sleepThread(10000000000LL);//Delay 10 seconds when running under the dlp module.
 
-	ret = /*svc_connectToPort(&srvHandle, "srv:");*/initSrv();
+	ret = initSrv();
 	if(ret!=0)
 	{
 		((u32*)0x94000000)[0x800>>2] = ret;
 	}
-
-	/*ret = gspInit();
-	if(ret!=0)*((u32*)0x58000500) = ret;*/
 
 	if(PROCESSNAME != 0x454d414e434f5250LL)//This is only executed when the PROCESSNAME is not set to the default "PROCNAME" string.
 	{
