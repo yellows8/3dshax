@@ -1,9 +1,9 @@
 Codebase for 3ds arm9 stuff + arm11 kernel/userland patches etc. This also includes ctrserver, which is a network server which runs on the 3ds.
 
-Building:
-To build just the non-ctrserver codebase: make -f Makefile.arm9 OUTPATH=<path to sdcard root> <other optional makefile parameters>  
-To build just ctrserver: make -f Makefile_ctrserver.arm11 OUTPATH=<path to sdcard root> <other optional makefile parameters>  
-To build arm9code+ctrserver:make -f Makefile_ctrserver OUTPATH=<path to sdcard root> <other optional makefile parameters>  
+# Building
+To build just the non-ctrserver codebase: make -f Makefile.arm9 OUTPATH={path to sdcard root} {other optional makefile parameters}  
+To build just ctrserver: make -f Makefile_ctrserver.arm11 OUTPATH={path to sdcard root} {other optional makefile parameters}  
+To build arm9code+ctrserver:make -f Makefile_ctrserver OUTPATH={path to sdcard root} {other optional makefile parameters}  
 
 Building ctrserver requires "3dshaxarm11_ctrserver_data/auth.bin", this is the "auth.txt" which would be used on the client-side.
 
@@ -13,7 +13,7 @@ Running the arm9 binary requires 3ds arm9haxx which can handle loading it. The f
 
 By default NAND-redir is enabled, see below for disabling it. Note that the nandimage base sector-num is currently hard-coded, see 3dshax9_start.s.
 
-Makefile parameters:  
+# Makefile parameters  
 "DISABLEAES=1" Disables all arm9 AES code.  
 "DISABLENANDREDIR=1" Disables NAND->SD redirection.  
 "DISABLE_ARM11KERNEL_DEBUG=1" Disables ARM11-kernel patches.  
