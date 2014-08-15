@@ -13,7 +13,12 @@ ifneq ($(strip $(NIX)),)
 	CFLAGS	:=	$(CFLAGS) -DNIX
 endif
 
+ifneq ($(strip $(WIN32)),)
+	CFLAGS	:=	$(CFLAGS) -DWIN32
+	LIBS	:=	$(LIBS) -lws2_32
+endif
+
 main: $(OBJS)
-	g++ -o $(OUTPUT) $(LIBS) $(OBJS) 
+	$(CC) -o $(OUTPUT) $(LIBS) $(OBJS)
 clean:
 	rm -rf $(OUTPUT) $(OBJS)
