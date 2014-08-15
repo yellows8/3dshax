@@ -6,14 +6,6 @@
 
 #include "ctrclient.h"
 
-#ifdef _WIN32
-#include <winsock2.h>
-#endif
-
-#ifdef NIX
-#include <arpa/inet.h>
-#endif
-
 void hexdump(void *ptr, int buflen)//From ctrtool.
 {
 	unsigned char *buf = (unsigned char*)ptr;
@@ -45,6 +37,18 @@ void hexdump(void *ptr, int buflen)//From ctrtool.
 		}
 		printf("\n");
 	}
+}
+
+unsigned int getbe32(unsigned char* p)//getbe32 and putle32 are based on the code from ctrtool utils.c.
+{
+	return (p[0]<<24) | (p[1]<<16) | (p[2]<<8) | (p[3]<<0);
+}
+void putle32(unsigned char* p, unsigned int n)
+{
+	p[0] = n;
+	p[1] = n>>8;
+	p[2] = n>>16;
+	p[3] = n>>24;
 }
 
 int load_bindata(char *arg, unsigned char **buf, unsigned int *size)
@@ -157,8 +161,8 @@ int cmd8c0_installcia(ctrclient *client, unsigned char mediatype, unsigned char 
 	if(maxchunksize==0)maxchunksize = 0x3ffc0;
 
 	header[0] = mediatype | (dbselect<<8);
-	header[1] = ntohl(titleid[1]);
-	header[2] = ntohl(titleid[0]);
+	putle32((unsigned char*)&header[1], getbe32((unsigned char*)&titleid[1]));
+	putle32((unsigned char*)&header[2], getbe32((unsigned char*)&titleid[0]));
 	header[3] = ciabufsize;
 	header[4] = maxchunksize;
 
