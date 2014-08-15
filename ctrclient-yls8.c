@@ -410,7 +410,7 @@ int cmd_memset(ctrclient *client, unsigned int address, unsigned int value, unsi
 	unsigned int cmdid;
 	unsigned int header[5];
 
-	memset(header, 0, 6*4);
+	memset(header, 0, sizeof(header));
 	
 	cmdid = 0xe;
 
@@ -989,7 +989,7 @@ int parsecmd_directfilerw(ctrclient *client, char *customcmd)
 {
 	int ret=0;
 	unsigned int header[8];
-	unsigned int *archive_lowpath, *file_lowpath, *databuf;
+	unsigned int *archive_lowpath, *file_lowpath, *databuf = NULL;
 	unsigned int archive_lowpathsz, file_lowpathsz, databufsz;
 	unsigned int payloadsize = 6*4;
 
@@ -1255,7 +1255,7 @@ int parsecmd_getdebuginfoblk(ctrclient *client, char *customcmd)
 
 	if(ret==0)
 	{
-		system("3dshax_parsedebug ctrclientyls8_debuginfotmp.bin --hexdump");
+		ret = system("3dshax_parsedebug ctrclientyls8_debuginfotmp.bin --hexdump");
 	}
 
 	return ret;

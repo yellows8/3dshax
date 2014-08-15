@@ -4,8 +4,8 @@ endif
 
 LIBS = 
 OBJS = ctrclient-yls8.o $(CTRCLIENT)/ctrclient.o 
-CXXFLAGS = -I. -I$(CTRCLIENT)
-CFLAGS = -Wall -I. -I$(CTRCLIENT)
+CXXFLAGS = -Wall -Os -I. -I$(CTRCLIENT)
+CFLAGS = $(CXXFLAGS)
 OUTPUT = ctrclient-yls8
 CC = gcc 
 
