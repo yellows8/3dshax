@@ -3,9 +3,16 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/time.h>
-#include <arpa/inet.h>
+
 #include "ctrclient.h"
 
+#ifdef _WIN32
+#include <winsock2.h>
+#endif
+
+#ifdef NIX
+#include <arpa/inet.h>
+#endif
 
 void hexdump(void *ptr, int buflen)//From ctrtool.
 {

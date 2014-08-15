@@ -14,11 +14,11 @@ ifneq ($(strip $(NIX)),)
 endif
 
 ifneq ($(strip $(WIN32)),)
-	CFLAGS	:=	$(CFLAGS) -DWIN32
+	CFLAGS	:=	$(CFLAGS) -D_WIN32
 	LIBS	:=	$(LIBS) -lws2_32
 endif
 
 main: $(OBJS)
-	$(CC) -o $(OUTPUT) $(LIBS) $(OBJS)
+	$(CC) -o $(OUTPUT) $(OBJS) $(LIBS)
 clean:
 	rm -rf $(OUTPUT) $(OBJS)
