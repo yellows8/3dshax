@@ -1,0 +1,19 @@
+ifeq ($(strip $(CTRCLIENT)),)
+$(error "The CTRCLIENT Makefile param is required, this should be: <localdir for neimod/ctr repo>/ctr/ramtracer/ctrclient")
+endif
+
+LIBS = 
+OBJS = ctrclient-yls8.o $(CTRCLIENT)/ctrclient.o 
+CXXFLAGS = -I. -I$(CTRCLIENT)
+CFLAGS = -Wall -I. -I$(CTRCLIENT)
+OUTPUT = ctrclient-yls8
+CC = gcc 
+
+ifneq ($(strip $(NIX)),)
+	CFLAGS	:=	$(CFLAGS) -DNIX
+endif
+
+main: $(OBJS)
+	g++ -o $(OUTPUT) $(LIBS) $(OBJS) 
+clean:
+	rm -rf $(OUTPUT) $(OBJS)
