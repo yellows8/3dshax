@@ -7,11 +7,15 @@ To build arm9code+ctrserver:make -f Makefile_ctrserver OUTPATH={path to sdcard r
 
 Building ctrserver requires "3dshaxarm11_ctrserver_data/auth.bin", this is the "auth.txt" which would be used on the client-side.
 
-The end result of building both of these is "3dshax_arm9.bin" and "3dshax_arm11_ctrserver.bin". After building, each .bin is copied to OUTPATH, for the latter .bin it's copied to OUTPATH/3dshax_arm11.bin. The arm9 codebase will handle launching the sdcard "/3dshax_arm11.bin", when enabled(which is the default).
+The end result of building both of these is "3dshax_arm9.bin" and "3dshax_arm11_ctrserver.bin". After building, each .bin is copied to OUTPATH, for the latter .bin it's copied to OUTPATH/3dshax_arm11.bin.
+
+The arm9 codebase will handle launching the sdcard "/3dshax_arm11.bin", when enabled(which is the default). By default this arm11code is loaded into the "dlp" process, this can be overriden with "spider" by holding down the "Up" D-Pad button when main() is executed.
 
 Running the arm9 binary requires 3ds arm9haxx which can handle loading it. The first u32 is the load-address for the following data, for offset+4 see 3dshax9_start.s for the rest of the structure. With the default PRAM settings near the start of the .bin, the arm9code uses FW1F(system-version v4.1-v4.5) settings. The arm9 code loader must setup the PRAM parameter fields to the correct values, when not running on FW1F. The code-loader can ignore the PRAM structure when running on FW1F.
 
 By default NAND-redir is enabled, see below for disabling it. Note that the nandimage base sector-num is currently hard-coded, see 3dshax9_start.s.
+
+The FIRM-launch code loads the plaintext FIRM from SD "/firm.bin". The FWVER values used by the arm9code is automatically determined by checking the first u32 in the FIRM RSA signature.
 
 # Makefile parameters  
 "DISABLEAES=1" Disables all arm9 AES code.  
