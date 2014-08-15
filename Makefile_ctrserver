@@ -36,6 +36,10 @@ ifneq ($(strip $(ENABLE_DUMP_NANDIMAGE)),)
 	PARAMS	:=	$(PARAMS) ENABLE_DUMP_NANDIMAGE=1
 endif
 
+ifneq ($(strip $(NANDREDIR_SECTORNUM)),)
+	PARAMS	:=	$(PARAMS) NANDREDIR_SECTORNUM=$(NANDREDIR_SECTORNUM)
+endif
+
 .PHONY: clean
 
 all:	3dshax_arm9.bin 3dshax_arm11_ctrserver.bin
@@ -49,3 +53,4 @@ clean:
 
 3dshax_arm11_ctrserver.bin:
 	make -f Makefile_ctrserver.arm11 OUTPATH=$(OUTPATH) CTRULIB=$(CTRULIB)
+

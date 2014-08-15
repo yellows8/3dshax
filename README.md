@@ -13,13 +13,14 @@ The arm9 codebase will handle launching the sdcard "/3dshax_arm11.bin", when ena
 
 Running the arm9 binary requires 3ds arm9haxx which can handle loading it. The first u32 is the load-address for the following data, for offset+4 see 3dshax9_start.s for the rest of the structure. With the default PRAM settings near the start of the .bin, the arm9code uses FW1F(system-version v4.1-v4.5) settings. The arm9 code loader must setup the PRAM parameter fields to the correct values, when not running on FW1F. The code-loader can ignore the PRAM structure when running on FW1F.
 
-By default NAND-redir is enabled, see below for disabling it. Note that the nandimage base sector-num is currently hard-coded, see 3dshax9_start.s.
+By default NAND-redir is enabled, see below for disabling it. When NAND-redir is enabled, the base sector-num must be specified via Makefile parameter NANDREDIR_SECTORNUM.
 
 The FIRM-launch code loads the plaintext FIRM from SD "/firm.bin". The FWVER values used by the arm9code is automatically determined by checking the first u32 in the FIRM RSA signature.
 
 # Makefile parameters  
 "DISABLEAES=1" Disables all arm9 AES code.  
 "DISABLENANDREDIR=1" Disables NAND->SD redirection.  
+"NANDREDIR_SECTORNUM={sectornum}" Sector-num base for the SD nandimage, for NAND-redir when enabled.  
 "DISABLE_ARM11KERNEL_DEBUG=1" Disables ARM11-kernel patches.  
 "DISABLE_ARM11KERNEL_PROCSTARTHOOK=1" Disables the ARM11-kernel process-start hook, used for loading arm11code(ctrserver) etc. This isn't needed when "DISABLE_ARM11KERNEL_DEBUG=1" is used.  
 "DISABLE_GETEXHDRHOOK=1" Disables the arm9 get-exheader hook. This option must be used when DISABLE_ARM11KERNEL_DEBUG/DISABLE_ARM11KERNEL_PROCSTARTHOOK is set, otherwise when doing a firm-launch the system will eventually trigger a fatal-error when dlp-module fails to get service-handles.  

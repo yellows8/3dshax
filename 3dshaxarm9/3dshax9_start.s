@@ -71,7 +71,15 @@ FIRMLAUNCH_FWVER:
 .word 0x0 @ The default value here doesn't really matter, since the firmlaunch code automatically determines what the FIRMLAUNCH_FWVER value is via the loaded FIRM.
 
 NANDREDIR_SECTORNUM:
-.word /*0x1DD000*/ /*0x38CE800*/ 0x3598000 //4GB card = 0x1DD000, main image on 32GB card = 0x38CE800, other image on 32GB card = 0x3598000.
+#ifndef NANDREDIR_SECTORNUM_
+#ifdef ENABLENANDREDIR
+#error "NANDREDIR is enabled, but the SECTORNUM was not specified via Makefile parameter NANDREDIR_SECTORNUM."
+#endif
+
+.word 0 /*0x1DD000*/ /*0x38CE800*/ /*0x3598000*/ //4GB card = 0x1DD000, main image on 32GB card = 0x38CE800, other image on 32GB card = 0x3598000.
+#else
+.word NANDREDIR_SECTORNUM_
+#endif
 
 _start_codebegin:
 ldr r0, FIRMLAUNCH_RUNNINGTYPE

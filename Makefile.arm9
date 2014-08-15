@@ -63,6 +63,10 @@ ifneq ($(strip $(ENABLE_DUMP_NANDIMAGE)),)
 	DEFINES	:=	$(DEFINES) -DENABLE_DUMP_NANDIMAGE
 endif
 
+ifneq ($(strip $(NANDREDIR_SECTORNUM)),)
+	DEFINES	:=	$(DEFINES) -DNANDREDIR_SECTORNUM_=$(NANDREDIR_SECTORNUM)
+endif
+
 ARCH	:=	-mthumb -mthumb-interwork
 
 CFLAGS	:=	-g -Wall -Os\
