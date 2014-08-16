@@ -4,7 +4,11 @@
 
 #include <nds/ndstypes.h>
 
+#include "arm9fs.h"
+
 extern u32 RUNNINGFWVER;
+
+u32 *gamecard_archiveobj = NULL;
 
 /*u32 gamecardslot_getpowerstate()
 {

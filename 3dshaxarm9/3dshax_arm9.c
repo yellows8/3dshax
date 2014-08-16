@@ -48,8 +48,6 @@ extern u32 arm9_rsaengine_txtwrite_hooksz;
 void pxidev_cmdhandler_cmd0();
 void mountcontent_nandsd_writehookstub();
 
-u32 *gamecard_archiveobj = NULL;
-
 u32 input_filepos;
 u32 input_filesize = 0;
 
