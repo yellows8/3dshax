@@ -376,8 +376,6 @@ void dump_arm11debuginfo()
 		debuginfo_pos+= debuginfo_ptr[3+5];
 	}*/
 
-	//if(debuginfo_ptr[1]==0x47424445)dumpmem((u32*)0x20000000, 0x08000000);
-	//if(debuginfo_ptr[1]==0x47424445/* && debuginfo_ptr[0x50>>2] == 0x50505050*/)dumpmem((u32*)0x24cff000/*0x24d02000*/, 0x1a97000);//web-browser 0x08000000 heap //v1024: 0x24cff000 v2050: 0x24d02000
 	memset((u32*)debuginfo_ptr, 0, debuginfo_ptr[2]);
 }
 #endif
@@ -635,16 +633,6 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 
 		*bufsize = (size * 0x200) + 4;
 		buf[0] = gamecard_readsectors(&buf[1], buf[0], buf[1]);//buf[0]=sector#, buf[1]=sectorcount
-		//buf[0] = SendReadCommand(buf[0]*0x200, 0x200, buf[1], &buf[1]);
-		/*while(size)
-		{
-			buf[0] = 0;//gamecard_readsectors(&buf[1 + bufpos], pos, 1);
-			if(buf[0]!=0)break;
-			Cart_ReadSectorSD(&buf[1 + bufpos], pos);
-			pos++;
-			size--;
-			bufpos+= 0x200>>2;
-		}*/
 		if(buf[0]!=0)*bufsize = 4;
 
 		svcSleepThread(800000000LL);
@@ -991,8 +979,6 @@ void thread_entry()
 
 	writepatch_arm11kernel_kernelpanicbkpt((u32*)0x1FF80000, 0x80000);
 
-	//dumpmem((u32*)0x20000000, 0x100000 - 0x28000);
-
 	//ns_physaddr = patch_mmutables(0x736e, 0, 0);
 
 	while(1)
@@ -1101,13 +1087,6 @@ void thread_entry()
 		//svcSleepThread(1000000000LL);
 	}
 
-	//dumpmem(0x20000000, 0x1000);
-	//dumpmem(0x1FF80000, 0x80000);
-	//dumpmem(0x20000000, 0x08000000);
-	//dumpmem(0x1FFF4000, 0x1000);
-
-	//dumpmem((u32*)0x08000000, 0x100000);
-
 	dump_fcramaxiwram();
 
 	svcExitThread();
@@ -1117,16 +1096,11 @@ void thread_entry()
 
 int main(void)
 {
-	//u32 *axiwram = (u32*)0x1FF80000;
 	//u32 *framebuf;
 	u32 pos=0;
 	u32 threadhandle = 0;
 	//u32 ret;
 	u32 *ptr;
-
-	//launchcode_kernelmode(changempu_memregions);
-	//dumpmem(0x20000000, 0x08000000);
-	//dumpmem(0x1FF80000, 0x80000);
 
 	launchcode_kernelmode(changempu_memregions);
 
@@ -1141,43 +1115,13 @@ int main(void)
 		}
 	}
 
-	//loadrun_arm9code("/boot.bin", (u32*)0x809C000);
-
 	//dump_nandfile("/data/e34f9af95c767280db87a62880d0426d/sysdata/00010034/00000000");
 	//dump_nandfile("/dbs/title.db");
-
-	//pos = 0x10000000 - 0xFFFF0000;
-	//dumpmem(&pos, 4);
-
-	//*((u32*)(0x23ba5000+0x2351b4)) = 0xffffffff;
-	//memset((u32*)(0x26AA8000+0x3100), 0x20202020, 0x5000);
-
-	//dump_nandimage();
-
-	//dumpmem(0x20000000, 0x08000000);
-	//dumpmem((u32*)0x08000000, 0x100000);
-	//dumpmem((u32*)0x01ff8000, 0x8000);
-
-	//*((u32*)0x20000000) = getsp();
-	//dumpmem((u32*)0x20000000, 4);
-
-	/**((u32*)0x20000000) = getsp();
-	memcpy(((u32*)0x20000004), (u32*)(0x08028000+4), 0xD8000-4);
-	dumpmem(((u32*)0x20000000), 0xD8000);*/
 
 	//dump_nandfile("/rw/sys/native.log");
 	//dump_nandfile("/rw/sys/lgy.log");
 
-	//while(1)
-	//{
-		if((*((vu16*)0x10146000) & 1) == 0 && FIRMLAUNCH_RUNNINGTYPE==0)memset(framebuf_addr, pos | (pos<<8) | (pos<<16) | (pos<<24), 0x46500*10);
-		//memset((u32*)0x18000000, pos | (pos<<8) | (pos<<16) | (pos<<24), 0x00600000);
-		////memset(&framebuf_addr[(0x46500)>>2], 0x88888888, 0x46500);
-
-		//pos+=0x20;
-
-	//	if((*((vu16*)0x10146000) & 1) == 0)break;
-	//}
+	if((*((vu16*)0x10146000) & 1) == 0 && FIRMLAUNCH_RUNNINGTYPE==0)memset(framebuf_addr, pos | (pos<<8) | (pos<<16) | (pos<<24), 0x46500*10);
 
 	//dumpmem((u32*)0x20000000, 8);
 
@@ -1186,8 +1130,6 @@ int main(void)
 
 	//memset(framebuf_addr, 0x80808080, 0x46500*10);
 	//patch_mountcontent();
-
-	//axiwram[0xa494>>2] = ~0;
 
 	//debug_dbs();
 
@@ -1215,19 +1157,6 @@ int main(void)
 
 	//while(1);
 
-	//launchcode_kernelmode(get_kernelmode_sp);
-	/**((u32*)(0x08028008+0)) = getsp();
-	*((u32*)(0x08028008+4)) = getcpsr();
-	//svcFlushProcessDataCache((u32*)0x08028000, 0x10);
-	memcpy((u32*)0x20000000, (u32*)0x08028000, 0x100000 - 0x28000);
-	dumpmem((u32*)0x20000000, 0x100000 - 0x28000);*/
-
-	//dumpmem((u32*)0x08000000, 0x100000);
-	//dumpmem((u32*)0x08028000, 0x100000 - 0x28000);
-
-	//changempu_memregions();
-	//*((u32*)0x1FF827CC) = 0xffffffff;
-
 	/*if(framebuf_addr)
 	{
 		framebuf = framebuf_addr;
@@ -1247,15 +1176,6 @@ int main(void)
 	}*/
 
 	//loadfile(0x20703000, 0x20000, input_filepath, 0x24);
-
-	//while(*((u32*)0x20000000) != 0x58584148);
-	//while(*((vu16*)0x10146000) & 0x400);//button X
-	//dumpmem(0x20000000, 0x4+0x200);
-	//dumpmem(0x20000000, 0x1000000);
-	//dumpmem(0x1FF80000, 0x80000);
-	//dumpmem(0x1FF00000, 0x80000);
-	//dumpmem(0x18000000, 0x600000);
-	//dumpmem(0x01FF8000, 0x8000);
 
 	if(FIRMLAUNCH_RUNNINGTYPE==0)
 	{
@@ -1368,12 +1288,6 @@ int main(void)
 	loadfile(((u32*)(0x203A02b0+0x38400+0x10)), 0x38400, subgfx_filepath, 0x18);*/
 
 	//pxirecv();
-
-	//while(*((vu16*)0x10146000) & 1);
-	//dumpmem(0x20000000, 0x1000);
-
-	//dumpmem(0x20000000, 0x4);
-	//dumpmem(0x20000000, 0x1000);
 
 	//debug_dbs();
 	//debug_memalloc();
