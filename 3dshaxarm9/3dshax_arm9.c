@@ -1096,7 +1096,6 @@ void thread_entry()
 
 int main(void)
 {
-	//u32 *framebuf;
 	u32 pos=0;
 	u32 threadhandle = 0;
 	//u32 ret;
@@ -1156,26 +1155,6 @@ int main(void)
 	//sdcryptdata2();
 
 	//while(1);
-
-	/*if(framebuf_addr)
-	{
-		framebuf = framebuf_addr;
-		memset(framebuf_addr, 0xffffffff, 0x46500);
-		memset(&framebuf_addr[(0x46500+0x10)>>2], 0xffffffff, 0x46500);
-		load_tga(maingfx0tga_filepath, 0x1c, (u8*)framebuf, 0);//Main screen frambuffers for left 3D image
-		memcpy(&framebuf[(0x46500+0x10)>>2], (u8*)framebuf, 0x46500);
-		framebuf = &framebuf[((0x46500*2) + (0x10*2))>>2];
-
-		load_tga(subgfxtga_filepath, 0x18, (u8*)framebuf, 0);//Sub screen framebuffers
-		memcpy(&framebuf[(0x38400+0x10)>>2], (u8*)framebuf, 0x38400);
-		framebuf = &framebuf[((0x38400*2) + (0x10*2))>>2];
-
-		load_tga(maingfx1tga_filepath, 0x1c, (u8*)framebuf, 0);//Main screen frambuffers for right 3D image
-		memcpy(&framebuf[(0x46500+0x10)>>2], framebuf, 0x46500);
-		framebuf = &framebuf[((0x46500*2) + (0x10*2))>>2];
-	}*/
-
-	//loadfile(0x20703000, 0x20000, input_filepath, 0x24);
 
 	if(FIRMLAUNCH_RUNNINGTYPE==0)
 	{
@@ -1237,55 +1216,6 @@ int main(void)
 	//dumpmem(0x20000000, 0x08000000);
 
 	//memset((u32*)0x18300000, 0xffffffff, 0x46500);
-
-	/*while(1)
-	{
-		if((*((vu16*)0x10146000) & 0x10) == 0)
-		{*/
-			/*for(pos=0; pos<3; pos+=3)
-			{
-				((u16*)0x18464ef8)[0+pos] = (((u16*)0x18464ef8)[0+pos] + 1) & 0xef;//0x18464ef8
-				((u16*)0x18464ef8)[1+pos] = (((u16*)0x18464ef8)[1+pos] + 1) & 0xef;
-				((u16*)0x18464ef8)[2+pos] = (((u16*)0x18464ef8)[2+pos] + 1) & 0xef;
-			}*/
-			//memset((u32*)0x18464ef8, 0x3f800000, 0x8);//0x3f800000
-			//memset((u32*)0x182447C0+0x100000, 0x3f800000, 0x300000-0x100000);
-			//memset((u32*)0x185447C0, 0x3f800000, 0x18600000-0x185447C0);
-		//}
-	//}
-	//memset((u32*)0x1846a66c, 0xffffffff, 0x400);//0x3f800000
-	//memset((u32*)0x1845dd00, 0x0, 0x18464b18-0x1845dd00);
-	//memset((u32*)0x1846d400, 0x3f800000, 0x1000);
-	//memset((u32*)0x18464b18, 0, 0x1846a66c-0x18464b18);
-	//memset((u32*)0x185447C0, 0, 0x600000 - 0x5447C0);
-	//memset((u32*)0x18061d58, 0x3f800000, 0x100);
-	//memcpy((u32*)0x18061d58, vertices, 24*4);
-	//for(pos=0; pos<36; pos++)vert_elements[pos] += 2;
-	//memcpy((u16*)0x18469bc0, vert_elements, 36*2);
-
-	/*for (pos = 1; pos < 6; pos++)memcpy(&cube_texcoords[pos*4*2], &cube_texcoords[0], 2*4*sizeof(float));
-	memcpy((float*)0x18061d58, cube_vertices, 6*4*3*sizeof(float));
-	memcpy((float*)0x18068a90, cube_texcoords, 2*4*6*sizeof(float));
-	memcpy((u16*)0x18469bc0, cube_elements, 36*2);*/
-
-	//dump_fcramvram();
-
-	//pos = load_tga(texturetga_filepath, 0x1a, (u8*)0x20703000, 1 | 8);//(0x1846F480)0x208AFF80
-	//loadfile((u8*)(0x1846F480-0x44), 0x844, texturektx_filepath, 0x1a);
-	//loadfile((u8*)(0x1846F480-0x10), 0x810, texturepkm_filepath, 0x1a);
-	//memset((u8*)0x1846F480, 0xffffffff, 128*32*4);
-	//dumpmem(&pos, 4);
-
-	//while(*((vu16*)0x10146000) & 0x400);
-	//dumpmem((u32*)0x20313890, 0x46500);
-
-	/*loadfile(((u32*)(0x20313890)), 0x46500, maingfx0bin_filepath, 0x1c);
-	loadfile(((u32*)(0x20359da0)), 0x46500, maingfx0bin_filepath, 0x1c);
-	loadfile(((u32*)(0x20410ad0)), 0x46500, maingfx1bin_filepath, 0x1c);
-	loadfile(((u32*)(0x20456fe0)), 0x46500, maingfx1bin_filepath, 0x1c);
-
-	loadfile(((u32*)(0x203A02b0)), 0x38400, subgfxbin_filepath, 0x18);
-	loadfile(((u32*)(0x203A02b0+0x38400+0x10)), 0x38400, subgfx_filepath, 0x18);*/
 
 	//pxirecv();
 
