@@ -197,5 +197,7 @@
 
 	loadfile(((u32*)(0x203A02b0)), 0x38400, subgfxbin_filepath, 0x18);
 	loadfile(((u32*)(0x203A02b0+0x38400+0x10)), 0x38400, subgfx_filepath, 0x18);*/
+
+	//dumpmem(0x20703000+0x20000, 0x20000);
 //}
 

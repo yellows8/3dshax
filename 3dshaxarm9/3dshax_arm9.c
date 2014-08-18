@@ -1098,7 +1098,6 @@ int main(void)
 {
 	u32 pos=0;
 	u32 threadhandle = 0;
-	//u32 ret;
 	u32 *ptr;
 
 	launchcode_kernelmode(changempu_memregions);
@@ -1114,47 +1113,7 @@ int main(void)
 		}
 	}
 
-	//dump_nandfile("/data/e34f9af95c767280db87a62880d0426d/sysdata/00010034/00000000");
-	//dump_nandfile("/dbs/title.db");
-
-	//dump_nandfile("/rw/sys/native.log");
-	//dump_nandfile("/rw/sys/lgy.log");
-
 	if((*((vu16*)0x10146000) & 1) == 0 && FIRMLAUNCH_RUNNINGTYPE==0)memset(framebuf_addr, pos | (pos<<8) | (pos<<16) | (pos<<24), 0x46500*10);
-
-	//dumpmem((u32*)0x20000000, 8);
-
-	//dsiware_test();
-	//am9_stuff();
-
-	//memset(framebuf_addr, 0x80808080, 0x46500*10);
-	//patch_mountcontent();
-
-	//debug_dbs();
-
-	//dump_pxirecv();
-	//send_pxireply();
-	//launchcode_kernelmode(send_pxireply);
-
-	//memcpy((u32*)0x20000000, (u32*)0x08000000, 0x100000);
-	//dumpmem((u32*)0x20000000, 0x100000);
-
-	//dump_movablesed();
-
-	//dump_nandfile("/rw/sys/native.log");
-
-	//load_gxcmd1_buffers();
-
-	//read_gamecard();
-
-	//genmac();
-
-	//rsa_test();
-
-	//sdcryptdata();
-	//sdcryptdata2();
-
-	//while(1);
 
 	if(FIRMLAUNCH_RUNNINGTYPE==0)
 	{
@@ -1187,8 +1146,6 @@ int main(void)
 	{
 		if(FIRMLAUNCH_RUNNINGTYPE==2)
 		{
-			//dumpmem(0x18600000-0x20000, 0x20000);
-
 			#ifdef ENABLENANDREDIR
 			#ifdef ENABLE_LOADA9_x01FFB800
 			loadfile_charpath("/x01ffb800.bin", (u32*)0x01ffb800, 0x4800);
@@ -1212,22 +1169,6 @@ int main(void)
 	}
 
 	if((*((vu16*)0x10146000) & 0x40) == 0)ARM11CODELOAD_PROCNAME = 0x726564697073LL;//0x726564697073LL = "spider". Change the the code-load procname to this, when the Up button is pressed.
-
-	//dumpmem(0x20000000, 0x08000000);
-
-	//memset((u32*)0x18300000, 0xffffffff, 0x46500);
-
-	//pxirecv();
-
-	//debug_dbs();
-	//debug_memalloc();
-
-	//pxirecv();
-	//dumpmem(0x20703000+0x20000, 0x20000);
-	//dumpmem(0x20000000, 0x08000000);
-	//dump_arm11debuginfo();
-	//memset(framebuf_addr, 0xffffffff, 0x46500);
-	//memset(&framebuf_addr[(0x46500+0x10)>>2], 0xffffffff, 0x46500);
 
 	//while(1);
 
