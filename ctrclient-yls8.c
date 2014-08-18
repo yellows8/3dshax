@@ -3,6 +3,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <inttypes.h>
 
 #include "ctrclient.h"
 
@@ -211,7 +212,7 @@ int cmd8c0_installcia(ctrclient *client, unsigned char mediatype, unsigned char 
 	return 0;
 }
 
-int cmd_deletetitle(ctrclient *client, unsigned int mediatype, unsigned int cmdtype, unsigned long long titleid)
+int cmd_deletetitle(ctrclient *client, unsigned int mediatype, unsigned int cmdtype, uint64_t titleid)
 {
 	unsigned int header[5];
 
@@ -781,7 +782,7 @@ int parsecmd_memoryrw(ctrclient *client, char *customcmd)
 	unsigned int clearval=0;
 	unsigned int optype=0;
 	unsigned char *databuf = NULL;
-	unsigned long long val64=0;
+	uint64_t val64=0;
 	char *procname = NULL;
 	char *str = NULL;
 	char procnamebuf[8];
@@ -881,7 +882,7 @@ int parsecmd_memoryrw(ctrclient *client, char *customcmd)
 		}
 		else
 		{
-			sscanf(procname, "%llx", &val64);
+			sscanf(procname, "%"PRIx64, &val64);
 			memcpy(procnamebuf, &val64, 8);
 		}
 
@@ -1416,7 +1417,7 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 	unsigned int paramblock[16];
 	struct stat filestat;
 	unsigned int val=0;
-	unsigned long long val64 = 0;
+	uint64_t val64 = 0;
 	unsigned int chunksize;
 
 	memset(paramblock, 0, 16*4);
@@ -1563,7 +1564,7 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 				}
 				else
 				{
-					sscanf(&str[2], "%llx", &val64);
+					sscanf(&str[2], "%"PRIx64, &val64);
 				}
 			}
 			else
