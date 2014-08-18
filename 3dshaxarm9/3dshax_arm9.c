@@ -113,7 +113,7 @@ void load_arm11code(u32 *loadptr, u32 maxloadsize, u64 procname)
 	{
 		ptr = app_physaddr;
 	}
-	if(maxloadsize>0 && maxloadsize<input_filesize)return;
+	if((maxloadsize>0 && maxloadsize<input_filesize) || ptr==NULL)return;
 	fileread(fileobj, ptr, input_filesize, 0);
 
 	if(loadptr)
