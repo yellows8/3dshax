@@ -29,3 +29,11 @@ The FIRM-launch code loads the plaintext FIRM from SD "/firm.bin". The FWVER val
 "ENABLE_CMDLOGGING=1" Enables ARM11-kernel patches+code for logging commands. Which process-names to log for the commands is currently determined via hard-coded process-names.  
 "ENABLE_DUMP_NANDIMAGE=1" Enables nandimage dumping to SD "/3dshax_dump.bin", when button Y is pressed once from the arm9 thread. To dump the physical NAND, "DISABLENANDREDIR=1" should be used.  
 
+# FIRM Compatibility
+Supported NATIVE_FIRM system-versions(versions where NATIVE_FIRM wasn't updated don't apply here):
+* v4.1
+* v6.x (mostly)
+* v7.x
+* v8.0
+
+Some of the codebase automatically determines what addresses to patch on-the-fly(NAND-redir, etc). However some of the codebase still uses hard-coded addresses for each FIRM version(which includes the FS code).
