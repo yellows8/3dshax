@@ -117,7 +117,7 @@ str r2, [r3, #0]
 ldr r2, [r1, #4]
 str r2, [r3, #4]*/
 
-ldr r1, =FIRMLAUNCH_FWVER
+/*ldr r1, =FIRMLAUNCH_FWVER
 ldr r1, [r1]
 mov r0, #0
 cmp r1, #0x1F
@@ -134,7 +134,11 @@ cmp r1, r2
 cmpne r1, r3
 ldreq r0, =0x08085c80
 cmp r0, #0
-beq patchfirm_arm9section_L0
+beq patchfirm_arm9section_L0*/
+
+mov r0, r4
+mov r1, r5
+bl proc9_autolocate_hookpatchaddr
 
 ldr r1, =proc9_waitfirmevent_hook
 ldr r2, =0xe51ff004

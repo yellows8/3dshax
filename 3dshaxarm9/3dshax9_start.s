@@ -17,6 +17,7 @@
 .global arm9general_debughook_writepatch
 .global proc9_waitfirmevent_hook
 .global proc9_waitfirmevent_hook_patchaddr
+.global proc9_autolocate_hookpatchaddr
 .global generate_branch
 .global parse_branch
 .global parse_branch_thumb
@@ -44,6 +45,7 @@
 .type arm9_pxipmcmd1_getexhdr_writepatch STT_FUNC
 .type arm9general_debughook_writepatch STT_FUNC
 .type proc9_waitfirmevent_hook STT_FUNC
+.type proc9_autolocate_hookpatchaddr STT_FUNC
 .type generate_branch STT_FUNC
 .type parse_branch STT_FUNC
 .type parse_branch_thumb STT_FUNC
@@ -492,6 +494,50 @@ proc9_waitfirmevent_hook_fail:
 
 proc9_waitfirmevent_hook_patchaddr:
 .word 0
+
+proc9_autolocate_hookpatchaddr: @ inr0 = Process9 .text addr, inr1 = addr of Process9 .code
+push {r4, r5, lr}
+mov r4, r0
+mov r5, r1
+
+add r0, r4, #0x14
+ldr r1, [r5, #0x14]
+bl parse_branch
+sub r0, r0, r4
+add r0, r0, r5 @ r0 = .code addr of Process9 main()
+
+ldr r1, =0xe8bd4010
+
+proc9_autolocate_hookpatchaddr_lp:
+ldr r2, [r0]
+cmp r2, r1
+addne r0, r0, #4
+bne proc9_autolocate_hookpatchaddr_lp @ r0 = Addr of the pop instruction in main().
+
+sub r0, r0, #0x10
+
+ldr r1, [r0]
+sub r0, r0, r5
+add r0, r0, r4
+bl parse_branch
+sub r0, r0, r4
+add r0, r0, r5 @ r0 = .code addr of Process9 init_pxi_threads() func
+
+ldr r1, =0xe8bd8ff0
+
+proc9_autolocate_hookpatchaddr_lp2:
+ldr r2, [r0]
+cmp r2, r1
+addne r0, r0, #4
+bne proc9_autolocate_hookpatchaddr_lp2 @ r0 = Addr of the pop instruction in init_pxi_threads().
+
+sub r0, r0, #0x10
+
+sub r0, r0, r5
+add r0, r0, r4
+
+pop {r4, r5, pc}
+.pool
 
 /*proc9_fsdeviceinit_hook:
 push {r0, r1, r2, r3, lr}
