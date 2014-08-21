@@ -205,11 +205,10 @@ ldr r4, [r4]
 ldr r0, =0x1FFDF000
 
 ldr r3, =0x1000
-cmp r4, #0x2E
-cmpne r4, #0x30
-subeq r0, r0, r3
+cmp r4, #0x25
+subge r0, r0, r3
 cmp r4, #0x37
-ldreq r0, =0x1FFDD000
+ldrge r0, =0x1FFDD000
 pop {r4, pc}
 .pool
 
@@ -542,11 +541,10 @@ arm11kernel_getdebugstateptr:
 ldr r1, arm11kernel_patch_fwver
 ldr r0, =0xFFF3F000
 ldr r3, =0x1000
-cmp r1, #0x2E
-cmpne r1, #0x30
-subeq r0, r0, r3
+cmp r1, #0x25
+subge r0, r0, r3
 cmp r1, #0x37
-ldreq r0, =0xFFF3D000
+ldrge r0, =0xFFF3D000
 bx lr
 
 .pool
