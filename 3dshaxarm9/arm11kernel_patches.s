@@ -556,6 +556,9 @@ push {r4, r5}
 ldr r3, arm11kernel_patch_fwver
 cmp r3, #0x1F
 ldreq r2, =0xfff7a8c4
+cmp r3, #0x25
+cmpne r3, #0x26
+ldreq r2, =0xfff6b3d8
 cmp r3, #0x2E
 ldreq r2, =0xfff6b810
 cmp r3, #0x30
