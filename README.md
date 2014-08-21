@@ -36,4 +36,13 @@ Supported NATIVE_FIRM system-versions(versions where NATIVE_FIRM wasn't updated 
 * v7.x
 * v8.0
 
-Some of the codebase automatically determines what addresses to patch on-the-fly(NAND-redir, etc). However some of the codebase still uses hard-coded addresses for each FIRM version(which includes the FS code).
+Some of the codebase automatically determines what addresses to patch on-the-fly(NAND-redir, etc). However some of the codebase still uses hard-coded addresses for each FIRM version.
+
+## Code and patches which use hard-coded addresses
+* Process9 FS code / state ptr
+* Process9 RSA sigcheck patches (certs sigcheck + main RSA padding check func)
+* Process9 patch for hooking code called from Process9 main(), for getting code execution after FIRM-launch under Process9.
+* Process9 AES mutex enter/leave functions
+* CTRCARD cmd 0xc6 code
+* ARM11-kernel funcptrs and ARM11-kernel cmdlogging patch addresses
+* ...
