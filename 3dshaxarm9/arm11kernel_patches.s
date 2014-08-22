@@ -470,7 +470,7 @@ stmdb sp, {r0, r1, r2, r3, fp, ip, sp, lr}^
 sub sp, sp, #32
 //push {r0, r1, r2, r3, fp, ip}
 ldr r1, arm11kernel_patch_fwver
-mov r2, #0x2E
+mov r2, #0x25
 ldr r0, =0xffff05c8
 cmp r1, r2
 subge r0, r0, #8
