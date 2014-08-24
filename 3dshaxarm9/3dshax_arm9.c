@@ -101,11 +101,6 @@ void load_arm11code(u32 *loadptr, u32 maxloadsize, u64 procname)
 
 	writepatch_arm11kernel_svcaccess();
 
-	/*if(RUNNINGFWVER==0x1F)ptr = (u32*)0x1FF827CC;
-	if(RUNNINGFWVER==0x2E)ptr = (u32*)0x1FF822A8;
-
-	*ptr = 0;*/
-
 	if(openfile(sdarchive_obj, 4, arm11code_filepath, 0x24, 1, &fileobj)!=0)return;
 	input_filesize = getfilesize(fileobj);
 	ptr = loadptr;

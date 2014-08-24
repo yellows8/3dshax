@@ -39,7 +39,6 @@ pop {r4, r5, pc}
 
 writepatch_arm11kernel_svcaccess:
 push {r4, r5, lr}
-//sub sp, sp, #4
 mov r1, #0
 ldr r0, =RUNNINGFWVER
 ldr r0, [r0]
@@ -69,25 +68,10 @@ cmp r2, r3
 addne r1, r1, #4
 bne writepatch_arm11kernel_svcaccess_lp
 
-/*ldr r0, =RUNNINGFWVER
-mov r1, #4
-bl dumpmem*/
-
 mov r2, #0
 str r2, [r1] @ Patch out the ARM11 kernel branch in the SVC handler which is executed when the process doesn't have access to a SVC.
 
-/*str r1, [sp, #0]
-mov r0, sp
-mov r1, #4
-bl dumpmem*/
-//b writepatch_arm11kernel_svcaccess_end
-
-/*mov r0, r5
-ldr r1, =0x80000
-bl dumpmem*/
-
 writepatch_arm11kernel_svcaccess_end:
-//add sp, sp, #4
 pop {r4, r5, pc}
 .pool
 
@@ -288,11 +272,11 @@ add r4, r4, r3
 /*mov r1, #0x1F
 mov r2, #0x2E
 cmp r8, r1
-ldreq r6, =0x33c @ Patch the prefetch abort vector code.
+ldreq r6, =0x33c
 cmp r8, r2
 ldreq r6, =0x62c*/
 
-ldr r0, =0xffff0000
+ldr r0, =0xffff0000 @ Patch the prefetch abort vector code.
 add r0, r0, #0xc
 ldr r1, =0x1FFF4000
 ldr r1, [r1, #0xc]
@@ -314,11 +298,11 @@ add r4, r4, r3
 /*mov r1, #0x1F
 mov r2, #0x2E
 cmp r8, r1
-ldreq r6, =0x348 @ Patch the data abort vector code.
+ldreq r6, =0x348
 cmp r8, r2
 ldreq r6, =0x638*/
 
-ldr r0, =0xffff0000
+ldr r0, =0xffff0000 @ Patch the data abort vector code.
 add r0, r0, #0x10
 ldr r1, =0x1FFF4000
 ldr r1, [r1, #0x10]
@@ -840,62 +824,34 @@ ldr r3, [r1, #0x54]
 str r2, [r4, #24]
 str r3, [r4, #28]
 
-ldr r3, =0xFFFC2000
+#ifdef ENABLE_CMDLOGGING_PADCHECK
+cmp ip, #0x37
+ldrlt r3, =0xFFFD4000
+ldrge r3, =0xFFFC2000
 ldrh r3, [r3]
 tst r3, #0x200 @ L button
 bne arm11kernel_processcmd_patchend @ Only do logging / check procname when above button is pressed.
+#endif
 
-//ldr r1, =0x70747468 @ "http"
-//ldr r1, =0x6361 @ "ac"
-//ldr r1, =0x6b636f73 @ "sock"
-//ldr r1, =0x73736f62 @ "boss"
-//ldr r1, =0x41727443 @ "CtrA"
-//ldr r1, =0x697870 @ "pxi"
-//ldr r1, =0x746e694e @ "Nint"
-//ldr r1, =0x6c7373 @ "ssl"
-//ldr r1, =0x646e7363 @ "csnd"
-//ldr r1, =0x6e6470 @ "pdn"
-//ldr r1, =0x6d7470 @ "ptm"
-//ldr r1, =0x65697266 @ "frie"
-//ldr r1, =0x7377656e @ "news"
-//ldr r1, =0x707364 @ "dsp"
-//ldr r1, =0x7465736d @ "mset"
-//ldr r1, =0x44727245 @ "ErrD"
-//ldr r1, =0x7366 @ "fs"
-//ldr r1, =0x707367 @ "gsp"
-//ldr r1, =0x756e656d @ "menu"
-//ldr r1, =0x44524147 @ "GARD"
-//ldr r1, =0x736e @ "ns"
-//ldr r1, =0x6f72 @ "ro"
-//ldr r1, =0x6d73 @ "sm"
-//ldr r1, =0x706c64 @ "dlp"
-//ldr r1, =0x6d696e @ "nim"
-//ldr r1, =0x6d61 @ "am"
-//ldr r3, =0x6d61 @ "am"
-//ldr r1, =0x44727245 @ "ErrD"
-//ldr r1, =0x6d70 @ "pm"
-//ldr r1, =0x64616f6c @ "load"
-//ldr r1, =0x676663 @ "cfg"
-//ldr r1, =0x656d6f48 @ "Home"
-//ldr r1, =0x45454154 @ "TAEE"
-//ldr r1, =0x69746579 @ "yeti"
-//ldr r1, =0x656c6946 @ "File"
-//ldr r1, =0x4d766544 @ "DevM"
-ldr r1, =0x6c6f7061 @ "apol"
+#ifndef CMDLOGGING_PROCNAME0
+#error "The CMDLOGGING_PROCNAME0 define must be set in order to use cmd-logging."
+#endif
 
-//ldr r3, =0x707364 @ "dsp"
-//ldr r3, =0x736e @ "ns"
-//ldr r3, =0x656d6163 @ "came"
-//ldr r3, =0x7366 @ "fs"
-//ldr r3, =0x65697266 @ "frie"
+ldr r1, =CMDLOGGING_PROCNAME0
+
+#ifdef CMDLOGGING_PROCNAME1
+ldr r3, =CMDLOGGING_PROCNAME1
+#endif
 
 cmp r2, r1 @ Ignore commands where the src/dst is not the above process(es).
 cmpne r0, r1
 beq arm11kernel_processcmd_procnamecheck_end
 //beq arm11kernel_processcmd_patchend
-/*cmp r2, r3
+#ifdef CMDLOGGING_PROCNAME1
+cmp r2, r3
 cmpne r0, r3
-beq arm11kernel_processcmd_procnamecheck_end*/
+beq arm11kernel_processcmd_procnamecheck_end
+#endif
 b arm11kernel_processcmd_patchend
 
 arm11kernel_processcmd_procnamecheck_end:
