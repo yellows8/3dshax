@@ -824,13 +824,14 @@ ldr r3, [r1, #0x54]
 str r2, [r4, #24]
 str r3, [r4, #28]
 
-#ifdef ENABLE_CMDLOGGING_PADCHECK
+#ifdef CMDLOGGING_PADCHECK
 cmp ip, #0x37
 ldrlt r3, =0xFFFD4000
 ldrge r3, =0xFFFC2000
+ldr r1, =CMDLOGGING_PADCHECK
 ldrh r3, [r3]
-tst r3, #0x200 @ L button
-bne arm11kernel_processcmd_patchend @ Only do logging / check procname when above button is pressed.
+tst r3, r1
+bne arm11kernel_processcmd_patchend @ Only do logging / check procname when the above button(s) specified via CMDLOGGING_PADCHECK is pressed.
 #endif
 
 #ifndef CMDLOGGING_PROCNAME0
