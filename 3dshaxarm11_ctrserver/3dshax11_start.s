@@ -149,3 +149,12 @@ svc 0x70
 add sp, sp, #16
 pop {r4, r5, pc}
 
+.global svc_duplicateHandle
+.type svc_duplicateHandle, %function
+svc_duplicateHandle:
+stmfd sp!, {r0}
+svc 0x27
+ldr r2, [sp], #4
+str r1, [r2]
+bx lr
+

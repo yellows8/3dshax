@@ -66,6 +66,7 @@ int ctrserver_senddata(ctrserver *server, u8 *buf, int size);
 u32 launchcode_kernelmode(void*, u32 param);
 void call_arbitaryfuncptr(void* funcptr, u32 *regdata);
 Result svcControlProcessMemory(Handle kprocess, u32 addr0, u32 addr1, u32 size, u32 type, u32 permissions);
+Result svc_duplicateHandle(Handle* out, Handle original);
 
 Result am_init()//This is based on code by smea.
 {
@@ -719,7 +720,17 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		}
 
 		*bufsize = 4;
+		val = 0;
+		if(buf[0]==0xffff8001)
+		{
+			svc_duplicateHandle(&val, 0xffff8001);
+			buf[0] = val;
+		}
+
 		buf[0] = svcControlProcessMemory(buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]);
+
+		if(val)svc_closeHandle(val);
+
 		return 0;
 	}
 

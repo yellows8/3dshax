@@ -79,7 +79,7 @@ int main(int argc, char **argv)
 	{
 		if(PROCESSNAME == 0x706c64)//"dlp"
 		{
-			gspheap_size = 0x1000;
+			gspheap_size = 0x2000;
 			gspInit();
 		}
 		else
