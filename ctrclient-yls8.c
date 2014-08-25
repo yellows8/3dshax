@@ -629,7 +629,7 @@ int cmd_readctrcard(ctrclient *client, unsigned int sector, unsigned int sectorc
 
 int parsecmd_inputhexdata(unsigned int *databuf, unsigned int size)
 {
-	unsigned int pos, pos2, sz;
+	unsigned int pos, pos2, sz, tmpsz;
 	unsigned int tmpval;
 	char *str;
 	struct stat filestat;
@@ -665,16 +665,20 @@ int parsecmd_inputhexdata(unsigned int *databuf, unsigned int size)
 			sz = filestat.st_size;
 			if(sz > size - pos)sz = size - pos;
 
-			if(fread(&databuf8[pos], 1, sz, f) != sz)
+			if((tmpsz = fread(&databuf8[pos], 1, sz, f)) != sz)
 			{
-				printf("Failed to read file.\n");
-				fclose(f);
-				return 2;
+				printf("Warning: only 0x%x bytes of 0x%x bytes from the input file were read.\n", tmpsz, sz);
+				if(tmpsz==0)
+				{
+					printf("Error, 0 bytes were read from file.\n");
+					fclose(f);
+					return 2;
+				}
 			}
 
 			fclose(f);
 
-			pos+= sz;
+			pos+= size - pos;
 
 		}
 		else if(strncmp(str, "0x", 2)!=0)
