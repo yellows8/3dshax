@@ -747,6 +747,57 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		return 0;
 	}
 
+	if(cmdid==0x62)
+	{
+		if(*bufsize != 0x4)
+		{
+			*bufsize = 0;
+			return 0;
+		}
+
+		buf[0] = svc_closeHandle(buf[0]);
+		return 0;
+	}
+
+	if(cmdid==0x63)
+	{
+		if(*bufsize != 0x10)
+		{
+			*bufsize = 0;
+			return 0;
+		}
+
+		*bufsize = 8;
+		buf[0] = svc_createMemoryBlock(&buf[1], buf[0], buf[1], buf[2], buf[3]);
+		return 0;
+	}
+
+	if(cmdid==0x64)
+	{
+		if(*bufsize != 0x10)
+		{
+			*bufsize = 0;
+			return 0;
+		}
+
+		*bufsize = 4;
+		buf[0] = svc_mapMemoryBlock(buf[0], buf[1], buf[2], buf[3]);
+		return 0;
+	}
+
+	if(cmdid==0x65)
+	{
+		if(*bufsize != 0x8)
+		{
+			*bufsize = 0;
+			return 0;
+		}
+
+		*bufsize = 4;
+		buf[0] = svc_unmapMemoryBlock(buf[0], buf[1]);
+		return 0;
+	}
+
 	if(cmdid==0x80)
 	{
 		//buf[0]=archiveid, [1]=archive_lowpathtype, [2]=archive_lowpathsize, [3]=file_lowpathtype, [4]=file_lowpathsize, [5]=openflags. starting @ buf[6]: archive_lowpathdata. starting @ buf[6 + <archive_lowpathsize aligned to 4-bytes>]: file_lowpathdata. immediately after the file_lowpathdata with 4-byte alignment is the data to write, when openflags bit1 is set.

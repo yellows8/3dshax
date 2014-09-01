@@ -86,7 +86,8 @@ static char arm11codeload_servaccesscontrol[][8] = { //Service-access-control co
 "ptm:sysm",
 "csnd:SND",
 "pm:app",
-"frd:u"
+"frd:u",
+"mic:u"
 };
 
 void load_arm11code(u32 *loadptr, u32 maxloadsize, u64 procname)
@@ -376,6 +377,8 @@ int ctrserver_process_aescontrol(aescontrol *control)
 }
 #endif
 
+static u32 aesflag = 0;
+
 int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 {
 	int ret=0;
@@ -426,6 +429,12 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 
 	if(cmdid>=0x1 && cmdid<0x9)
 	{
+		/*if(!aesflag)
+		{
+			aesflag = 1;
+			//aes_mutexenter();
+		}*/
+
 		rw = 0;//0=read, 1=write
 		if((cmdid & 0xff)<0x05)rw = 1;
 
