@@ -495,51 +495,55 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 
 		handletype = buf[1];
 
-		if(buf[1])
+		if(handletype)
 		{
 			buf[0] = 0;
 
-			if(buf[1]==1)
+			if(handletype==1)
 			{
 				buf[0] = srvHandle;
 			}
-			else if(buf[1]==2)
+			else if(handletype==2)
 			{
 				if(amserv_available==0)am_init();
 				if(amserv_available)buf[0] = am_handle;
 			}
-			else if(buf[1]==3)
+			else if(handletype==3)
 			{
 				buf[0] = IRU_GetServHandle();
 			}
-			else if(buf[1]==4 && aptLockHandle)
+			else if(handletype==4 && aptLockHandle)
 			{
 				aptOpenSession();
 				buf[0] = aptuHandle;
 			}
-			else if(buf[1]==5)
+			else if(handletype==5)
 			{
 				buf[0] = fsuser_servhandle;
 			}
-			else if(buf[1]==6)
+			else if(handletype==6)
 			{
 				buf[0] = gspGpuHandle;
 			}
-			else if(buf[1]==7)
+			else if(handletype==7)
 			{
 				buf[0] = CFGNOR_handle;
 			}
-			else if(buf[1]==8)
+			else if(handletype==8)
 			{
 				buf[0] = hidHandle;
 			}
-			else if(buf[1]==9)
+			else if(handletype==9)
 			{
 				buf[0] = CSND_handle;
 			}
-			else if(buf[1]==10)
+			else if(handletype==10)
 			{
 				buf[0] = SOCU_handle;
+			}
+			else if(handletype==11 && arm9access_available)
+			{
+				buf[0] = pxidev_handle;
 			}
 
 			if(buf[0]==0)
