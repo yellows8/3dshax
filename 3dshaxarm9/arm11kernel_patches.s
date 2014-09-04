@@ -542,6 +542,9 @@ cmp r3, #0x25
 ldreq r2, =0xfff6b3d8
 cmp r3, #0x26
 ldreq r2, =0xfff6b3d4
+cmp r3, #0x29
+cmpne r3, #0x2A
+ldreq r2, =0xfff6b7d0
 cmp r3, #0x2E
 ldreq r2, =0xfff6b810
 cmp r3, #0x30
