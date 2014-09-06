@@ -715,7 +715,9 @@ void pxipmcmd1_getexhdr(u32 *exhdr)
 		memset(servlist, 0, 0x100);
 		memcpy(servlist, arm11codeload_servaccesscontrol, sizeof(arm11codeload_servaccesscontrol));
 
+		#ifndef DISABLE_FSACCESSINFO_OVERWRITE
 		for(pos=0x248; pos<0x248+0x7; pos++)exhdr8[pos] = 0xFF;//Set FS accessinfo to all 0xFF.
+		#endif
 	}
 
 	if(exhdr[0]==0x45454154)//"TAEE", NES VC for TLoZ.
