@@ -558,14 +558,12 @@ bx r2
 
 arm11kernel_exceptionregdump:
 push {r4, r5, r6, lr}
-sub sp, sp, #0x200
 mov r6, r0
-//ldr r4, =0xFFF3F000
-mov r4, sp
 
 //cpsid i @ disable IRQs
 
 bl arm11kernel_getdebugstateptr
+add r4, r0, #0x800
 add r0, r0, #0x200
 bl arm11kernel_waitdebuginfo_magic
 
@@ -711,7 +709,6 @@ ldr r0, [r0]
 blx r4 @ Terminate the current process.
 
 arm11kernel_exceptionregdump_exit:
-add sp, sp, #0x200
 pop {r4, r5, r6, pc}
 .pool
 
