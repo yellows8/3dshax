@@ -68,6 +68,31 @@ void call_arbitaryfuncptr(void* funcptr, u32 *regdata);
 Result svcControlProcessMemory(Handle kprocess, u32 addr0, u32 addr1, u32 size, u32 type, u32 permissions);
 Result svc_duplicateHandle(Handle* out, Handle original);
 
+Result FSUSER_ControlArchive(Handle handle, FS_archive archive)//This is from code by smea.
+{
+	u32* cmdbuf=getThreadCommandBuffer();
+
+	u32 b1, b2;
+	((u8*)&b1)[0]=0x4e;
+	((u8*)&b2)[0]=0xe4;
+
+	cmdbuf[0]=0x080d0144;
+	cmdbuf[1]=archive.handleLow;
+	cmdbuf[2]=archive.handleHigh;
+	cmdbuf[3]=0x0;
+	cmdbuf[4]=0x1; //buffer1 size
+	cmdbuf[5]=0x1; //buffer1 size
+	cmdbuf[6]=0x1a;
+	cmdbuf[7]=(u32)&b1;
+	cmdbuf[8]=0x1c;
+	cmdbuf[9]=(u32)&b2;
+
+	Result ret=0;
+	if((ret=svc_sendSyncRequest(handle)))return ret;
+
+	return cmdbuf[1];
+}
+
 Result am_init()//This is based on code by smea.
 {
 	Result ret;
@@ -817,7 +842,11 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		fileLowPath.size = buf[4];
 		fileLowPath.data = (u8*)&buf[6 + pos];
 
-		ret = FSUSER_OpenFileDirectly(fsuser_servhandle, &filehandle, archive, fileLowPath, buf[5], FS_ATTRIBUTE_NONE);
+		ret = FSUSER_OpenArchive(fsuser_servhandle, &archive);
+
+		if(ret==0)ret = FSUSER_OpenFile(fsuser_servhandle, &filehandle, archive, fileLowPath, buf[5], FS_ATTRIBUTE_NONE);
+
+		//ret = FSUSER_OpenFileDirectly(fsuser_servhandle, &filehandle, archive, fileLowPath, buf[5], FS_ATTRIBUTE_NONE);
 		pos+= 6 + (((buf[4] + 3) & ~3)>>2);
 
 		filesize = 0;
@@ -826,10 +855,9 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		{
 			ret = FSFILE_GetSize(filehandle, &filesize);
 			if(ret!=0)FSFILE_Close(filehandle);
-			//filesize = 0x36c0;
-			//filesize = 0x80000;
 
-			if((buf[5] & 2) && ((*bufsize)-pos*4) < filesize)filesize = (*bufsize)-pos*4;
+			//if((buf[5] & 2) && ((*bufsize)-pos*4) < filesize)filesize = (*bufsize)-pos*4;
+			if(buf[5] & 2)filesize = (*bufsize)-pos*4;
 		}
 
 		*bufsize = 0;
@@ -843,6 +871,13 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 				*bufsize = 4;
 			}
 			FSFILE_Close(filehandle);
+
+			if(buf[5] & 2)
+			{
+				if(archive.id==4 || archive.id==8 || archive.id==0x1234567C || archive.id==0x567890B1 || archive.id==0x567890B2)FSUSER_ControlArchive(fsuser_servhandle, archive);
+			}
+
+			FSUSER_CloseArchive(fsuser_servhandle, &archive);
 		}
 
 		if(ret!=0)
