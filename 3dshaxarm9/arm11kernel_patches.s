@@ -621,6 +621,25 @@ cmpeq r2, #2
 movne r5, #0
 moveq r5, #1 @ r5=1 when this exception was triggered via a breakpoint.
 
+ldr r1, [r4, #0x4c]
+cmp r1, #1
+addeq r0, r0, #0x20
+beq arm11kernel_exceptionregdump_datadump_init
+
+arm11kernel_exceptionregdump_datadump_pc:
+mov r3, #0
+add r1, r4, #0x50//sp = #0x44, lr = #0x48, pc = #0x50
+ldr r1, [r1]
+sub r1, r1, #0x10
+
+arm11kernel_exceptionregdump_datadump_pclp:
+ldr r2, [r1], #4
+str r2, [r0], #4
+add r3, r3, #4
+cmp r3, #0x20
+blt arm11kernel_exceptionregdump_datadump_pclp
+
+arm11kernel_exceptionregdump_datadump_init:
 mov r3, #0
 add r1, r4, #0x44//sp = #0x44, lr = #0x48, pc = #0x50
 ldr r1, [r1]
@@ -655,7 +674,7 @@ arm11kernel_exceptionregdump_L2:
 ldr r2, [r1], #4
 str r2, [r0], #4
 add r3, r3, #4
-cmp r3, #0x1b0
+cmp r3, #0x190
 blt arm11kernel_exceptionregdump_L2
 
 arm11kernel_exceptionregdump_L2_end:
