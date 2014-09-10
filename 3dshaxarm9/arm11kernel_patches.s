@@ -78,7 +78,9 @@ pop {r4, r5, pc}
 #ifdef ENABLE_ARM11KERNEL_DEBUG
 
 #ifdef ENABLE_ARM11KERNEL_PROCSTARTHOOK
+#ifndef DISABLE_NETDEBUG
 #define ENABLE_NETDEBUG
+#endif
 #endif
 
 writepatch_arm11kernel_getsvctableadr: @ inr0: val0=return physaddr of jumptable, non-zero=return addr for the specified SVC. for SVCs: out r0 = vaddr, out r1 = physaddr.
