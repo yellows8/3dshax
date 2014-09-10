@@ -100,7 +100,9 @@ void load_arm11code(u32 *loadptr, u32 maxloadsize, u64 procname)
 
 	//if(loadptr==NULL)app_physaddr = patch_mmutables(procname, 1, 0);
 
+	#ifndef DISABLE_ARM11KERNEL_SVCHANDLER_PATCH
 	writepatch_arm11kernel_svcaccess();
+	#endif
 
 	if(openfile(sdarchive_obj, 4, arm11code_filepath, 0x24, 1, &fileobj)!=0)return;
 	input_filesize = getfilesize(fileobj);
@@ -720,7 +722,7 @@ void pxipmcmd1_getexhdr(u32 *exhdr)
 		#endif
 	}
 
-	if(exhdr[0]==0x45454154)//"TAEE", NES VC for TLoZ.
+	if(exhdr[0]==0x45454154)//"TAEE" for NES VC for TLoZ
 	{
 		for(pos=0x248; pos<0x248+0x7; pos++)exhdr8[pos] = 0xFF;//Set FS accessinfo to all 0xFF.
 	}
