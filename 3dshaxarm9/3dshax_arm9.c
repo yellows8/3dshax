@@ -1084,6 +1084,7 @@ int main(void)
 	u32 pos=0;
 	u32 threadhandle = 0;
 	u32 *ptr;
+	u8 *ptr8;
 
 	launchcode_kernelmode(changempu_memregions);
 
@@ -1125,7 +1126,9 @@ int main(void)
 
 		//while(*((vu16*)0x10146000) & 2);
 
+		#ifndef DISABLE_A9THREAD
 		svcCreateThread(&threadhandle, thread_entry, 0, &thread_stack[THREAD_STACKSIZE>>2], 0x3f, ~1);
+		#endif
 	}
 	else
 	{
@@ -1149,7 +1152,16 @@ int main(void)
 			#ifdef ENABLE_ARM11KERNEL_DEBUG
 			write_arm11debug_patch();
 			#endif
+
+			#ifndef DISABLE_A9THREAD
 			svcCreateThread(&threadhandle, thread_entry, 0, &thread_stack[THREAD_STACKSIZE>>2], 0x3f, ~1);
+			#endif
+
+			#ifdef ENABLE_CONFIGMEM_DEVUNIT
+			ptr8 = NULL;
+			while(ptr8 == NULL)ptr8 = (u32*)mmutable_convert_vaddr2physaddr(get_kprocessptr(0x697870, 0, 1), 0x1FF80014);
+			*ptr8 = 0;
+			#endif
 		}
 	}
 
