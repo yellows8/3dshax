@@ -109,7 +109,7 @@ mov r0, r3
 blx r4
 mov r2, r0
 pop {lr}
-cpsie i @ Enable IRQs
+//cpsie i @ Enable IRQs (don't re-enable IRQs since the svc-handler will just disable IRQs after the SVC returns)
 bx lr
 
 launchcode_kernelmode:

@@ -72,9 +72,7 @@ Result FSUSER_ControlArchive(Handle handle, FS_archive archive)//This is from co
 {
 	u32* cmdbuf=getThreadCommandBuffer();
 
-	u32 b1, b2;
-	((u8*)&b1)[0]=0x4e;
-	((u8*)&b2)[0]=0xe4;
+	u32 b1 = 0, b2 = 0;
 
 	cmdbuf[0]=0x080d0144;
 	cmdbuf[1]=archive.handleLow;
