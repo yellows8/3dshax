@@ -955,6 +955,9 @@ void thread_entry()
 	{
 		*((u16*)0x0803e676) = 0x2002;
 		svcFlushProcessDataCache((u32*)0x0803e674, 0x4);//pxipm opentitle sd-flag check patch
+
+		*((u16*)0x0805ef38) |= 1;
+		svcFlushProcessDataCache((u32*)0x0805ef38, 0x4);//Patch the code which reads the arm9 access-control mount flags, so that all of these archives are accessible.
 	}
 
 	patch_pxidev_cmdhandler_cmd0((u32*)0x08028000, 0x080ff000-0x08028000);
