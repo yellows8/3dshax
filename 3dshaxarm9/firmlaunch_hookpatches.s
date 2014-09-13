@@ -137,11 +137,17 @@ str r3, [r0, #8]
 mov r3, #1
 str r3, [r0, #0x20]*/
 
-ldr r0, =0x20000000
+ldr r0, =FIRMLAUNCH_CLEARPARAMS
+ldr r0, [r0]
+cmp r0, #1
+bne arm9_debugcode_skip_paramsclear
+
+ldr r0, =0x20000000 @ Clear FIRM-launch params.
 mov r1, #0
 mov r2, #0x1000
 bl memset
 
+arm9_debugcode_skip_paramsclear:
 @ Enable the following block to have NS launch the gamecard title, which bypasses the region-lock. Note that the system will fail to boot with this enabled if no gamecard is inserted.
 /*ldr r0, =0x20000440
 mov r1, #0

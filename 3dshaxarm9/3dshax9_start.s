@@ -33,6 +33,7 @@
 .global RUNNINGFWVER
 .global FIRMLAUNCH_FWVER
 .global NANDREDIR_SECTORNUM
+.global FIRMLAUNCH_CLEARPARAMS
 .global arm9_rsaengine_txtwrite_hooksz
 
 .global FIRM_contentid_versions
@@ -865,6 +866,9 @@ FIRM_sigword0_array: @ First u32 from the FIRM RSA signature, for each version.
 
 FIRM_contentid_totalversions:
 .word 15
+
+FIRMLAUNCH_CLEARPARAMS:
+.word 1
 
 /*twlbootldrenc_arm7:
 //.incbin "../twlbootldrenc_arm7.bin"

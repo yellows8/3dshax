@@ -72,9 +72,7 @@ Result FSUSER_ControlArchive(Handle handle, FS_archive archive)//This is from co
 {
 	u32* cmdbuf=getThreadCommandBuffer();
 
-	u32 b1, b2;
-	((u8*)&b1)[0]=0x4e;
-	((u8*)&b2)[0]=0xe4;
+	u32 b1 = 0, b2 = 0;
 
 	cmdbuf[0]=0x080d0144;
 	cmdbuf[1]=archive.handleLow;
@@ -824,6 +822,20 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 
 		*bufsize = 4;
 		buf[0] = svc_unmapMemoryBlock(buf[0], buf[1]);
+		return 0;
+	}
+
+	if(cmdid==0x66)
+	{
+		if(*bufsize != 0x8)
+		{
+			*bufsize = 0;
+			return 0;
+		}
+
+		*bufsize = 0xc;
+
+		buf[0] = svc_getSystemInfo((s64*)&buf[1], buf[0], buf[1]);
 		return 0;
 	}
 
