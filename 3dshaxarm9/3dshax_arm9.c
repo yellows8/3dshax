@@ -43,6 +43,7 @@ extern u32 arm11_stub[];
 extern u8 rsamodulo_slot0[];
 extern u32 FIRMLAUNCH_RUNNINGTYPE;
 extern u32 RUNNINGFWVER;
+extern u32 FIRMLAUNCH_CLEARPARAMS;
 extern u32 arm9_rsaengine_txtwrite_hooksz;
 
 void pxidev_cmdhandler_cmd0();
@@ -1109,6 +1110,7 @@ int main(void)
 		if((*((vu16*)0x10146000) & 0x100) == 0)//button R
 		{
 			loadfile_charpath("/x01ffb800.bin", (u32*)0x01ffb800, 0x4800);
+			FIRMLAUNCH_CLEARPARAMS = 1;
 			patch_proc9_launchfirm();
 			//load_arm11code(NULL, 0, 0x707041727443LL);
 
@@ -1143,6 +1145,7 @@ int main(void)
 			#endif
 			#endif
 
+			FIRMLAUNCH_CLEARPARAMS = 1;
 			patch_proc9_launchfirm();
 
 			//Change the configmem UPDATEFLAG value to 1, which then causes NS module to do a FIRM launch, once NS gets loaded.
@@ -1164,6 +1167,11 @@ int main(void)
 			ptr8 = NULL;
 			while(ptr8 == NULL)ptr8 = (u32*)mmutable_convert_vaddr2physaddr(get_kprocessptr(0x697870, 0, 1), 0x1FF80014);
 			*ptr8 = 0;
+			#endif
+
+			#ifdef ENABLE_FIRMLAUNCH_HOOK
+			FIRMLAUNCH_CLEARPARAMS = 0;
+			patch_proc9_launchfirm();
 			#endif
 		}
 	}
