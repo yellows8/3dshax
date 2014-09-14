@@ -319,8 +319,8 @@ bl generate_branch
 str r0, [r5, r6]
 
 #ifdef ARM11KERNEL_ENABLECMDLOG
-adr r1, arm11kernel_patch
-adr r3, arm11kernel_processcmd_patch
+ldr r1, =arm11kernel_patch
+ldr r3, =arm11kernel_processcmd_patch
 sub r3, r3, r1
 //ldr r4, =0xffff0b10
 ldr r4, =0x1800
