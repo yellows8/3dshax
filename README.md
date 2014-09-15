@@ -17,8 +17,6 @@ By default NAND-redir is enabled, see below for disabling it. When NAND-redir is
 
 The FIRM-launch code loads the plaintext FIRM from SD "/firm.bin". The FWVER values used by the arm9code is automatically determined by checking the first u32 in the FIRM RSA signature.
 
-Region-free patch with ctrclient-yls8(all sd titles will be shown as presents as a side-effect), for homemenu v9230(unknown if this works for non-USA homemenu): "writemem:11usr=menu 0x19c800 0x4 0xe3a00001"
-
 # Makefile parameters  
 * "DISABLEAES=1" Disables all arm9 AES code.
 * "DISABLENANDREDIR=1" Disables NAND->SD redirection.
@@ -34,6 +32,7 @@ Region-free patch with ctrclient-yls8(all sd titles will be shown as presents as
 * "DISABLE_A9THREAD=1" Disables creation of the arm9 thread.
 * "ENABLE_CONFIGMEM_DEVUNIT=1" Enables writing val0 to configmem UNITINFO. This can be used to enable dev-mode for ErrDisp.
 * "ENABLE_FIRMLAUNCH_HOOK=1" Enables hooking Process9 FIRM-launch once the system finishes fully booting after previous FIRM-launch(es). FIRM-launch parameters won't be cleared with this, so that launching titles with this works.
+* "ENABLE_REGIONFREE=1" Enables the homemenu SMDH icon region check patch. This does not affect the region-lock via gamecard sysupdates. Note that this may cause SD titles which normally aren't displayed, to be shown as presents.
 * "ENABLE_CMDLOGGING=1" Enables ARM11-kernel patches+code for logging commands.
 * "CMDLOGGING_PADCHECK=value" For cmd-logging, only do logging when any of the bits in the specified value is set for the current PAD register state.
 * "CMDLOGGING_PROCNAME0=value" u32 value to compare the src/dst process-name with for filtering. This is required for cmd-logging.

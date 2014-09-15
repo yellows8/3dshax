@@ -246,6 +246,8 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 	u32 *codebin_physaddr, total_codebin_size;
 	u32 *ptr;
 	u32 *mmutable;
+	u32 pos, pos2;
+	u32 cmpblock[4] = {0xe3140001, 0x13844040, 0xe0100004, 0x13a00001};
 
 	procname = ((u64)debuginfo_ptr[5]) | (((u64)debuginfo_ptr[6])<<32);
 
@@ -257,6 +259,32 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 		load_arm11code(codebin_physaddr, total_codebin_size, procname);
 		return;
 	}
+
+	#ifdef ENABLE_REGIONFREE//SMDH icon region check patch. This does not affect the region-lock via gamecard sysupdates.
+	if(procname==0x756e656d)//"menu", Home Menu.
+	{
+		mmutable = (u32*)get_kprocessptr(0x726564616f6cLL, 0, 1);//"loader"
+		if(mmutable==NULL)return;
+
+		for(pos=0; pos<total_codebin_size; pos+=0x1000)
+		{
+			ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x10000000 + pos);
+			if(ptr==NULL)continue;
+
+			for(pos2=0; pos2<(0x1000-0x10); pos2+=4)
+			{
+				if(memcmp(&ptr[pos2>>2], cmpblock, 0x10)!=0)continue;
+
+				pos2+= 0xc;
+				ptr[pos2>>2] = 0xe3a00001;
+
+				return;
+			}
+		}
+
+		return;
+	}
+	#endif
 
 	if(procname==0x45454154)//"TAEE", NES VC for TLoZ.
 	{
