@@ -36,6 +36,8 @@ void arm9general_debughook_writepatch(u32 addr);
 
 void writearm11_firmlaunch_usrpatch();
 
+u32 *locate_cmdhandler_code(u32 *ptr, u32 size, u32 *pool_cmpdata, u32 pool_cmpdata_wordcount, u32 locate_ldrcc);
+
 extern u32 arm9_stub[];
 extern u32 arm9_stub2[];
 extern u32 arm9dbs_stub[];
@@ -244,10 +246,11 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 {
 	u64 procname;
 	u32 *codebin_physaddr, total_codebin_size;
-	u32 *ptr;
+	u32 *ptr, *ptr2;
 	u32 *mmutable;
 	u32 pos, pos2;
 	u32 cmpblock[4] = {0xe3140001, 0x13844040, 0xe0100004, 0x13a00001};
+	u32 cmpblock_nss[7] = {0xd9001830, 0x00010040, 0x00020080, 0xb2d05e00, 0xc8a05801, 0xc8a12402, 0x00030040};
 
 	procname = ((u64)debuginfo_ptr[5]) | (((u64)debuginfo_ptr[6])<<32);
 
@@ -285,6 +288,30 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 		return;
 	}
 	#endif
+
+	/*#ifdef DISABLE_GAMECARDUPDATE//Patch the ns:s cmd7 code so that result-code 0xc821180b is always returned, indicating that no gamecard sysupdate installation is needed. This is required for launching gamecards from other regions. This is commented-out since launching the title with this breaks title-launch.
+	if(procname==0x736e)//"ns"
+	{
+		mmutable = (u32*)get_kprocessptr(0x726564616f6cLL, 0, 1);//"loader"
+		if(mmutable==NULL)return;
+
+		ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x10000000);
+		if(ptr==NULL)return;
+
+		ptr2 = locate_cmdhandler_code(ptr, 0x1e000, cmpblock_nss, 7, 1);
+		if(ptr2==NULL)return;
+
+		ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x10000000 + (ptr2[0x7] - 0x00100000));//ptr = code for handling ns:s cmd7
+		if(ptr==NULL)return;
+
+		ptr2 = &ptr[0x1c>>2];
+		ptr2[0] = 0xe59f0000;//ldr r0, [pc, #0]
+		ptr2[1] = 0xea000001;//branch to the instruction following the func-call.
+		ptr2[2] = 0xc821180b;
+
+		return;
+	}
+	#endif*/
 
 	if(procname==0x45454154)//"TAEE", NES VC for TLoZ.
 	{
@@ -757,7 +784,7 @@ void pxipmcmd1_getexhdr(u32 *exhdr)
 	}
 }
 
-u32 *locate_pxicmdhandler_code(u32 *ptr, u32 size, u32 *pool_cmpdata, u32 pool_cmpdata_wordcount, u32 locate_ldrcc)
+u32 *locate_cmdhandler_code(u32 *ptr, u32 size, u32 *pool_cmpdata, u32 pool_cmpdata_wordcount, u32 locate_ldrcc)
 {
 	u32 pos, i, found;
 
@@ -786,9 +813,9 @@ u32 *locate_pxicmdhandler_code(u32 *ptr, u32 size, u32 *pool_cmpdata, u32 pool_c
 
 	found = 0;
 
-	while(pos)//Locate the "ldrcc pc, [pc, r0, lsl #2]" instruction in this function where the matching .pool data was found.
+	while(pos)//Locate the "ldrcc pc, [pc, XX, lsl #2]" instruction in this function where the matching .pool data was found.
 	{
-		if(ptr[pos] == 0x379ff100)
+		if((ptr[pos] & ~0xf) == 0x379ff100)
 		{
 			found = 1;
 			break;
@@ -809,7 +836,7 @@ void patch_pxidev_cmdhandler_cmd0(u32 *startptr, u32 size)
 	u32 *ptr = NULL;
 	u32 pool_cmpdata[9] = {0xd9001830, 0x000101c2, 0x00010041, 0x000201c2, 0x00020041, 0x00030102, 0x00030041, 0x00040102, 0x00040041};
 
-	ptr = locate_pxicmdhandler_code(startptr, size, pool_cmpdata, 9, 1);
+	ptr = locate_cmdhandler_code(startptr, size, pool_cmpdata, 9, 1);
 	if(ptr==NULL)return;
 
 	*ptr = (u32)pxidev_cmdhandler_cmd0;
@@ -822,7 +849,7 @@ void arm9_pxipmcmd1_getexhdr_writepatch_autolocate(u32 *startptr, u32 size)
 	u32 i, found;
 	u32 pool_cmpdata[6] = {0xd900182f, 0xd9001830, 0x00010082, 0x00010041, 0x000200c0, 0x00030040};
 
-	ptr = locate_pxicmdhandler_code(startptr, size, pool_cmpdata, 6, 0);
+	ptr = locate_cmdhandler_code(startptr, size, pool_cmpdata, 6, 0);
 	if(ptr==NULL)return;
 
 	found = 0;
