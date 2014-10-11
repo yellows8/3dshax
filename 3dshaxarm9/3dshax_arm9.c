@@ -245,7 +245,7 @@ u32 *get_framebuffers_addr()
 void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 {
 	u64 procname;
-	u32 *codebin_physaddr, total_codebin_size;
+	u32 *codebin_physaddr, codebin_vaddr, total_codebin_size;
 	u32 *ptr, *ptr2;
 	u32 *mmutable;
 	u32 pos, pos2;
@@ -254,9 +254,13 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 
 	procname = ((u64)debuginfo_ptr[5]) | (((u64)debuginfo_ptr[6])<<32);
 
-	codebin_physaddr = (u32*)debuginfo_ptr[4];
+	codebin_vaddr = (u32*)debuginfo_ptr[4];
 	total_codebin_size = debuginfo_ptr[3]<<12;
 
+	mmutable = (u32*)get_kprocessptr(0x726564616f6cLL, 0, 1);//"loader"
+	if(mmutable==NULL)return;
+
+	codebin_physaddr =  (u32*)mmutable_convert_vaddr2physaddr(mmutable, codebin_vaddr);
 	if(codebin_physaddr==NULL)return;
 
 	if(procname==ARM11CODELOAD_PROCNAME)
@@ -268,9 +272,6 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 	#ifdef ENABLE_REGIONFREE//SMDH icon region check patch. This does not affect the region-lock via gamecard sysupdates.
 	if(procname==0x756e656d)//"menu", Home Menu.
 	{
-		mmutable = (u32*)get_kprocessptr(0x726564616f6cLL, 0, 1);//"loader"
-		if(mmutable==NULL)return;
-
 		for(pos=0; pos<total_codebin_size; pos+=0x1000)
 		{
 			ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x10000000 + pos);
@@ -294,9 +295,6 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 	/*#ifdef DISABLE_GAMECARDUPDATE//Patch the ns:s cmd7 code so that result-code 0xc821180b is always returned, indicating that no gamecard sysupdate installation is needed. This is required for launching gamecards from other regions. This is commented-out since launching the title with this breaks title-launch.
 	if(procname==0x736e)//"ns"
 	{
-		mmutable = (u32*)get_kprocessptr(0x726564616f6cLL, 0, 1);//"loader"
-		if(mmutable==NULL)return;
-
 		ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x10000000);
 		if(ptr==NULL)return;
 
@@ -317,9 +315,6 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 
 	if(procname==0x45454154)//"TAEE", NES VC for TLoZ.
 	{
-		mmutable = (u32*)get_kprocessptr(0x726564616f6cLL, 0, 1);//"loader"
-		if(mmutable==NULL)return;
-
 		ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x1000e1bc);
 
 		*ptr = (*ptr & ~0xff) | 0x09;//Change the archiveid used for the savedata archive from the savedata archiveid, to sdmc.
@@ -335,6 +330,7 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 		ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x10104028);
 		ptr[0] = 0x61746164;//Change the archive mount-point string used by the functions which generates "rom:/rom/" paths, from "rom:" to "data:".
 		ptr[1] = 0x3a;*/
+		return;
 	}
 }
 

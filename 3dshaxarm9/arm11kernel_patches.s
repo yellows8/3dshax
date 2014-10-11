@@ -1057,17 +1057,8 @@ add r0, r0, r2
 add r0, r0, r3
 str r0, [r4, #12] @ Total used pages for .text + .rodata + .data + .bss.
 
-ldr r0, =0xffff9004
-ldr r0, [r0]
-add r0, r0, #0x54
-
-ldr r3, arm11kernel_patch_fwver
-cmp r3, #0x37
-addge r0, r0, #8
-
-ldr r1, [sp, #8] @ r1=inr2
-bl KProcessmem_getphysicaladdr
-str r0, [r4, #16] @ text_mapadr converted to a physical address.
+ldr r0, [sp, #8] @ inr2, vaddr for text_mapadr
+str r0, [r4, #16]
 
 ldr r1, =0x58584148
 str r1, [r4]
