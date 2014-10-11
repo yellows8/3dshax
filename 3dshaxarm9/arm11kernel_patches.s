@@ -537,6 +537,8 @@ bx lr
 
 KProcessmem_getphysicaladdr:
 push {r4, r5}
+mov r2, #0
+
 ldr r3, arm11kernel_patch_fwver
 cmp r3, #0x1F
 ldreq r2, =0xfff7a8c4
@@ -554,6 +556,9 @@ ldreq r2, =0xfff6b80c
 cmp r3, #0x37
 ldreq r2, =0xfff5b924
 pop {r4, r5}
+cmp r2, #0
+moveq r0, #0
+bxeq lr
 bx r2
 
 .pool

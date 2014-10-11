@@ -257,6 +257,8 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 	codebin_physaddr = (u32*)debuginfo_ptr[4];
 	total_codebin_size = debuginfo_ptr[3]<<12;
 
+	if(codebin_physaddr==NULL)return;
+
 	if(procname==ARM11CODELOAD_PROCNAME)
 	{
 		load_arm11code(codebin_physaddr, total_codebin_size, procname);
