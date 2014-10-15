@@ -163,50 +163,59 @@ void patch_proc9_launchfirm()
 	u32 *arm9_patchaddr;
 	u32 pos;
 
-	//*((u32*)0x080c4afc) = 0x0809796c;
-	//*((u32*)0x10010000) = 1;
-	//*((u8*)(0x10000010)) = 0;
+	ptr = (u32*)parse_branch(0x08028014, 0);//ptr = address of Process9 main()
 
-	ptr = (u32*)0x08086a7c;//FWVER 0x1F
-	if(RUNNINGFWVER==0x2E)ptr = (u32*)0x080854d8;
-	if(RUNNINGFWVER==0x30)ptr = (u32*)0x080854dc;
-	if(RUNNINGFWVER==0x37)ptr = (u32*)0x080857a4;
+	pos = 0;
+	while(1)
+	{
+		if(ptr[pos]==0xe8bd4010)break;//"pop {r4, lr}"
+		pos++;
+	}
+	pos++;
 
-	arm9_patchaddr = (u32*)&ptr[0x11c>>2];
-	if(RUNNINGFWVER==0x37)arm9_patchaddr = (u32*)&ptr[0x124>>2];
+	ptr = (u32*)parse_branch((u32)&ptr[pos], 0);//ptr = address of launch_firm function called @ the end of main().
+
+	pos = 0;
+	while(1)
+	{
+		if(ptr[pos]==0xe12fff32)break;//"blx r2"
+		pos++;
+	}
+	arm9_patchaddr = (u32*)&ptr[pos];
 
 	arm9_patchaddr[0] = arm9_stub[0];
 	arm9_patchaddr[1] = arm9_stub[1];
 	arm9_patchaddr[2] = arm9_stub[2];
 
-	pos = 0;
-	if(RUNNINGFWVER==0x37)pos = 8;
+	while(1)
+	{
+		if(ptr[pos]==0xe12fff3c)break;//"blx ip"
+		pos++;
+	}
 
-	//*((u32*)0x8086b7c) = 0xe3a00000;//0xe3e00000;//patch the launch_firm fs_openfile() blx to "mov r0, #0".
-	ptr[(0x140 + pos)>>2] = 0xe3a00000;//patch the fileread blx for the 0x100-byte FIRM header to "mov r0, #0".
-	ptr[(0x154 + pos)>>2] = 0xe3a00000;//patch the bne branch after the fileread call.
-	ptr[(0x170 + pos)>>2] = 0xe3a00000;//patch the FIRM signature read.
-	ptr[(0x17C + pos)>>2] = 0xe3a00c01;//"mov r0, #0x100".
-	//*((u32*)0x8086c0c) = 0xe1a00000;//nop the fs_closefile() call, this patch isn't needed since this function won't really do anything since the file ctx wasn't initialized via fs_openfile.
+	ptr[pos] = 0xe3a00000;//patch the fileread blx for the 0x100-byte FIRM header to "mov r0, #0".
+	ptr[pos + (0x14 >> 2)] = 0xe3a00000;//patch the bne branch after the fileread call.
+	ptr[pos + (0x30 >> 2)] = 0xe3a00000;//patch the FIRM signature read.
+	ptr[pos + (0x3C >> 2)] = 0xe3a00c01;//"mov r0, #0x100".
 
-	pos = 0;
-	if(RUNNINGFWVER==0x37)pos = 0x14;	
+	while(1)
+	{
+		if(ptr[pos]==0xe3a03b02)break;//"mov r3, #0x800"
+		pos++;
+	}
 
-	ptr[(0x3D8 + pos)>>2] = 0xe3a00000;//patch the RSA signature verification func call.
+	ptr[pos + (0x30 >> 2)] = 0xe3a00000;//patch the RSA signature verification func call.
 
-	pos = 0;
-	if(RUNNINGFWVER==0x37)pos = 0x18;
+	while(1)
+	{
+		if((ptr[pos] & ~0xFFFFF) == 0xe2700000)break;//"rsbs"
+		pos++;
+	}
 
-	ptr[(0x594 + pos)>>2] = 0xe3a00000;//patch the func-call which reads the encrypted ncch firm data.
-	//*((u32*)0x8087048) = 0xe1a00000;//patch out the fs_closefile() func-call.
-	ptr[(0x5D0 + pos)>>2] = 0xe1a00000;//patch out the func-call which is immediately after the fs_closefile call. (FS shutdown stuff)
+	ptr[pos + (0x34 >> 2)] = 0xe3a00000;//patch the func-call which reads the encrypted ncch firm data.
+	ptr[pos + ((0x34+0x3c) >> 2)] = 0xe1a00000;//patch out the func-call which is immediately after the fs_closefile call. (FS shutdown stuff)
 
 	svcFlushProcessDataCache(ptr, 0x630);
-
-	/*ptr = (u32*)0x8086a2c;//FWVER 0x1F
-	if(RUNNINGFWVER==0x2E)ptr = (u32*)0x8085488;
-	*ptr = 0xe1a00000;//nop "mov r0, r0" (FS shutdown function called by main() right before the launch_firm() call at the end of main())
-	svcFlushProcessDataCache(ptr, 0x4);*/
 
 	init_arm9patchcode3();
 
@@ -214,8 +223,6 @@ void patch_proc9_launchfirm()
 	//if(*((u32*)0x01ffcd00) == 0)*((u32*)0x01ffcd00) |= 1;
 
 	svcFlushProcessDataCache((u32*)0x80ff000, 0xc00);
-
-	//memset(framebuf_addr, 0x80808080, 0x46500*2);
 }
 
 /*void get_kernelmode_sp()
@@ -1162,7 +1169,6 @@ int main(void)
 	{
 		if((*((vu16*)0x10146000) & 0x100) == 0)//button R
 		{
-			loadfile_charpath("/x01ffb800.bin", (u32*)0x01ffb800, 0x4800);
 			FIRMLAUNCH_CLEARPARAMS = 1;
 			patch_proc9_launchfirm();
 			//load_arm11code(NULL, 0, 0x707041727443LL);
@@ -1192,19 +1198,16 @@ int main(void)
 	{
 		if(FIRMLAUNCH_RUNNINGTYPE==2)
 		{
-			#ifdef ENABLENANDREDIR
-			#ifdef ENABLE_LOADA9_x01FFB800
-			loadfile_charpath("/x01ffb800.bin", (u32*)0x01ffb800, 0x4800);
-			#endif
-			#endif
-
 			FIRMLAUNCH_CLEARPARAMS = 1;
 			patch_proc9_launchfirm();
 
 			//Change the configmem UPDATEFLAG value to 1, which then causes NS module to do a FIRM launch, once NS gets loaded.
-			ptr = NULL;
-			while(ptr == NULL)ptr = (u32*)mmutable_convert_vaddr2physaddr(get_kprocessptr(0x697870, 0, 1), 0x1FF80004);
-			*ptr = 1;
+			if(RUNNINGFWVER<0x38)
+			{
+				ptr = NULL;
+				while(ptr == NULL)ptr = (u32*)mmutable_convert_vaddr2physaddr(get_kprocessptr(0x697870, 0, 1), 0x1FF80004);
+				*ptr = 1;
+			}
 		}
 		else if((*((vu16*)0x10146000) & 0x100))//button R not pressed
 		{

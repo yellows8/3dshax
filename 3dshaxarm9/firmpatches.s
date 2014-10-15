@@ -233,6 +233,15 @@ ldr r0, [r0]
 cmp r0, #3
 beq patchfirm_arm9section_L3
 
+#ifdef ENABLENANDREDIR
+#ifdef ENABLE_LOADA9_x01FFB800
+adr r0, filepath_x01ffb800
+ldr r1, =0x01ffb800
+ldr r2, =0x4800
+bl loadfile_charpath
+#endif
+#endif
+
 /*ldr r0, =FIRMLAUNCH_FWVER
 ldr r0, [r0]
 mov r1, #0x1F
@@ -501,4 +510,8 @@ svc 0x7b
 arm9launchfirm_end:
 b arm9launchfirm_end
 .pool*/
+
+filepath_x01ffb800:
+.string "/x01ffb800.bin"
+.align 2
 

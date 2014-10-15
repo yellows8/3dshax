@@ -61,5 +61,6 @@ Some of the codebase automatically determines what addresses to patch on-the-fly
 ## Code and patches where the addresses are automatically determined on-the-fly
 * NAND->SD redirection
 * Process9 patch for hooking code called from Process9 main(), for getting code execution after FIRM-launch under Process9.
+* Process9 FIRM-launch patches(for the function called by main()).
 * ...
 

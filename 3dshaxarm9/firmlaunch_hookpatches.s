@@ -18,12 +18,12 @@ blx r3
 .pool
 //.arm
 
-#ifdef ENABLE_FIRMBOOT
+/*#ifdef ENABLE_FIRMBOOT
 arm9_stub2:
 ldr pc, =arm9_debugcode2
 //bx r0
 .pool
-#endif
+#endif*/
 
 arm9_debugcode:
 push {r0, r1, r2, r3, r4, lr}
@@ -32,57 +32,6 @@ sub sp, sp, #12
 /*ldr r0, =0x20000000
 ldr r1, =0x1000
 bl dumpmem*/
-
-//ldr r0, =0x08028000
-//ldr r1, =0xD8000
-//bl dumpmem
-/*ldr r0, =0x20703000
-ldr r1, [r0]
-add r0, r0, #4
-add r0, r0, r1
-ldr r2, [r4, #12]
-str r2, [r0]
-
-ldr r2, [r4, #8]
-ldr r2, [r2]
-ldr r2, [r2, #0x6c]
-str r2, [r0, #4]
-
-ldr r0, =0x20703000
-ldr r1, [r0]
-add r1, r1, #8
-str r1, [r0]
-
-ldr r0, =0x20703000
-ldr r1, [r0]
-add r0, r0, #4
-add r0, r0, r1
-mov r1, r5
-mov r2, r6
-bl memcpy
-ldr r0, =0x20703000
-ldr r1, [r0]
-add r1, r1, r6
-str r1, [r0]*/
-
-/*ldr r0, =0x20000000
-mov r1, #0x400000
-bl dumpmem*/
-
-/*mov r0, #0 @ RSA keyslot
-mov r1, #2048 @ RSA bitsize
-ldr r2, =rsamodulo_slot0 @ modulo
-mov r3, #3 @ exponent
-blx rsaengine_setpubk*/
-//mvn r2, #0
-mov r2, #0
-ldr r0, =0x01ffcd00
-ldr r1, [r0]
-cmp r1, #0
-strne r2, [r0, #0]
-strne r2, [r0, #4]
-strne r2, [r0, #8]
-strne r2, [r0, #12]
 
 ldr r0, =sdarchive_obj
 ldr r0, [r0]
@@ -189,6 +138,20 @@ ldr r1, =0x13333337
 ldr r2, =0x600000//=0x800000//0x38400
 bl memset*/
 
+/*mov r0, #0 @ RSA keyslot
+mov r1, #2048 @ RSA bitsize
+ldr r2, =rsamodulo_slot0 @ modulo
+mov r3, #3 @ exponent
+blx rsaengine_setpubk*/
+mov r2, #0
+ldr r0, =0x01ffcd00
+ldr r1, [r0]
+cmp r1, #0
+strne r2, [r0, #0]
+strne r2, [r0, #4]
+strne r2, [r0, #8]
+strne r2, [r0, #12]
+
 add sp, sp, #12
 pop {r0, r1, r2, r3, r4, lr}
 add lr, lr, #4
@@ -203,7 +166,7 @@ b arm9_debugcode_failend
 .pool
 
 #ifdef ENABLE_FIRMBOOT
-arm9_debugcode2:
+/*arm9_debugcode2:
 push {r0, r1, r2, r3, lr}
 ldr r0, =0x20000000//0x203a02b0
 //mov r1, #0
@@ -217,7 +180,7 @@ mov r1, r2
 ldr pc, =0x80ff914
 arm9_debugcode2_end:
 b arm9_debugcode2_end
-.pool
+.pool*/
 
 init_arm9patchcode3:
 push {r4, r5, lr}
@@ -227,7 +190,7 @@ ldr r0, =RUNNINGFWVER
 ldr r1, =0x2E
 ldr r0, [r0]
 cmp r0, r1
-moveq r5, #4
+movge r5, #4
 
 ldr r0, =0x80ff6f8
 add r0, r0, r5
@@ -287,10 +250,10 @@ bgt arm9_patchcode3_copylp
 arm9_patchcode3_copyend:
 mov r2, #0
 ldr r0, =RUNNINGFWVER
-ldr r1, =0x2E
+mov r1, #0x2E
 ldr r0, [r0]
 cmp r0, r1
-moveq r2, #4
+movge r2, #4
 
 ldr r0, =0x80ff8f8
 add r0, r0, r2
@@ -336,6 +299,5 @@ pop {r4, pc}
 
 firmbin_filepath:
 .hword 0x2F, 0x66, 0x69, 0x72, 0x6D, 0x2E, 0x62, 0x69, 0x6E, 0x00 //UTF-16 "/firm.bin"
-
 .align 2
 

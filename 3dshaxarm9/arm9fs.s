@@ -50,6 +50,8 @@ cmp r2, #0x30
 ldreq r4, =0x08062719
 cmp r2, #0x37
 ldreq r4, =0x08062915
+cmp r2, #0x38
+ldreq r4, =0x080628b1
 ldr r0, =0x29
 add r1, r0, #1
 cmp r2, r0
@@ -82,6 +84,9 @@ str r0, [sp, #4]
 ldr r2, =RUNNINGFWVER
 ldr r2, [r2]
 
+mov r5, #0
+mov r4, r5
+
 cmp r2, #0x1F
 ldreq r5, =0x080d93f8/*0x0809797c*/ @ pxifs state
 ldreq r4, =0x8061451 @ mntsd archive funcptr
@@ -100,6 +105,9 @@ ldreq r4, =0x0805eb7d
 cmp r2, #0x37
 ldreq r5, =0x080d8c20
 ldreq r4, =0x0805ed7d
+cmp r2, #0x38
+ldreq r5, =0x080d8ce0
+ldreq r4, =0x0805ed11
 
 ldr r0, =0x29
 add r1, r0, #1
@@ -108,10 +116,9 @@ cmpne r2, r1
 ldreq r5, =0x080d8be0
 ldreq r4, =0x0805ecbd
 
-/*mvn r3, #0
-ldr r5, [r5]
+mvn r3, #0
 cmp r5, #0
-beq fs_initialize_end*/
+beq fs_initialize_end
 
 add r5, r5, #8 @ r5 = state
 ldr r0, =pxifs_state
@@ -224,6 +231,9 @@ beq fs_getvtableptr_rw_end
 cmp r1, #0x37
 ldreq r0, =0x08091368
 beq fs_getvtableptr_rw_end
+cmp r1, #0x38
+ldreq r0, =0x080911c4
+beq fs_getvtableptr_rw_end
 ldr r2, =0x29
 add r3, r2, #1
 cmp r1, r2
@@ -252,6 +262,9 @@ ldreq r0, =0x08091038
 beq fs_getvtableptr_rw_end
 cmp r1, #0x37
 ldreq r0, =0x08091330
+beq fs_getvtableptr_rw_end
+cmp r1, #0x38
+ldreq r0, =0x0809118c
 beq fs_getvtableptr_rw_end
 ldr r2, =0x29
 add r3, r2, #1
