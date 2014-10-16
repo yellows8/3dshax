@@ -299,7 +299,7 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 	}
 	#endif
 
-	/*#ifdef DISABLE_GAMECARDUPDATE//Patch the ns:s cmd7 code so that result-code 0xc821180b is always returned, indicating that no gamecard sysupdate installation is needed. This is required for launching gamecards from other regions. This is commented-out since launching the title with this breaks title-launch.
+	#ifdef DISABLE_GAMECARDUPDATE//Patch the ns:s cmd7 code so that result-code 0xc821180b is always returned, indicating that no gamecard sysupdate installation is needed. This is required for launching gamecards from other regions.
 	if(procname==0x736e)//"ns"
 	{
 		ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x10000000);
@@ -311,14 +311,35 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 		ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x10000000 + (ptr2[0x7] - 0x00100000));//ptr = code for handling ns:s cmd7
 		if(ptr==NULL)return;
 
-		ptr2 = &ptr[0x1c>>2];
-		ptr2[0] = 0xe59f0000;//ldr r0, [pc, #0]
-		ptr2[1] = 0xea000001;//branch to the instruction following the func-call.
-		ptr2[2] = 0xc821180b;
+		ptr2 = (u32*)parse_branch(ptr2[0x7] + 0x28, ptr[0x28>>2]);
+		ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x10000000 + (((u32)ptr2) - 0x00100000));//ptr = function for handling ns:s cmd7
+		if(ptr==NULL)return;
+
+		pos2 = 0;
+		for(pos=0; pos<0x40; pos++)//Locate the "bne" instruction.
+		{
+			if((ptr[pos] & ~0xff) == 0x1a000000)
+			{
+				pos2 = pos;
+				break;
+			}
+		}
+
+		if(pos2)
+		{
+			pos2++;
+			ptr2 = (u32*)parse_branch(((u32)ptr2) + (pos2<<2), ptr[pos2]);
+			ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x10000000 + (((u32)ptr2) - 0x00100000));//ptr = physaddr of the function code called immediately after the above bne instruction.
+			if(ptr==NULL)return;
+
+			ptr[0] = 0xe59f0000;//ldr r0, [pc, #0]
+			ptr[1] = 0xe12fff1e;//"bx lr"
+			ptr[2] = 0xc821180b;
+		}
 
 		return;
 	}
-	#endif*/
+	#endif
 
 	if(procname==0x45454154)//"TAEE", NES VC for TLoZ.
 	{
