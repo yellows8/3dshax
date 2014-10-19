@@ -4,7 +4,7 @@ ENTRY(_start)
 
 MEMORY {
 
-	memregion	: ORIGIN = 0x01ff8000, LENGTH = 14K
+	memregion	: ORIGIN = 0x20008000, LENGTH = 14K
 }
 
 /* 0x01ff8000 14K */

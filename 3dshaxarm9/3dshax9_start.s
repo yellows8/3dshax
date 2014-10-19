@@ -187,19 +187,30 @@ pop {r4, pc}
 .pool
 
 parse_configmem_firmversion:
+push {r4, lr}
 and r3, r0, #0xff @ FIRM_VERSIONMINOR
 lsr r1, r0, #8 @ FIRM_VERSIONMAJOR
 lsr r2, r0, #16 @ FIRM_SYSCOREVER
 and r1, r1, #0xff
 and r2, r2, #0xff
+mov r4, r0
 mov r0, #1
 
 cmp r1, #2 @ Return error when FIRM_VERSIONMAJOR!=2.
-bxne lr
+popne {r4, pc}
 cmp r2, #2 @ Return error when FIRM_SYSCOREVER!=2.
-bxne lr
+popne {r4, pc}
 cmp r3, #27 @ Return error when FIRM_VERSIONMINOR<27, should never happen on retail.
-bxlt lr
+poplt {r4, pc}
+
+lsr r4, r4, #30
+and r4, r4, #1
+cmp r4, #1
+moveq r0, r1 @ FIRM_VERSIONMAJOR
+moveq r1, r2 @ FIRM_SYSCOREVER
+moveq r2, r3 @ FIRM_VERSIONMINOR
+popeq {r4, lr}
+beq parse_configmem_firmversion_new3ds
 
 ldr r1, =FIRM_contentid_totalversions
 ldr r1, [r1]
@@ -212,7 +223,7 @@ cmp r3, #16
 subge r3, r3, #1
 
 cmp r3, r1
-bxge lr
+popge {r4, pc}
 
 ldr r0, =FIRM_contentid_versions
 ldrb r0, [r0, r3]
@@ -221,6 +232,11 @@ ldr r1, =RUNNINGFWVER
 str r0, [r1]
 
 mov r0, #0
+pop {r4, pc}
+.pool
+
+parse_configmem_firmversion_new3ds: @ r0=FIRM_VERSIONMAJOR, r1=FIRM_SYSCOREVER, r2=FIRM_VERSIONMINOR
+mov r0, #1
 bx lr
 .pool
 

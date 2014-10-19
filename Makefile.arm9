@@ -27,6 +27,8 @@ DATA		:=	data
 #---------------------------------------------------------------------------------
 DEFINES	:=	
 
+LDNAME	:=	3dshaxarm9.ld
+
 ifeq ($(strip $(DISABLEAES)),)
 	DEFINES	:=	$(DEFINES) -DENABLEAES
 endif
@@ -115,6 +117,11 @@ ifneq ($(strip $(NANDREDIR_SECTORNUM)),)
 	DEFINES	:=	$(DEFINES) -DNANDREDIR_SECTORNUM_=$(NANDREDIR_SECTORNUM)
 endif
 
+ifneq ($(strip $(NEW3DS)),)
+	DEFINES	:=	$(DEFINES) -DNEW3DS
+	LDNAME	:=	3dshaxarm9new3ds.ld
+endif
+
 ARCH	:=	-mthumb -mthumb-interwork
 
 CFLAGS	:=	-g -Wall -Os\
@@ -126,7 +133,7 @@ CFLAGS	+=	$(INCLUDE) -DARM9 $(DEFINES)
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions
 
 ASFLAGS	:=	-g $(ARCH) $(DEFINES)
-LDFLAGS	=	-nostartfiles -T../3dshaxarm9.ld -g $(ARCH) -Wl,-Map,$(notdir $*.map)
+LDFLAGS	=	-nostartfiles -T../$(LDNAME) -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project (order is important)
