@@ -239,11 +239,17 @@ pop {r4, r5, pc}
 .pool
 
 parse_configmem_firmversion_new3ds: @ r0=FIRM_VERSIONMAJOR, r1=FIRM_SYSCOREVER, r2=FIRM_VERSIONMINOR, r3=original FIRM arm9 entrypoint
-push {lr}
-cmp r2, #45 @ v8.1
-bleq new3ds_hookloader_entrypoint
+push {r4, r5, lr}
+ldr r4, =RUNNINGFWVER
+mov r5, #1
+lsl r5, r5, #30
+orr r5, r5, r2
+str r5, [r4] @ RUNNINGFWVER = 0x40000000 | FIRM_VERSIONMINOR
+
+bl new3ds_hookloader_entrypoint
+
 mov r0, #1
-pop {pc}
+pop {r4, r5, pc}
 .pool
 
 new3ds_hookloader_entrypoint: @ Hook the new3ds entrypoint word in the arm9bin loader.
@@ -296,38 +302,110 @@ bx lr
 .pool
 
 new3ds_plaintextbin_entrypoint_stubstart:
+#ifdef NEW3DS_MEMDUMPA9_ADR
+#ifndef NEW3DS_MEMDUMPA9_SIZE
+#error "The NEW3DS_MEMDUMPA9_SIZE option is required when using NEW3DS_MEMDUMPA9_ADR."
+#endif
 ldr r0, =new3ds_entrypointhookword
 ldr r0, [r0]
 mov lr, r0
 b new3ds_dumpmema9
+#else
+ldr r0, =new3ds_entrypointhookword
+ldr r0, [r0]
+bx r0
+#endif
 .pool
 
+#ifdef NEW3DS_MEMDUMPA9_ADR
 new3ds_dumpmema9:
-//This code is disabled since the below kernel patch doesn't actually work without breaking system boot.
-/*mrc 15, 0, r0, cr1, cr0, 0 @ Disable MPU.
+mrc 15, 0, r0, cr1, cr0, 0 @ Disable MPU.
 bic r0, r0, #1
 mcr 15, 0, r0, cr1, cr0, 0
 
-ldr r1, =0x1FF80000 @ Patch the kernel heap structure init function so that it doesn't clear the heap.
-ldr r0, =0x13dcc
+ldr r1, =0x1FF80000 @ Patch the arm11kernel main() wfi loop, with the below arm11stub.
+ldr r2, =0xe320f003 @ "wfi"
+mov r3, #0
+
+new3ds_dumpmema9_locatewfi:
+ldr r0, [r1, r3]
+cmp r0, r2
+addne r3, r3, #4
+bne new3ds_dumpmema9_locatewfi
+
+sub r3, r3, #8
+mov r0, r3
 add r0, r0, r1
-mov r2, #0
-ldr r2, [r0]
 
-ldr r0, =0x22001000
-ldr r1, =0x58584148
-ldr r2, =0x200000
+adr r2, new3ds_plaintextbin_entrypoint_stub_arm11stub
+ldr r3, [r2, #0]
+str r3, [r0, #0]
+ldr r3, [r2, #4]
+str r3, [r0, #4]
+ldr r3, [r2, #8]
+str r3, [r0, #8]
 
-new3ds_dumpmema9_memclr:
-str r1, [r0], #4
+ldr r0, =0x2dc68
+add r0, r0, r1
+adr r1, new3ds_plaintextbin_entrypoint_stub_arm11code
+adr r2, new3ds_plaintextbin_entrypoint_stub_arm11code_end
+
+new3ds_dumpmema9_arm11codecpy:
+ldr r3, [r1], #4
+str r3, [r0], #4
+cmp r1, r2
+blt new3ds_dumpmema9_arm11codecpy
+
+ldr r0, =0x18000000
+ldr r1, =NEW3DS_MEMDUMPA9_ADR
+ldr r2, =NEW3DS_MEMDUMPA9_SIZE
+
+new3ds_dumpmema9_memcpy:
+ldr r3, [r1], #4
+str r3, [r0], #4
 subs r2, r2, #4
-bgt new3ds_dumpmema9_memclr
+bgt new3ds_dumpmema9_memcpy
 
 mrc 15, 0, r0, cr1, cr0, 0 @ Enable MPU.
 orr r0, r0, #1
-mcr 15, 0, r0, cr1, cr0, 0*/
+mcr 15, 0, r0, cr1, cr0, 0
 bx lr
 .pool
+
+new3ds_plaintextbin_entrypoint_stub_arm11stub:
+ldr r0, =0xffff0c68
+blx r0
+.pool
+
+new3ds_plaintextbin_entrypoint_stub_arm11code: @ Copy the entire VRAM to FCRAM+0x02001000.
+mrc 15, 0, r0, cr0, cr0, 5
+and r0, r0, #3
+cmp r0, #0
+bne new3ds_plaintextbin_entrypoint_stub_arm11code_lp
+
+ldr r0, =0xd8000000
+ldr r1, =0xe2001000
+ldr r2, =0x600000
+
+new3ds_plaintextbin_entrypoint_stub_arm11code_cpylp:
+ldr r3, [r0], #4
+str r3, [r1], #4
+subs r2, r2, #4
+bgt new3ds_plaintextbin_entrypoint_stub_arm11code_cpylp
+
+mov r0, #0
+mcr p15, 0, r0, c7, c14, 0 @ "Clean and Invalidate Entire Data Cache"
+mcr p15, 0, r0, c7, c10, 5 @ "Data Memory Barrier"
+mcr p15, 0, r0, c7, c10, 4 @ "Data Synchronization Barrier"
+
+new3ds_plaintextbin_entrypoint_stub_arm11code_lp:
+.word 0xe320f003 @ "wfi", use .word here instead of the actual instruction this .s is under armv5.
+b new3ds_plaintextbin_entrypoint_stub_arm11code_lp
+.pool
+
+new3ds_plaintextbin_entrypoint_stub_arm11code_end:
+.word 0
+#endif
 
 new3ds_plaintextbin_entrypoint_stubend:
 .word 0

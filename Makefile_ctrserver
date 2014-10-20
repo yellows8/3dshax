@@ -88,6 +88,14 @@ ifneq ($(strip $(NEW3DS)),)
 	PARAMS	:=	$(PARAMS) NEW3DS=1
 endif
 
+ifneq ($(strip $(NEW3DS_MEMDUMPA9_ADR)),)
+	PARAMS	:=	$(PARAMS) NEW3DS_MEMDUMPA9_ADR=$(NEW3DS_MEMDUMPA9_ADR)
+endif
+
+ifneq ($(strip $(NEW3DS_MEMDUMPA9_SIZE)),)
+	PARAMS	:=	$(PARAMS) NEW3DS_MEMDUMPA9_SIZE=$(NEW3DS_MEMDUMPA9_SIZE)
+endif
+
 .PHONY: clean
 
 all:	3dshax_arm9.bin 3dshax_arm11_ctrserver.bin

@@ -122,6 +122,14 @@ ifneq ($(strip $(NEW3DS)),)
 	LDNAME	:=	3dshaxarm9new3ds.ld
 endif
 
+ifneq ($(strip $(NEW3DS_MEMDUMPA9_ADR)),)
+	DEFINES	:=	$(DEFINES) -DNEW3DS_MEMDUMPA9_ADR=$(NEW3DS_MEMDUMPA9_ADR)
+endif
+
+ifneq ($(strip $(NEW3DS_MEMDUMPA9_SIZE)),)
+	DEFINES	:=	$(DEFINES) -DNEW3DS_MEMDUMPA9_SIZE=$(NEW3DS_MEMDUMPA9_SIZE)
+endif
+
 ARCH	:=	-mthumb -mthumb-interwork
 
 CFLAGS	:=	-g -Wall -Os\
