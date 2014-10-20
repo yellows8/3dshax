@@ -357,6 +357,18 @@ cmp r1, r2
 blt new3ds_dumpmema9_arm11codecpy
 
 ldr r0, =0x18000000
+#ifndef NEW3DS_MEMDUMPA9_DISABLEVRAMCLR
+ldr r1, =0x600000
+mov r2, #0
+mov r3, r2
+
+new3ds_dumpmema9_memclr:
+str r3, [r0, r2]
+add r2, r2, #4
+subs r1, r1, #4
+bgt new3ds_dumpmema9_memclr
+#endif
+
 ldr r1, =NEW3DS_MEMDUMPA9_ADR
 ldr r2, =NEW3DS_MEMDUMPA9_SIZE
 
