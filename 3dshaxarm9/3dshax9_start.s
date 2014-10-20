@@ -165,6 +165,7 @@ ldr r0, [r0]
 lsr r1, r0, #31
 cmp r1, #0
 beq startcode_type3_patchstart
+mov r1, lr
 bl parse_configmem_firmversion
 cmp r0, #0
 popne {r4, pc}
@@ -187,7 +188,8 @@ pop {r4, pc}
 .pool
 
 parse_configmem_firmversion:
-push {r4, lr}
+push {r4, r5, lr}
+mov r5, r1
 and r3, r0, #0xff @ FIRM_VERSIONMINOR
 lsr r1, r0, #8 @ FIRM_VERSIONMAJOR
 lsr r2, r0, #16 @ FIRM_SYSCOREVER
@@ -197,11 +199,11 @@ mov r4, r0
 mov r0, #1
 
 cmp r1, #2 @ Return error when FIRM_VERSIONMAJOR!=2.
-popne {r4, pc}
+popne {r4, r5, pc}
 cmp r2, #2 @ Return error when FIRM_SYSCOREVER!=2.
-popne {r4, pc}
+popne {r4, r5, pc}
 cmp r3, #27 @ Return error when FIRM_VERSIONMINOR<27, should never happen on retail.
-poplt {r4, pc}
+poplt {r4, r5, pc}
 
 lsr r4, r4, #30
 and r4, r4, #1
@@ -209,7 +211,8 @@ cmp r4, #1
 moveq r0, r1 @ FIRM_VERSIONMAJOR
 moveq r1, r2 @ FIRM_SYSCOREVER
 moveq r2, r3 @ FIRM_VERSIONMINOR
-popeq {r4, lr}
+moveq r3, r5
+popeq {r4, r5, lr}
 beq parse_configmem_firmversion_new3ds
 
 ldr r1, =FIRM_contentid_totalversions
@@ -223,7 +226,7 @@ cmp r3, #16
 subge r3, r3, #1
 
 cmp r3, r1
-popge {r4, pc}
+popge {r4, r5, pc}
 
 ldr r0, =FIRM_contentid_versions
 ldrb r0, [r0, r3]
@@ -232,13 +235,102 @@ ldr r1, =RUNNINGFWVER
 str r0, [r1]
 
 mov r0, #0
-pop {r4, pc}
+pop {r4, r5, pc}
 .pool
 
-parse_configmem_firmversion_new3ds: @ r0=FIRM_VERSIONMAJOR, r1=FIRM_SYSCOREVER, r2=FIRM_VERSIONMINOR
+parse_configmem_firmversion_new3ds: @ r0=FIRM_VERSIONMAJOR, r1=FIRM_SYSCOREVER, r2=FIRM_VERSIONMINOR, r3=original FIRM arm9 entrypoint
+push {lr}
+cmp r2, #45 @ v8.1
+bleq new3ds_hookloader_entrypoint
 mov r0, #1
+pop {pc}
+.pool
+
+new3ds_hookloader_entrypoint: @ Hook the new3ds entrypoint word in the arm9bin loader.
+ldr r1, =0x080ff000
+ldr r2, =0x0801B01C
+
+new3ds_hookloader_entrypoint_lp:
+ldr r0, [r3]
+cmp r0, r2
+beq new3ds_hookloader_entrypoint_finish
+add r3, r3, #4
+cmp r3, r1
+bge new3ds_hookloader_entrypoint_end
+b new3ds_hookloader_entrypoint_lp
+
+new3ds_hookloader_entrypoint_finish:
+str r0, new3ds_entrypointhookword
+ldr r2, =0x08098000
+str r2, [r3]
+
+ldr r1, =0x08006800
+ldr r2, =0xe12fff12 @ "bx r2"
+
+new3ds_hookloader_entrypoint_lp2:
+ldr r0, [r3]
+cmp r0, r2
+beq new3ds_hookloader_entrypoint_finish2
+sub r3, r3, #4
+cmp r3, r1
+ble new3ds_hookloader_entrypoint_end
+b new3ds_hookloader_entrypoint_lp2
+
+new3ds_hookloader_entrypoint_finish2:
+sub r3, r3, #8
+mov r0, #0
+str r0, [r3] @ Patch the branch executed when the plaintext binary entrypoint address is out-of-bounds.
+
+ldr r2, =0x08098000
+adr r0, new3ds_plaintextbin_entrypoint_stubstart
+adr r1, new3ds_plaintextbin_entrypoint_stubend
+
+new3ds_hookloader_entrypoint_cpylp: @ No need to do anything with dcache since the arm9bin loader does that anyway.
+ldr r3, [r0], #4
+str r3, [r2], #4
+cmp r0, r1
+blt new3ds_hookloader_entrypoint_cpylp
+
+new3ds_hookloader_entrypoint_end:
 bx lr
 .pool
+
+new3ds_plaintextbin_entrypoint_stubstart:
+ldr r0, =new3ds_entrypointhookword
+ldr r0, [r0]
+mov lr, r0
+b new3ds_dumpmema9
+.pool
+
+new3ds_dumpmema9:
+//This code is disabled since the below kernel patch doesn't actually work without breaking system boot.
+/*mrc 15, 0, r0, cr1, cr0, 0 @ Disable MPU.
+bic r0, r0, #1
+mcr 15, 0, r0, cr1, cr0, 0
+
+ldr r1, =0x1FF80000 @ Patch the kernel heap structure init function so that it doesn't clear the heap.
+ldr r0, =0x13dcc
+add r0, r0, r1
+mov r2, #0
+ldr r2, [r0]
+
+ldr r0, =0x22001000
+ldr r1, =0x58584148
+ldr r2, =0x200000
+
+new3ds_dumpmema9_memclr:
+str r1, [r0], #4
+subs r2, r2, #4
+bgt new3ds_dumpmema9_memclr
+
+mrc 15, 0, r0, cr1, cr0, 0 @ Enable MPU.
+orr r0, r0, #1
+mcr 15, 0, r0, cr1, cr0, 0*/
+bx lr
+.pool
+
+new3ds_plaintextbin_entrypoint_stubend:
+.word 0
 
 ioDelay:
   subs r0, #1
@@ -886,6 +978,9 @@ FIRM_contentid_totalversions:
 
 FIRMLAUNCH_CLEARPARAMS:
 .word 1
+
+new3ds_entrypointhookword:
+.word 0
 
 /*twlbootldrenc_arm7:
 //.incbin "../twlbootldrenc_arm7.bin"
