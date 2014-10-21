@@ -111,6 +111,11 @@ add r5, r5, #8 @ r5 = state
 ldr r0, =pxifs_state
 str r5, [r0]
 
+bl initializeptr_pxifsopenarchive
+mov r3, r0
+cmp r0, #0
+bne fs_initialize_end
+
 mov r3, #0
 cmp r7, #0
 bne fs_initialize_end
@@ -413,26 +418,8 @@ pxifs_openarchive: @ inr0=ptr where the archiveobj* will be written, inr1=archiv
 push {r0, r1, r2, r3, r4, r5, lr}
 sub sp, sp, #24
 
-ldr r2, =RUNNINGFWVER
-ldr r2, [r2]
-cmp r2, #0x1F
-ldreq r4, =0x0805d8fd @ pxifs_openarchive
-cmp r2, #0x25
-cmpne r2, #0x26
-ldreq =0x0805bd7d
-cmp r2, #0x2E
-ldreq r4, =0x0805b835
-cmp r2, #0x30
-ldreq r4, =0x0805b839
-cmp r2, #0x37
-ldreq r4, =0x0805ba1d
-cmp r2, #0x38
-ldreq r4, =0x0805b9b5
-ldr r0, =0x29
-add r1, r0, #1
-cmp r2, r0
-cmpne r2, r1
-ldreq r4, =0x0805ba31
+ldr r4, =pxifsopenarchive_adr
+ldr r4, [r4]
 
 mov r0, #0
 str r0, [sp, #0]
@@ -460,4 +447,63 @@ add sp, sp, #24
 add sp, sp, #16
 pop {r4, r5, pc}
 .pool
+
+initializeptr_pxifsopenarchive:
+push {r4, r5, r6, r7, lr}
+sub sp, sp, #12
+
+mvn r4, #0
+
+mov r0, #1 @ Locate the pxifs cmdhandler jump-table.
+str r0, [sp]
+ldr r0, =0x08028000
+ldr r1, =(0x000ff000-0x28000)
+adr r2, pxifs_cmdhandler_poolcmpdata
+mov r3, #7
+bl locate_cmdhandler_code
+cmp r0, #0
+beq initializeptr_pxifsopenarchive_end
+
+mov r1, #0x12
+lsl r1, r1, #2
+ldr r0, [r0, r1] @ r0 = jump-addr in the pxifs cmdhandler for cmd 0x12, OpenArchive.
+
+ldr r1, =0x080ff000
+
+initializeptr_pxifsopenarchive_lp: @ Locate the pxifs_openarchive blx instruction.
+ldr r2, [r0]
+lsr r2, r2, #24
+cmp r2, #0xfa
+bne initializeptr_pxifsopenarchive_lpnext
+b initializeptr_pxifsopenarchive_lpend
+
+initializeptr_pxifsopenarchive_lpnext:
+add r0, r0, #4
+cmp r0, r1
+blt initializeptr_pxifsopenarchive_lp
+
+mvn r4, #1
+b initializeptr_pxifsopenarchive_end
+
+initializeptr_pxifsopenarchive_lpend:
+mov r1, #0
+bl parse_branch
+
+ldr r1, =pxifsopenarchive_adr
+orr r0, r0, #1
+str r0, [r1]
+
+mov r4, #0
+
+initializeptr_pxifsopenarchive_end:
+mov r0, r4
+add sp, sp, #12
+pop {r4, r5, r6, r7, pc}
+.pool
+
+pxifs_cmdhandler_poolcmpdata:
+.word 0xd9001830, 0x000101c2, 0xe0e046be, 0x000100c1, 0x00020142, 0x00020041, 0x00030244
+
+pxifsopenarchive_adr:
+.word 0
 

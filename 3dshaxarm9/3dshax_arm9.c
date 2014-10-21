@@ -984,36 +984,13 @@ void thread_entry()
 
 	//axiwram[0x9608>>2] = (axiwram[0x9608>>2] & ~(0xff<<24)) | 0xea000000;//Patch the conditional branch to an unconditional branch, for the check in svcCreateMemoryBlock which normally returns an error when memorytype==application.
 
-	if(RUNNINGFWVER==0x1F)
+	if(RUNNINGFWVER==0x2E)
 	{
-		//*((u32*)0x8087a50) = (u32)pxidev_cmdhandler_cmd0;//Patch the jump-addr used for "pxi:dev" cmd0.
-		//svcFlushProcessDataCache((u32*)0x8087a50, 0x4);
-		
-		//*((u16*)0x0803e88e) = 0x2002;//"mov r0, #2"
-		//svcFlushProcessDataCache((u32*)0x0803e88c, 0x4);//Patch the pxipm opentitle code checking exheader_systeminfoflags.flag bit1: instead of loading the flag from exheader, the value for that is always set to value 2 with this.
-
-		//arm9_pxipmcmd1_getexhdr_writepatch(0x0803ea5c);
-
-		//axiwram[0x1a008>>2] = 0xE1200070;//Patch the first word in the ARM11 kernelpanic function, with: "bkpt #0"
-		//axiwram[0x67dc>>2] = 0xE1200070;//Same as above except for kernelpanic_assert.
-	}
-	else if(RUNNINGFWVER==0x2E)
-	{
-		//*((u32*)0x8086560) = (u32)pxidev_cmdhandler_cmd0;
-		//svcFlushProcessDataCache((u32*)0x8086560, 0x4);
-
-		//*((u16*)0x0803e602) = 0x2002;
-		//svcFlushProcessDataCache((u32*)0x0803e600, 0x4);//pxipm opentitle sd-flag check patch
-
-		//arm9_pxipmcmd1_getexhdr_writepatch(0x0803e7d0);
-
 		*((u16*)0x0805ed34) |= 1;
 		svcFlushProcessDataCache((u32*)0x0805ed34, 0x4);//Patch the code which reads the arm9 access-control mount flags, so that all of these archives are accessible.
 
 		//arm9general_debughook_writepatch(0x0802ea90);//Hook the gamecard v6.0 savegame keyY init code for debug.
 		//arm9general_debughook_writepatch(0x0807b49c);
-
-		//axiwram[0x1af2c>>2] = 0xE1200070;//ARM11 kernelpanic function patch. Note that the "kernelpanic_assert" function doesn't exist here.
 
 		//axiwram[0x1b6f8>>2] = ~0;
 
@@ -1023,15 +1000,8 @@ void thread_entry()
 	}
 	else if(RUNNINGFWVER==0x30)
 	{
-		//*((u32*)0x8086564) = (u32)pxidev_cmdhandler_cmd0;
-		//svcFlushProcessDataCache((u32*)0x8086564, 0x4);
-
-		//arm9_pxipmcmd1_getexhdr_writepatch(0x0803e7d0);
-
 		*((u16*)0x0805ed38) |= 1;
 		svcFlushProcessDataCache((u32*)0x0805ed38, 0x4);//Patch the code which reads the arm9 access-control mount flags, so that all of these archives are accessible.
-
-		//axiwram[0x1af28>>2] = 0xE1200070;//ARM11 kernelpanic function patch.
 	}
 	else if(RUNNINGFWVER==0x37)
 	{
