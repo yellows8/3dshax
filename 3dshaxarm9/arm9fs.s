@@ -159,48 +159,20 @@ initialize_nandarchiveobj:
 push {r4, r5, lr}
 sub sp, sp, #12
 
-ldr r2, =RUNNINGFWVER
-ldr r2, [r2]
-cmp r2, #0x1F
-ldreq r4, =0x080590b5
-moveq r3, #0
-cmp r2, #0x2E
-ldreq r4, =0x08055d29
-moveq r3, #1
-cmp r2, #0x30
-ldreq r4, =0x08055d2d
-moveq r3, #1
-cmp r2, #0x37
-ldreq r4, =0x08055f05
-moveq r3, #1
-ldr r0, =0x29
-add r1, r0, #1
-cmp r2, r0
-cmpne r2, r1
-ldreq r4, =0x08055de1
-moveq r3, #1
+mov r0, #1
+str r0, [sp, #0]
+str sp, [sp, #4]
+str r0, [sp, #8]
 
-ldr r0, =pxifs_state
-ldr r0, [r0]
-ldr r1, =0x2de8
-add r0, r0, r1
-mov r1, sp
-ldr r2, =0x567890ab
-mov r5, #0
-str r5, [sp, #0]
-str r5, [sp, #4]
-
-blx r4 @ archive_mountnand
-
-cmp r0, #0
-bne initialize_nandarchiveobj_end
-
-ldr r0, [sp, #0]
-ldr r1, [sp, #4]
-bl getarchiveclass_something
-ldr r1, =nandarchive_obj
-str r0, [r1]
 mov r0, #0
+ldr r3, =nandarchive_obj
+ldr r4, [r3]
+cmp r4, #0
+bne initialize_nandarchiveobj_end
+mov r0, r3
+ldr r1, =0x567890ab
+mov r2, sp
+bl pxifs_openarchive
 
 initialize_nandarchiveobj_end:
 add sp, sp, #12

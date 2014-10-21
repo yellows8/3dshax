@@ -37,21 +37,10 @@
 u32 nand_readsector(u32 sector, u32 *outbuf, u32 sectorcount)
 {
 	u32 val;
-	u32 *state;// = (u32*)0x080d77e0;//FWVER 0x1F
-	//u32 (*funcptr)(u32*, u32*, u32, u32, u32);
-	//u32 outclass[2];
+	u32 *state;
 
-	//if(RUNNINGFWVER>=0x2E)state = (u32*)0x080d6f40;
 	val = ((u32)pxifs_state) - 8;
 	state = (u32*)(*((u32*)val));
-
-	/*funcptr = (void*)*((u32*)((*state) + 8));
-
-	outclass[0] = 0x080944c8;//FWVER 0x1F
-	if(RUNNINGFWVER==0x2E)outclass[0] = 0x0809106c;
-	outclass[1] = outbuf;
-
-	return funcptr(state, outclass, 0, sector, sectorcount);*/
 
 	return archive_readsectors(state, outbuf, sectorcount, sector);
 }
