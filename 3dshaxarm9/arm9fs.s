@@ -73,48 +73,35 @@ pop {r4, pc}
 
 fs_initialize:
 push {r4, r5, r6, r7, lr}
-sub sp, sp, #8
+sub sp, sp, #12
 
 mov r7, r0
-
-mov r0, #0
-str r0, [sp, #0]
-str r0, [sp, #4]
 
 ldr r2, =RUNNINGFWVER
 ldr r2, [r2]
 
 mov r5, #0
-mov r4, r5
 
 cmp r2, #0x1F
-ldreq r5, =0x080d93f8/*0x0809797c*/ @ pxifs state
-ldreq r4, =0x8061451 @ mntsd archive funcptr
+ldreq r5, =0x080d93f8 @ pxifs state
 cmp r2, #0x25
 ldreq r5, =0x080d9db8
-ldreq r4, =0x0805ef45
 cmp r2, #0x26
 ldreq r5, =0x080d9cd8
-ldreq r4, =0x0805ef41
 cmp r2, #0x2E
-ldreq r5, =0x080d8b60/*0x080945c4*/
-ldreq r4, =0x805eb79
+ldreq r5, =0x080d8b60
 cmp r2, #0x30
 ldreq r5, =0x080d8b60
-ldreq r4, =0x0805eb7d
 cmp r2, #0x37
 ldreq r5, =0x080d8c20
-ldreq r4, =0x0805ed7d
 cmp r2, #0x38
 ldreq r5, =0x080d8ce0
-ldreq r4, =0x0805ed11
 
 ldr r0, =0x29
 add r1, r0, #1
 cmp r2, r0
 cmpne r2, r1
 ldreq r5, =0x080d8be0
-ldreq r4, =0x0805ecbd
 
 mvn r3, #0
 cmp r5, #0
@@ -128,30 +115,20 @@ mov r3, #0
 cmp r7, #0
 bne fs_initialize_end
 
-ldr r1, =0x2EA0
-add r0, r5, r1
-add r1, sp, #0
-blx r4
+mov r0, #1
+str r0, [sp, #0]
+str sp, [sp, #4]
+str r0, [sp, #8]
 
-mvn r3, #1
-cmp r0, #0
-bne fs_initialize_end
+ldr r0, =sdarchive_obj
+mov r1, #9
+mov r2, sp
+bl pxifs_openarchive
+mov r3, r0
 
-ldr r0, [sp, #0]
-ldr r1, [sp, #4]
-bl getarchiveclass_something
-
-mvn r3, #2
-cmp r0, #0
-beq fs_initialize_end
-
-ldr r1, =sdarchive_obj
-str r0, [r1]
-
-mov r3, #0
 fs_initialize_end:
 mov r0, r3
-add sp, sp, #8
+add sp, sp, #12
 pop {r4, r5, r6, r7, pc}
 .pool
 
@@ -449,6 +426,8 @@ cmp r2, #0x30
 ldreq r4, =0x0805b839
 cmp r2, #0x37
 ldreq r4, =0x0805ba1d
+cmp r2, #0x38
+ldreq r4, =0x0805b9b5
 ldr r0, =0x29
 add r1, r0, #1
 cmp r2, r0
