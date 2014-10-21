@@ -25,52 +25,6 @@
 .type archive_readsectors STT_FUNC
 .type pxifs_openarchive STT_FUNC
 
-getarchiveclass_something: @ inr0/inr1 = u64 archivehandle
-push {r0, r1, r4, lr}
-sub sp, sp, #24
-
-mov r3, #0
-str r3, [sp, #8]
-str r3, [sp, #12]
-str r3, [sp, #16]
-str r3, [sp, #0]
-str r3, [sp, #4]
-
-ldr r2, =RUNNINGFWVER
-ldr r2, [r2]
-cmp r2, #0x1F
-ldreq r4, =0x8063f91
-cmp r2, #0x25
-ldreq r4, =0x08062add
-cmp r2, #0x26
-ldreq r4, =0x08062ad9
-cmp r2, #0x2E
-ldreq r4, =0x8062715
-cmp r2, #0x30
-ldreq r4, =0x08062719
-cmp r2, #0x37
-ldreq r4, =0x08062915
-cmp r2, #0x38
-ldreq r4, =0x080628b1
-ldr r0, =0x29
-add r1, r0, #1
-cmp r2, r0
-cmpne r2, r1
-ldreq r4, =0x08062861
-
-add r0, sp, #8
-ldr r1, =pxifs_state
-ldr r1, [r1]
-ldr r2, [sp, #24]
-ldr r3, [sp, #28]
-blx r4
-
-ldr r0, [sp, #20]
-
-add sp, sp, #32
-pop {r4, pc}
-.pool
-
 fs_initialize:
 push {r4, r5, r6, r7, lr}
 sub sp, sp, #12
@@ -116,6 +70,11 @@ mov r3, r0
 cmp r0, #0
 bne fs_initialize_end
 
+bl initializeptr_getarchiveclass_something
+mov r3, r0
+cmp r0, #0
+bne fs_initialize_end
+
 mov r3, #0
 cmp r7, #0
 bne fs_initialize_end
@@ -135,6 +94,33 @@ fs_initialize_end:
 mov r0, r3
 add sp, sp, #12
 pop {r4, r5, r6, r7, pc}
+.pool
+
+getarchiveclass_something: @ inr0/inr1 = u64 archivehandle
+push {r0, r1, r4, lr}
+sub sp, sp, #24
+
+mov r3, #0
+str r3, [sp, #8]
+str r3, [sp, #12]
+str r3, [sp, #16]
+str r3, [sp, #0]
+str r3, [sp, #4]
+
+ldr r4, =getarchiveclass_something_adr
+ldr r4, [r4]
+
+add r0, sp, #8
+ldr r1, =pxifs_state
+ldr r1, [r1]
+ldr r2, [sp, #24]
+ldr r3, [sp, #28]
+blx r4
+
+ldr r0, [sp, #20]
+
+add sp, sp, #32
+pop {r4, pc}
 .pool
 
 initialize_nandarchiveobj:
@@ -388,7 +374,7 @@ add sp, sp, #8
 pop {pc}
 
 archive_readsectors: @ r0=archiveclass*, r1=buffer, r2=sectorcount, r3=mediaoffset/sector#
-push {r0, r1, r2, r3, r4, r5, lr}
+push {r0, r1, r2, r3, r4, lr}
 sub sp, sp, #24
 
 mov r0, #0
@@ -411,7 +397,7 @@ ldr r4, [r4, #0x8]
 blx r4
 
 add sp, sp, #28
-pop {r1, r2, r3, r4, r5, pc}
+pop {r1, r2, r3, r4, pc}
 .pool
 
 pxifs_openarchive: @ inr0=ptr where the archiveobj* will be written, inr1=archiveid, and inr2=lowpath*
@@ -449,8 +435,7 @@ pop {r4, r5, pc}
 .pool
 
 initializeptr_pxifsopenarchive:
-push {r4, r5, r6, r7, lr}
-sub sp, sp, #12
+push {r4, lr}
 
 mvn r4, #0
 
@@ -497,13 +482,64 @@ mov r4, #0
 
 initializeptr_pxifsopenarchive_end:
 mov r0, r4
-add sp, sp, #12
-pop {r4, r5, r6, r7, pc}
+pop {r4, pc}
+.pool
+
+initializeptr_getarchiveclass_something:
+push {r4, r5, lr}
+
+mvn r4, #0
+
+ldr r0, =0x08028000
+ldr r1, =0x080ff000
+ldr r2, =0x567890ae
+ldr r5, =0x0074002f
+
+initializeptr_getarchiveclass_something_lp0:
+ldr r3, [r0]
+cmp r3, r2
+bne initializeptr_getarchiveclass_something_lp0next
+ldr r3, [r0, #4]
+cmp r3, r5
+bne initializeptr_getarchiveclass_something_lp0next
+b initializeptr_getarchiveclass_something_lp1_begin
+
+initializeptr_getarchiveclass_something_lp0next:
+add r0, r0, #4
+cmp r0, r1
+blt initializeptr_getarchiveclass_something_lp0
+b initializeptr_getarchiveclass_something_end
+
+initializeptr_getarchiveclass_something_lp1_begin:
+ldr r2, =0x0280
+
+initializeptr_getarchiveclass_something_lp1:
+ldrh r3, [r0]
+cmp r3, r2
+subne r0, r0, #2
+bne initializeptr_getarchiveclass_something_lp1
+
+sub r0, r0, #6
+mov r1, #0
+bl parse_branch_thumb
+
+orr r0, r0, #1
+ldr r1, =getarchiveclass_something_adr
+str r0, [r1]
+
+mov r4, #0
+
+initializeptr_getarchiveclass_something_end:
+mov r0, r4
+pop {r4, r5, pc}
 .pool
 
 pxifs_cmdhandler_poolcmpdata:
 .word 0xd9001830, 0x000101c2, 0xe0e046be, 0x000100c1, 0x00020142, 0x00020041, 0x00030244
 
 pxifsopenarchive_adr:
+.word 0
+
+getarchiveclass_something_adr:
 .word 0
 
