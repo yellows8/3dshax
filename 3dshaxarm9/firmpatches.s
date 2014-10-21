@@ -5,8 +5,10 @@
 
 .global patch_firm
 .global patchfirm_arm9section
+.global patchfirm_arm11section_kernel
 .type patch_firm STT_FUNC
 .type patchfirm_arm9section STT_FUNC
+.type patchfirm_arm11section_kernel STT_FUNC
 
 patch_firm: @ r0 = addr of entire FIRM
 push {r4, r5, r6, lr}
@@ -459,9 +461,39 @@ ldr r2, [r0, r1]
 add r2, r2, r3
 str r2, [r0, r1]
 
-patchfirm_arm11section_kernel_end:
 #endif
 #endif*/
+
+ldr r3, =FIRMLAUNCH_RUNNINGTYPE
+ldr r3, [r3]
+cmp r3, #3
+bne patchfirm_arm11section_kernel_end
+
+ldr r4, =0x000ff000
+
+patchfirm_arm11section_kernel_lp: @ Locate the padcheck code in the kernel configmem init func.
+ldr r3, [r0]
+bic r3, r3, r4
+ldr r2, =0xe2400b03 @ sub <reg>, <reg>, #0xc00
+cmp r3, r2
+bne patchfirm_arm11section_kernel_lpnext
+ldr r3, [r0, #4]
+bic r3, r3, r4
+ldr r2, =0xe25000be @ subs <reg>, <reg>, #0xbe
+cmp r3, r2
+bne patchfirm_arm11section_kernel_lpnext
+
+sub r0, r0, #0x18 @ Patch the "mov ip, #0" instruction before the above code, to "mov ip, #1", so that the UPDATEFLAG always is set. Hence, this then triggers firmlaunch by NS later.
+ldr r1, [r0]
+orr r1, r1, #1
+str r1, [r0]
+
+patchfirm_arm11section_kernel_lpnext:
+add r0, r0, #4
+subs r1, r1, #4
+bgt patchfirm_arm11section_kernel_lp
+
+patchfirm_arm11section_kernel_end:
 pop {r4, r5, r6, pc}
 .pool
 

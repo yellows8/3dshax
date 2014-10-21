@@ -1221,14 +1221,6 @@ int main(void)
 		{
 			FIRMLAUNCH_CLEARPARAMS = 1;
 			patch_proc9_launchfirm();
-
-			//Change the configmem UPDATEFLAG value to 1, which then causes NS module to do a FIRM launch, once NS gets loaded.
-			if(RUNNINGFWVER<0x38)
-			{
-				ptr = NULL;
-				while(ptr == NULL)ptr = (u32*)mmutable_convert_vaddr2physaddr(get_kprocessptr(0x697870, 0, 1), 0x1FF80004);
-				*ptr = 1;
-			}
 		}
 		else if((*((vu16*)0x10146000) & 0x100))//button R not pressed
 		{

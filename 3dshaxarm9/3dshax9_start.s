@@ -181,6 +181,10 @@ ldr r0, =0x08006800 @ Address
 ldr r1, =0x000F8800 @ Size
 bl patchfirm_arm9section
 
+ldr r0, =0x1FF80000
+ldr r1, =0x80000
+bl patchfirm_arm11section_kernel
+
 ldr r0, =FIRMLAUNCH_FWVER
 str r4, [r0]
 
