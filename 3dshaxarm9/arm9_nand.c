@@ -51,10 +51,13 @@ void dump_nandimage()
 	u32 ret = 0;
 	u32 pos = 0, sectorbase = 0, sectori = 0;
 	u32 *fileobj;
+	u32 size;
+
+	size = (*((u32*)0x01ffcdc4)) * 0x200;
 
 	if(openfile(sdarchive_obj, 4, dump_filepath, 0x22, 7, &fileobj)!=0)return;
 
-	for(pos=0; pos<0x3af00000; pos+=0x100000)
+	for(pos=0; pos<size; pos+=0x100000)
 	{
 		sectorbase = pos/0x200;
 
