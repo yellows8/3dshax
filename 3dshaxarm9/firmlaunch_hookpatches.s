@@ -185,19 +185,47 @@ b arm9_debugcode2_end
 init_arm9patchcode3:
 push {r4, r5, lr}
 
-mov r5, #0
-ldr r0, =RUNNINGFWVER
-ldr r1, =0x2E
-ldr r0, [r0]
-cmp r0, r1
-movge r5, #4
+mov r4, r0
 
-ldr r0, =0x80ff6f8
-add r0, r0, r5
+mov r0, #2
+strb r0, [r2]
+
+mov r5, #0
+ldr r2, =0xe5900048
+ldr r3, =0xe3500000
+
+init_arm9patchcode3_locatelp0:
+ldr r0, [r1, r5]
+cmp r0, r2
+bne init_arm9patchcode3_locatelp0next
+add r5, r5, #4
+ldr r0, [r1, r5]
+cmp r0, r3
+beq init_arm9patchcode3_locatelp0end
+
+init_arm9patchcode3_locatelp0next:
+add r5, r5, #4
+b init_arm9patchcode3_locatelp0
+
+init_arm9patchcode3_locatelp0end:
+add r5, r5, #4
+add r1, r1, r5
+mov r0, r1
+
+ldr r3, =0xe59d0000
+
+init_arm9patchcode3_locatelp1:
+ldr r2, [r1], #4
+cmp r2, r3
+bne init_arm9patchcode3_locatelp1
+sub r1, r1, #4
+
+ldr r2, =arm9_patchcode3_finishjumpadr
+str r1, [r2]
+
 adr r1, arm9_patchcode3
 adr r2, arm9_patchcode3_end
 sub r2, r2, r1
-mov r4, r2
 
 init_arm9patchcode3_cpy:
 ldr r3, [r1], #4
@@ -205,18 +233,18 @@ str r3, [r0], #4
 subs r2, r2, #4
 bgt init_arm9patchcode3_cpy
 
-ldr r0, =0x080ffb10
-add r0, r0, r5
+mov r0, r4
 mov r1, #0
 mov r2, #0x20
 bl memset
 
-ldr r0, =0x080ff9c4
-add r0, r0, r5
-mov r1, #2
-strb r1, [r0]
-
+ldr r0, =0xfff
+bic r4, r4, r0
 mov r0, r4
+ldr r1, =0xc00
+bl svcFlushProcessDataCache
+
+mov r0, #0
 pop {r4, r5, pc}
 .pool
 
@@ -248,15 +276,8 @@ subs r2, r2, #4
 bgt arm9_patchcode3_copylp
 
 arm9_patchcode3_copyend:
-mov r2, #0
-ldr r0, =RUNNINGFWVER
-mov r1, #0x2E
+ldr r0, =arm9_patchcode3_finishjumpadr
 ldr r0, [r0]
-cmp r0, r1
-movge r2, #4
-
-ldr r0, =0x80ff8f8
-add r0, r0, r2
 bx r0
 .pool
 
@@ -300,4 +321,7 @@ pop {r4, pc}
 firmbin_filepath:
 .hword 0x2F, 0x66, 0x69, 0x72, 0x6D, 0x2E, 0x62, 0x69, 0x6E, 0x00 //UTF-16 "/firm.bin"
 .align 2
+
+arm9_patchcode3_finishjumpadr:
+.word 0
 

@@ -16,7 +16,7 @@
 #include "ctrclient.h"
 
 void changempu_memregions();
-u32 init_arm9patchcode3();
+u32 init_arm9patchcode3(u32 *ptr0, u32 *ptr1, u32 *ptr2);
 void arm9_launchfirm();
 u32 getsp();
 u32 getcpsr();
@@ -179,7 +179,7 @@ void patch_proc9_launchfirm()
 {
 	u32 *ptr;
 	u32 *arm9_patchaddr;
-	u32 pos;
+	u32 pos, pos2;
 
 	ptr = (u32*)parse_branch((u32)proc9_locate_main_endaddr(), 0);//ptr = address of launch_firm function called @ the end of main().
 
@@ -223,14 +223,26 @@ void patch_proc9_launchfirm()
 	ptr[pos + (0x34 >> 2)] = 0xe3a00000;//patch the func-call which reads the encrypted ncch firm data.
 	ptr[pos + ((0x34+0x3c) >> 2)] = 0xe1a00000;//patch out the func-call which is immediately after the fs_closefile call. (FS shutdown stuff)
 
+	pos += ((0x34+0x3c) >> 2);
+
+	while(1)
+	{
+		if(ptr[pos]==0x00044846)break;
+		pos++;
+	}
+	pos+=2;
+
+	pos2 = pos;
+	while(1)
+	{
+		if(ptr[pos2]==0x00044837)break;
+		pos2--;
+	}
+	pos2++;
+
 	svcFlushProcessDataCache(ptr, 0x630);
 
-	init_arm9patchcode3();
-
-	//rsaengine_setpubk(0, 2048, rsamodulo_slot0, 0x00010001);//This was only for testing using modulo data already stored in memory, for the RSA slot0 v6.0 save crypto / v7.0 NCCH crypto.
-	//if(*((u32*)0x01ffcd00) == 0)*((u32*)0x01ffcd00) |= 1;
-
-	svcFlushProcessDataCache((u32*)0x80ff000, 0xc00);
+	init_arm9patchcode3((u32*)ptr[pos], (u32*)ptr[pos+1], (u32*)ptr[pos2]);
 }
 
 /*void get_kernelmode_sp()
