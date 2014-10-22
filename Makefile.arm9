@@ -118,6 +118,7 @@ ifneq ($(strip $(NANDREDIR_SECTORNUM)),)
 endif
 
 ifneq ($(strip $(LOADA9_FCRAM)),)
+	DEFINES	:=	$(DEFINES) -DLOADA9_FCRAM
 	LDNAME	:=	3dshaxarm9fcram.ld
 endif
 

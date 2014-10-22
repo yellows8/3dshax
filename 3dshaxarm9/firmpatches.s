@@ -34,6 +34,7 @@ cmp r3, #0
 bne patchfirm_sectionlp_checkarm11 @ branch when the section type is not arm9.
 
 ldr r1, [r1, #0x8]
+mov r3, #1
 bl patchfirm_arm9section
 b patchfirm_sectionlp_end
 
@@ -50,12 +51,34 @@ cmp r5, #4
 blt patchfirm_sectionlp
 pop {r4, r5, r6, pc}
 
-patchfirm_arm9section: @ r0 = address of FIRM section in memory, in the FIRM binary. r1 = FIRM section size. r2 = FIRM header address.
+patchfirm_arm9section: @ r0 = address of FIRM section in memory, in the FIRM binary. r1 = FIRM section size. r2 = FIRM header address, r3 = flag.
 push {r4, r5, r6, r7, lr}
 sub sp, sp, #4
 
 mov r4, r1
 
+cmp r3, #0
+beq patchfirm_arm9section_begin
+
+ldr r3, =RUNNINGFWVER
+ldr r3, [r3]
+lsr r3, r3, #30
+and r3, r3, #1
+cmp r3, #0
+beq patchfirm_arm9section_begin @ Branch when not running on new3ds.
+
+add r1, r1, r0
+ldr r3, =0x24000000
+ldr r3, [r3, #12]
+ldr r2, =0x08006000
+sub r3, r3, r2
+add r3, r3, r0
+ldr r4, =new3ds_hookloader_entrypoint
+blx r4
+
+b patchfirm_arm9section_finish
+
+patchfirm_arm9section_begin:
 /*#ifdef ENABLENANDREDIR
 #ifdef ENABLE_LOADA9_x01FFB800
 ldr r1, =FIRMLAUNCH_RUNNINGTYPE

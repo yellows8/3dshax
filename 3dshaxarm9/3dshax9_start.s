@@ -22,6 +22,8 @@
 .global parse_branch
 .global parse_branch_thumb
 
+.global new3ds_hookloader_entrypoint
+
 .global call_arbitaryfuncptr
 
 .global pxifs_state
@@ -53,6 +55,8 @@
 .type generate_branch STT_FUNC
 .type parse_branch STT_FUNC
 .type parse_branch_thumb STT_FUNC
+
+.type new3ds_hookloader_entrypoint STT_FUNC
 
 .type call_arbitaryfuncptr STT_FUNC
 
@@ -185,6 +189,11 @@ pop {r4, pc}
 
 startcode_type3_patchfirm:
 push {r4, r5, lr}
+ldr r1, =FIRMLAUNCH_RUNNINGTYPE
+ldr r1, [r1]
+cmp r1, #3
+movne r0, #1
+
 mov r5, r0
 cmp r5, #0
 bne startcode_type3_patchfirm_patchstart
@@ -198,6 +207,7 @@ str r0, [r1]
 startcode_type3_patchfirm_patchstart:
 ldr r0, =0x08006800 @ Address
 ldr r1, =0x000F8800 @ Size
+mov r3, #0
 bl patchfirm_arm9section
 
 ldr r0, =0x1FF80000
@@ -273,15 +283,23 @@ lsl r5, r5, #30
 orr r5, r5, r2
 str r5, [r4] @ RUNNINGFWVER = 0x40000000 | FIRM_VERSIONMINOR
 
+ldr r0, =0x08006800
+ldr r1, =0x080ff000
 bl new3ds_hookloader_entrypoint
 
 mov r0, #0
 pop {r4, r5, pc}
 .pool
 
-new3ds_hookloader_entrypoint: @ Hook the new3ds entrypoint word in the arm9bin loader.
-ldr r1, =0x080ff000
+new3ds_hookloader_entrypoint: @ Hook the new3ds entrypoint word in the arm9bin loader. r0=startaddr, r1=endaddr, r2=unused, r3=arm9 entrypoint from FIRM hdr
+mov r5, r0
 ldr r2, =0x0801B01C
+
+#ifdef LOADA9_FCRAM
+ldr r4, =0x08098000
+#else
+ldr r4, =0x08101000
+#endif
 
 new3ds_hookloader_entrypoint_lp:
 ldr r0, [r3]
@@ -294,10 +312,8 @@ b new3ds_hookloader_entrypoint_lp
 
 new3ds_hookloader_entrypoint_finish:
 str r0, new3ds_entrypointhookword
-ldr r2, =0x08098000
-str r2, [r3]
+str r4, [r3]
 
-ldr r1, =0x08006800
 ldr r2, =0xe12fff12 @ "bx r2"
 
 new3ds_hookloader_entrypoint_lp2:
@@ -305,7 +321,7 @@ ldr r0, [r3]
 cmp r0, r2
 beq new3ds_hookloader_entrypoint_finish2
 sub r3, r3, #4
-cmp r3, r1
+cmp r3, r5
 ble new3ds_hookloader_entrypoint_end
 b new3ds_hookloader_entrypoint_lp2
 
@@ -314,13 +330,12 @@ sub r3, r3, #8
 mov r0, #0
 str r0, [r3] @ Patch the branch executed when the plaintext binary entrypoint address is out-of-bounds.
 
-ldr r2, =0x08098000
 adr r0, new3ds_plaintextbin_entrypoint_stubstart
 adr r1, new3ds_plaintextbin_entrypoint_stubend
 
 new3ds_hookloader_entrypoint_cpylp: @ No need to do anything with dcache since the arm9bin loader does that anyway.
 ldr r3, [r0], #4
-str r3, [r2], #4
+str r3, [r4], #4
 cmp r0, r1
 blt new3ds_hookloader_entrypoint_cpylp
 
@@ -341,8 +356,12 @@ b new3ds_dumpmema9
 ldr r0, =new3ds_entrypointhookword
 ldr r0, [r0]
 mov lr, r0
+#ifndef LOADA9_FCRAM
 mov r0, #0
 ldr pc, =startcode_type3_patchfirm
+#else
+bx r0
+#endif
 #endif
 .pool
 

@@ -62,6 +62,11 @@ bl fileread
 cmp r0, #0
 bne arm9_debugcode_fail
 
+ldr r0, =0x24000000
+ldr r1, =0x21000000
+mov r2, #0x100
+bl memcpy
+
 ldr r0, =0x21000000
 bl init_firmlaunch_fwver
 cmp r0, #0
@@ -75,11 +80,6 @@ ldr r0, =0x21000000 @ Only execute this when init_firmlaunch_fwver() successfull
 bl patch_firm
 
 arm9_debugcode_patchfinish:
-ldr r0, =0x24000000
-ldr r1, =0x21000000
-mov r2, #0x100
-bl memcpy
-
 /*ldr r0, =0x20000440
 ldr r1, =0x4B464445
 ldr r2, =0x00048004
@@ -289,7 +289,7 @@ arm9_patchcode3_end:
 .word 0
 
 init_firmlaunch_fwver: @ Use the u32 from the first word of the FIRM RSA signature to determine the FIRMLAUNCH_FWVER, via the array @ FIRM_sigword0_array.
-push {r4, r5, r6, r7, lr}
+push {r4, r5, r6, r7, r8, lr}
 mov r4, #0
 add r0, r0, #0x100
 ldr r0, [r0]
@@ -298,6 +298,8 @@ ldr r3, =RUNNINGFWVER
 ldr r3, [r3]
 lsr r3, r3, #30
 and r3, r3, #1
+mov r8, r3
+lsl r8, r8, #30
 cmp r3, #0
 bne init_firmlaunch_fwver_new3ds
 
@@ -327,13 +329,14 @@ b init_firmlaunch_fwver_end
 
 init_firmlaunch_fwver_lpend:
 ldrb r3, [r7, r4]
+orr r3, r3, r8
 ldr r2, =FIRMLAUNCH_FWVER
 str r3, [r2]
 
 mov r0, #0
 
 init_firmlaunch_fwver_end:
-pop {r4, r5, r6, r7, pc}
+pop {r4, r5, r6, r7, r8, pc}
 .pool
 
 #endif
