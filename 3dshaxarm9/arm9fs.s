@@ -511,7 +511,7 @@ pop {r4, r5, pc}
 .pool
 
 initializeptr_fsvtables:
-push {r4, r5, r6, lr}
+push {r4, r5, r6, r7, lr}
 mvn r4, #0
 
 ldr r0, =0x08028000
@@ -537,14 +537,21 @@ ldr r2, =fs_vtableptr_fileread
 str r5, [r2]
 add r0, r0, #4
 
-mov r6, #2
+ldr r6, =0xb005 @ "add sp, #20"
+ldr r7, =0xbdf0 @ "pop {r4, r5, r6, r7, pc}"
 
 initializeptr_fsvtables_lp1: @ Locate two words of the fileread vtable ptr. For the second one, the filewrite ptr is located @ the word right after that.
 ldr r3, [r0]
 cmp r3, r5
 bne initializeptr_fsvtables_lp1next
-subs r6, r6, #1
-beq initializeptr_fsvtables_lp1end
+sub r2, r0, #4
+ldrh r3, [r2, #0]
+cmp r3, r6
+bne initializeptr_fsvtables_lp1next
+ldrh r3, [r2, #2]
+cmp r3, r7
+bne initializeptr_fsvtables_lp1next
+b initializeptr_fsvtables_lp1end
 
 initializeptr_fsvtables_lp1next:
 add r0, r0, #4
@@ -562,7 +569,7 @@ mov r4, #0
 
 initializeptr_fsvtables_end:
 mov r0, r4
-pop {r4, r5, r6, pc}
+pop {r4, r5, r6, r7, pc}
 .pool
 
 pxifs_cmdhandler_poolcmpdata:

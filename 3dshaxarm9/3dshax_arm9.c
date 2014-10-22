@@ -1211,12 +1211,9 @@ int main(void)
 		{
 			FIRMLAUNCH_CLEARPARAMS = 1;
 			patch_proc9_launchfirm();
-			//dumpmem(0x08000000, 0x100000);
 		}
 		else if((*((vu16*)0x10146000) & 0x100))//button R not pressed
 		{
-			//dumpmem(0x08000000, 0x100000);
-
 			#ifdef ENABLE_ARM11KERNEL_DEBUG
 			write_arm11debug_patch();
 			#endif
