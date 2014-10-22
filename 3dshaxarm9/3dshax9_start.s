@@ -39,6 +39,9 @@
 .global FIRM_contentid_versions
 .global FIRM_sigword0_array
 .global FIRM_contentid_totalversions
+.global NEW3DS_FIRM_versions
+.global NEW3DS_sigword0_array
+.global NEW3DS_totalversions
 
 .type ioDelay STT_FUNC
 .type changempu_memregions STT_FUNC
@@ -160,15 +163,31 @@ str r3, [r1], #4
 subs r2, r2, #4
 bgt startcode_type3_cpy*/
 
+mov r4, #0
+
 ldr r0, =RUNNINGFWVER
 ldr r0, [r0]
 lsr r1, r0, #31
 cmp r1, #0
+moveq r4, #1
 beq startcode_type3_patchstart
 mov r1, lr
 bl parse_configmem_firmversion
 cmp r0, #0
 popne {r4, pc}
+
+startcode_type3_patchstart:
+mov r0, r4
+bl startcode_type3_patchfirm
+
+pop {r4, pc}
+.pool
+
+startcode_type3_patchfirm:
+push {r4, r5, lr}
+mov r5, r0
+cmp r5, #0
+bne startcode_type3_patchfirm_patchstart
 
 ldr r1, =FIRMLAUNCH_FWVER
 ldr r0, =RUNNINGFWVER
@@ -176,7 +195,7 @@ ldr r4, [r1]
 ldr r0, [r0]
 str r0, [r1]
 
-startcode_type3_patchstart:
+startcode_type3_patchfirm_patchstart:
 ldr r0, =0x08006800 @ Address
 ldr r1, =0x000F8800 @ Size
 bl patchfirm_arm9section
@@ -185,10 +204,14 @@ ldr r0, =0x1FF80000
 ldr r1, =0x80000
 bl patchfirm_arm11section_kernel
 
+cmp r5, #0
+bne startcode_type3_patchfirm_end
+
 ldr r0, =FIRMLAUNCH_FWVER
 str r4, [r0]
 
-pop {r4, pc}
+startcode_type3_patchfirm_end:
+pop {r4, r5, pc}
 .pool
 
 parse_configmem_firmversion:
@@ -252,7 +275,7 @@ str r5, [r4] @ RUNNINGFWVER = 0x40000000 | FIRM_VERSIONMINOR
 
 bl new3ds_hookloader_entrypoint
 
-mov r0, #1
+mov r0, #0
 pop {r4, r5, pc}
 .pool
 
@@ -317,7 +340,9 @@ b new3ds_dumpmema9
 #else
 ldr r0, =new3ds_entrypointhookword
 ldr r0, [r0]
-bx r0
+mov lr, r0
+mov r0, #0
+ldr pc, =startcode_type3_patchfirm
 #endif
 .pool
 
@@ -1069,6 +1094,16 @@ FIRM_sigword0_array: @ First u32 from the FIRM RSA signature, for each version.
 
 FIRM_contentid_totalversions:
 .word 16
+
+NEW3DS_FIRM_versions:
+.byte 45
+.align 2
+
+NEW3DS_sigword0_array:
+.word 0x79d0fb89
+
+NEW3DS_totalversions:
+.word 1
 
 FIRMLAUNCH_CLEARPARAMS:
 .word 1

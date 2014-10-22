@@ -117,9 +117,8 @@ ifneq ($(strip $(NANDREDIR_SECTORNUM)),)
 	DEFINES	:=	$(DEFINES) -DNANDREDIR_SECTORNUM_=$(NANDREDIR_SECTORNUM)
 endif
 
-ifneq ($(strip $(NEW3DS)),)
-	DEFINES	:=	$(DEFINES) -DNEW3DS
-	LDNAME	:=	3dshaxarm9new3ds.ld
+ifneq ($(strip $(LOADA9_FCRAM)),)
+	LDNAME	:=	3dshaxarm9fcram.ld
 endif
 
 ifneq ($(strip $(NEW3DS_MEMDUMPA9_ADR)),)
