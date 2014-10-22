@@ -36,6 +36,11 @@ mov r3, r0
 cmp r0, #0
 bne fs_initialize_end
 
+bl initializeptr_fsvtables
+mov r3, r0
+cmp r0, #0
+bne fs_initialize_end
+
 bl initializeptr_pxifsopenarchive
 mov r3, r0
 cmp r0, #0
@@ -122,66 +127,13 @@ fs_getvtableptr_rw: @ r0=rw. 0 = fileread(data write to FCRAM), 1 = filewrite(da
 cmp r0, #0
 bne fs_getvtableptr_rw_write
 
-ldr r1, =RUNNINGFWVER
-ldr r1, [r1]
-cmp r1, #0x1F
-ldreq r0, =0x080944c8
-beq fs_getvtableptr_rw_end
-cmp r1, #0x25
-ldreq r0, =0x08091174
-beq fs_getvtableptr_rw_end
-cmp r1, #0x26
-ldreq r0, =0x08091208
-beq fs_getvtableptr_rw_end
-cmp r1, #0x2E
-ldreq r0, =0x0809106c
-beq fs_getvtableptr_rw_end
-cmp r1, #0x30
-ldreq r0, =0x08091070
-beq fs_getvtableptr_rw_end
-cmp r1, #0x37
-ldreq r0, =0x08091368
-beq fs_getvtableptr_rw_end
-cmp r1, #0x38
-ldreq r0, =0x080911c4
-beq fs_getvtableptr_rw_end
-ldr r2, =0x29
-add r3, r2, #1
-cmp r1, r2
-cmpne r1, r3
-ldreq r0, =0x08090efc
+ldr r0, =fs_vtableptr_fileread
+ldr r0, [r0]
 b fs_getvtableptr_rw_end
 
 fs_getvtableptr_rw_write:
-mov r0, #0
-ldr r1, =RUNNINGFWVER
-ldr r1, [r1]
-cmp r1, #0x1F
-ldreq r0, =0x08094490
-beq fs_getvtableptr_rw_end
-cmp r1, #0x25
-ldreq r0, =0x0809113c
-beq fs_getvtableptr_rw_end
-cmp r1, #0x26
-ldreq r0, =0x080911d0
-beq fs_getvtableptr_rw_end
-cmp r1, #0x2E
-ldreq r0, =0x08091034
-beq fs_getvtableptr_rw_end
-cmp r1, #0x30
-ldreq r0, =0x08091038
-beq fs_getvtableptr_rw_end
-cmp r1, #0x37
-ldreq r0, =0x08091330
-beq fs_getvtableptr_rw_end
-cmp r1, #0x38
-ldreq r0, =0x0809118c
-beq fs_getvtableptr_rw_end
-ldr r2, =0x29
-add r3, r2, #1
-cmp r1, r2
-cmpne r1, r3
-ldreq r0, =0x08090ec4
+ldr r0, =fs_vtableptr_filewrite
+ldr r0, [r0]
 
 fs_getvtableptr_rw_end:
 bx lr
@@ -558,6 +510,61 @@ mov r0, r4
 pop {r4, r5, pc}
 .pool
 
+initializeptr_fsvtables:
+push {r4, r5, r6, lr}
+mvn r4, #0
+
+ldr r0, =0x08028000
+ldr r1, =0x080ff000
+ldr r2, =0x4453434e
+
+initializeptr_fsvtables_lp0: @ Locate "NCSD" word in the target function's .pool.
+ldr r3, [r0]
+cmp r3, r2
+bne initializeptr_fsvtables_lp0next
+b initializeptr_fsvtables_lp0end
+
+initializeptr_fsvtables_lp0next:
+add r0, r0, #4
+cmp r0, r1
+blt initializeptr_fsvtables_lp0
+b initializeptr_fsvtables_end
+
+initializeptr_fsvtables_lp0end:
+sub r0, r0, #4
+ldr r5, [r0]
+ldr r2, =fs_vtableptr_fileread
+str r5, [r2]
+add r0, r0, #4
+
+mov r6, #2
+
+initializeptr_fsvtables_lp1: @ Locate two words of the fileread vtable ptr. For the second one, the filewrite ptr is located @ the word right after that.
+ldr r3, [r0]
+cmp r3, r5
+bne initializeptr_fsvtables_lp1next
+subs r6, r6, #1
+beq initializeptr_fsvtables_lp1end
+
+initializeptr_fsvtables_lp1next:
+add r0, r0, #4
+cmp r0, r1
+blt initializeptr_fsvtables_lp1
+b initializeptr_fsvtables_end
+
+initializeptr_fsvtables_lp1end:
+add r0, r0, #4
+ldr r0, [r0]
+ldr r1, =fs_vtableptr_filewrite
+str r0, [r1]
+
+mov r4, #0
+
+initializeptr_fsvtables_end:
+mov r0, r4
+pop {r4, r5, r6, pc}
+.pool
+
 pxifs_cmdhandler_poolcmpdata:
 .word 0xd9001830, 0x000101c2, 0xe0e046be, 0x000100c1, 0x00020142, 0x00020041, 0x00030244
 
@@ -565,5 +572,11 @@ pxifsopenarchive_adr:
 .word 0
 
 getarchiveclass_something_adr:
+.word 0
+
+fs_vtableptr_fileread:
+.word 0
+
+fs_vtableptr_filewrite:
 .word 0
 
