@@ -157,10 +157,9 @@ void load_arm11code(u32 *loadptr, u32 maxloadsize, u64 procname)
 	funcptr(keyslot, bitsize, modulo, pubexponent);
 }*/
 
-void patch_proc9_launchfirm()
+u32 *proc9_locate_main_endaddr()//Returns a ptr to the last instruction in Process9 main().
 {
 	u32 *ptr;
-	u32 *arm9_patchaddr;
 	u32 pos;
 
 	ptr = (u32*)parse_branch(0x08028014, 0);//ptr = address of Process9 main()
@@ -173,7 +172,16 @@ void patch_proc9_launchfirm()
 	}
 	pos++;
 
-	ptr = (u32*)parse_branch((u32)&ptr[pos], 0);//ptr = address of launch_firm function called @ the end of main().
+	return &ptr[pos];
+}
+
+void patch_proc9_launchfirm()
+{
+	u32 *ptr;
+	u32 *arm9_patchaddr;
+	u32 pos;
+
+	ptr = (u32*)parse_branch((u32)proc9_locate_main_endaddr(), 0);//ptr = address of launch_firm function called @ the end of main().
 
 	pos = 0;
 	while(1)

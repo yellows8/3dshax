@@ -31,39 +31,10 @@ sub sp, sp, #12
 
 mov r7, r0
 
-ldr r2, =RUNNINGFWVER
-ldr r2, [r2]
-
-mov r5, #0
-
-cmp r2, #0x1F
-ldreq r5, =0x080d93f8 @ pxifs state
-cmp r2, #0x25
-ldreq r5, =0x080d9db8
-cmp r2, #0x26
-ldreq r5, =0x080d9cd8
-cmp r2, #0x2E
-ldreq r5, =0x080d8b60
-cmp r2, #0x30
-ldreq r5, =0x080d8b60
-cmp r2, #0x37
-ldreq r5, =0x080d8c20
-cmp r2, #0x38
-ldreq r5, =0x080d8ce0
-
-ldr r0, =0x29
-add r1, r0, #1
-cmp r2, r0
-cmpne r2, r1
-ldreq r5, =0x080d8be0
-
-mvn r3, #0
-cmp r5, #0
-beq fs_initialize_end
-
-add r5, r5, #8 @ r5 = state
-ldr r0, =pxifs_state
-str r5, [r0]
+bl initializeptr_pxifs_state
+mov r3, r0
+cmp r0, #0
+bne fs_initialize_end
 
 bl initializeptr_pxifsopenarchive
 mov r3, r0
@@ -530,6 +501,59 @@ str r0, [r1]
 mov r4, #0
 
 initializeptr_getarchiveclass_something_end:
+mov r0, r4
+pop {r4, r5, pc}
+.pool
+
+initializeptr_pxifs_state:
+push {r4, r5, lr}
+mvn r4, #0
+
+bl proc9_locate_main_endaddr
+cmp r0, #0
+beq initializeptr_pxifs_state_end
+
+sub r0, r0, #0x18
+mov r1, #0
+bl parse_branch
+
+ldr r1, =0xe2800008
+ldr r4, =0x000ff000
+
+initializeptr_pxifs_state_lp0: @ Locate "add <reg>, <reg>, #8"
+ldr r3, [r0]
+bic r2, r3, r4
+cmp r2, r1
+addne r0, r0, #4
+bne initializeptr_pxifs_state_lp0
+
+lsr r3, r3, #16
+and r3, r3, #0xf
+
+ldr r1, =0xe59f0000
+lsl r3, r3, #12
+orr r1, r1, r3
+ldr r4, =0xfff
+
+initializeptr_pxifs_state_lp1: @ Locate the ldr instruction for pxifs state.
+ldr r3, [r0]
+bic r2, r3, r4
+cmp r2, r1
+subne r0, r0, #4
+bne initializeptr_pxifs_state_lp1
+
+and r3, r3, #0xff
+add r0, r0, #8
+add r0, r0, r3
+ldr r0, [r0]
+
+add r0, r0, #8
+ldr r1, =pxifs_state
+str r0, [r1]
+
+mov r4, #0
+
+initializeptr_pxifs_state_end:
 mov r0, r4
 pop {r4, r5, pc}
 .pool
