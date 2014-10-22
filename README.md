@@ -61,6 +61,6 @@ Some of the codebase automatically determines what addresses to patch on-the-fly
 * NAND->SD redirection
 * Process9 patch for hooking code called from Process9 main(), for getting code execution after FIRM-launch under Process9.
 * Process9 FIRM-launch patches(for the function called by main() + addresses near the end of arm9mem).
-* Process9 PxiFS code + state/vtable ptrs
+* Process9 PxiFS code + state/vtable ptrs (This change to auto-locating these addrs resulted in file-writing breaking on >v4.1 FIRM)
 * ...
 
