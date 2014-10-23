@@ -1,12 +1,13 @@
 .arch armv5te
 .fpu softvfp
 .text
-.arm
+.thumb
 
 .global fs_initialize
 .global dumpmem
 .global loadfile
 .global openfile
+.global closefile
 .global fileread
 .global filewrite
 .global getfilesize
@@ -18,6 +19,7 @@
 .type dumpmem STT_FUNC
 .type loadfile STT_FUNC
 .type openfile STT_FUNC
+.type closefile STT_FUNC
 .type fileread STT_FUNC
 .type filewrite STT_FUNC
 .type getfilesize STT_FUNC
@@ -57,7 +59,8 @@ bne fs_initialize_end
 
 mov r0, #1
 str r0, [sp, #0]
-str sp, [sp, #4]
+mov r0, sp
+str r0, [sp, #4]
 str r0, [sp, #8]
 
 ldr r0, =sdarchive_obj
@@ -105,7 +108,8 @@ sub sp, sp, #12
 
 mov r0, #1
 str r0, [sp, #0]
-str sp, [sp, #4]
+mov r0, sp
+str r0, [sp, #4]
 str r0, [sp, #8]
 
 mov r0, #0
@@ -152,19 +156,22 @@ mov r1, #4
 ldr r2, =dump_filepath
 mov r3, #0x22
 bl openfile
+mov r4, r0
+cmp r0, #0
+bne dumpmem_end
 
-mov r4, #0
-dumpmem_writelp:
 ldr r0, [sp, #8]
 ldr r1, [sp, #12]
 ldr r2, [sp, #16]
 mov r3, #0
 bl filewrite
-add r4, r4, #1
-cmp r4, #16
-cmplt r0, #0
-blt dumpmem_writelp
+mov r4, r0
 
+ldr r0, [sp, #8]
+bl closefile
+
+dumpmem_end:
+mov r0, r4
 add sp, sp, #12
 add sp, sp, #8
 pop {r4, pc}
@@ -194,6 +201,9 @@ mov r2, r5
 mov r3, #0
 bl fileread
 
+ldr r0, [sp, #8]
+bl closefile
+
 loadfile_end:
 add sp, sp, #12
 pop {r4, r5, pc}
@@ -220,6 +230,14 @@ ldr r4, [r4, #8]
 blx r4
 add sp, sp, #20
 pop {r3, r4, r5, pc}
+
+closefile:
+bx lr
+/*push {lr} @ This doesn't seem to actually close the file?
+ldr r1, [r0]
+ldr r1, [r1, #4]
+blx r1
+pop {pc}*/
 
 fileread: @ r0=fileclass*, r1=buffer, r2=size, r3=filepos
 push {r0, r1, r2, r3, r4, r5, lr}
@@ -360,7 +378,8 @@ pop {r4, r5, pc}
 initializeptr_pxifsopenarchive:
 push {r4, lr}
 
-mvn r4, #0
+mov r4, #0
+mvn r4, r4
 
 mov r0, #1 @ Locate the pxifs cmdhandler jump-table.
 str r0, [sp]
@@ -390,15 +409,17 @@ add r0, r0, #4
 cmp r0, r1
 blt initializeptr_pxifsopenarchive_lp
 
-mvn r4, #1
+mov r4, #1
+mvn r4, r4
 b initializeptr_pxifsopenarchive_end
 
 initializeptr_pxifsopenarchive_lpend:
 mov r1, #0
-bl parse_branch
+blx parse_branch
 
 ldr r1, =pxifsopenarchive_adr
-orr r0, r0, #1
+mov r2, #1
+orr r0, r0, r2
 str r0, [r1]
 
 mov r4, #0
@@ -411,7 +432,8 @@ pop {r4, pc}
 initializeptr_getarchiveclass_something:
 push {r4, r5, lr}
 
-mvn r4, #0
+mov r4, #0
+mvn r4, r4
 
 ldr r0, =0x08028000
 ldr r1, =0x080ff000
@@ -439,14 +461,19 @@ ldr r2, =0x0280
 initializeptr_getarchiveclass_something_lp1:
 ldrh r3, [r0]
 cmp r3, r2
-subne r0, r0, #2
-bne initializeptr_getarchiveclass_something_lp1
+beq initializeptr_getarchiveclass_something_lp1end
 
+initializeptr_getarchiveclass_something_lp1next:
+sub r0, r0, #2
+b initializeptr_getarchiveclass_something_lp1
+
+initializeptr_getarchiveclass_something_lp1end:
 sub r0, r0, #6
 mov r1, #0
 bl parse_branch_thumb
 
-orr r0, r0, #1
+mov r2, #1
+orr r0, r0, r2
 ldr r1, =getarchiveclass_something_adr
 str r0, [r1]
 
@@ -459,7 +486,8 @@ pop {r4, r5, pc}
 
 initializeptr_pxifs_state:
 push {r4, r5, lr}
-mvn r4, #0
+mov r4, #0
+mvn r4, r4
 
 bl proc9_locate_main_endaddr
 cmp r0, #0
@@ -474,13 +502,20 @@ ldr r4, =0x000ff000
 
 initializeptr_pxifs_state_lp0: @ Locate "add <reg>, <reg>, #8"
 ldr r3, [r0]
-bic r2, r3, r4
+mov r2, r3
+bic r2, r2, r4
 cmp r2, r1
-addne r0, r0, #4
-bne initializeptr_pxifs_state_lp0
+beq initializeptr_pxifs_state_lp0end
 
-lsr r3, r3, #16
-and r3, r3, #0xf
+initializeptr_pxifs_state_lp0next:
+add r0, r0, #4
+b initializeptr_pxifs_state_lp0
+
+initializeptr_pxifs_state_lp0end:
+mov r2, #16
+lsr r3, r3, r2
+mov r2, #0xf
+and r3, r3, r2
 
 ldr r1, =0xe59f0000
 lsl r3, r3, #12
@@ -489,12 +524,18 @@ ldr r4, =0xfff
 
 initializeptr_pxifs_state_lp1: @ Locate the ldr instruction for pxifs state.
 ldr r3, [r0]
-bic r2, r3, r4
+mov r2, r3
+bic r2, r2, r4
 cmp r2, r1
-subne r0, r0, #4
-bne initializeptr_pxifs_state_lp1
+beq initializeptr_pxifs_state_lp1end
 
-and r3, r3, #0xff
+initializeptr_pxifs_state_lp1next:
+sub r0, r0, #4
+b initializeptr_pxifs_state_lp1
+
+initializeptr_pxifs_state_lp1end:
+mov r2, #0xff
+and r3, r3, r2
 add r0, r0, #8
 add r0, r0, r3
 ldr r0, [r0]
@@ -512,7 +553,8 @@ pop {r4, r5, pc}
 
 initializeptr_fsvtables:
 push {r4, r5, r6, r7, lr}
-mvn r4, #0
+mov r4, #0
+mvn r4, r4
 
 ldr r0, =0x08028000
 ldr r1, =0x080ff000

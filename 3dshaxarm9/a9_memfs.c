@@ -21,6 +21,7 @@
 
 	if(openfile(sdarchive_obj, 4, filepath, (strlen(path)+1)*2, 7, &fileobj)!=0)return;
 	if(filewrite(fileobj, (u32*)0x18000000, 0x00600000, 0)!=0)return;
+	closefile(fileobj);
 }*/
 
 void dump_fcramaxiwram()
@@ -37,6 +38,7 @@ void dump_fcramaxiwram()
 
 	if(openfile(sdarchive_obj, 4, filepath, (strlen(path)+1)*2, 7, &fileobj)!=0)return;
 	if(filewrite(fileobj, (u32*)0x1FF80000, 0x80000, 0)!=0)return;
+	closefile(fileobj);
 }
 
 void loadfile_charpath(char *path, u32 *addr, u32 maxsize)
@@ -62,6 +64,8 @@ void loadfile_charpath(char *path, u32 *addr, u32 maxsize)
 	{
 		return;
 	}
+
+	closefile(fileobj);
 
 	svcFlushProcessDataCache(addr, filesize);
 }

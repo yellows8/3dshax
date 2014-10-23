@@ -4,6 +4,7 @@
 u32 dumpmem(u32 *addr, u32 size);
 u32 loadfile(u32 *addr, u32 size, u16 *path, u32 pathsize);
 u32 openfile(u32 *archiveobj, u32 lowpathtype, void* path, u32 pathsize, u32 openflags, u32 **fileobj);
+u32 closefile(u32 *fileobj);
 u32 fileread(u32 *fileobj, u32 *buf, u32 size, u32 filepos);
 u32 filewrite(u32 *fileobj, u32 *buf, u32 size, u32 filepos);
 u32 getfilesize(u32 *fileobj);
