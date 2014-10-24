@@ -11,6 +11,7 @@
 .global fileread
 .global filewrite
 .global getfilesize
+.global setfilesize
 .global initialize_nandarchiveobj
 .global archive_readsectors
 .global pxifs_openarchive
@@ -23,6 +24,7 @@
 .type fileread STT_FUNC
 .type filewrite STT_FUNC
 .type getfilesize STT_FUNC
+.type setfilesize STT_FUNC
 .type initialize_nandarchiveobj STT_FUNC
 .type archive_readsectors STT_FUNC
 .type pxifs_openarchive STT_FUNC
@@ -309,10 +311,19 @@ sub sp, sp, #8
 add r1, sp, #0
 ldr r2, [r0]
 ldr r2, [r2, #16]
-blx r2 //getfilesize
+blx r2
 ldr r0, [sp, #0]
 add sp, sp, #8
 pop {pc}
+
+setfilesize:
+push {r4, lr}
+mov r3, #0
+mov r2, r1
+ldr r4, [r0]
+ldr r4, [r4, #20]
+blx r4
+pop {r4, pc}
 
 archive_readsectors: @ r0=archiveclass*, r1=buffer, r2=sectorcount, r3=mediaoffset/sector#
 push {r0, r1, r2, r3, r4, lr}
