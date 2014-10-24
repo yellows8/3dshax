@@ -10,17 +10,43 @@
 .type write_arm11debug_patch STT_FUNC
 .type writepatch_arm11kernel_svcaccess STT_FUNC
 
+arm11kernel_textvaddr:
+.word 0
+
+arm11kernel_init_textvaddr:
+ldr r0, =0x1FF80000
+ldr r1, =0xf57ff01f //"clrex"
+
+arm11kernel_init_textvaddr_lp:
+ldr r2, [r0]
+cmp r2, r1
+bne arm11kernel_init_textvaddr_lpnext
+
+ldr r2, [r0, #0xc]
+cmp r2, r1
+bne arm11kernel_init_textvaddr_lpnext
+ldr r2, [r0, #8]
+b arm11kernel_init_textvaddr_lpend
+
+arm11kernel_init_textvaddr_lpnext:
+add r0, r0, #4
+b arm11kernel_init_textvaddr_lp
+
+arm11kernel_init_textvaddr_lpend:
+lsr r2, r2, #16
+lsl r2, r2, #16
+
+ldr r0, =arm11kernel_textvaddr
+str r2, [r0]
+bx lr
+.pool
+
 writepatch_arm11kernel_getsvchandler_physaddr:
 push {r4, r5, lr}
 ldr r5, =0x1FF80000
 
-ldr r0, =RUNNINGFWVER
-ldr r0, [r0]
-cmp r0, #0x25
-ldrlt r4, =0xfff60000
-ldrge r4, =0xfff50000
-cmp r0, #0x37
-ldrge r4, =0xfff40000
+ldr r4, =arm11kernel_textvaddr
+ldr r4, [r4]
 
 ldr r0, =0xffff0000
 add r0, r0, #8
@@ -40,20 +66,17 @@ pop {r4, r5, pc}
 writepatch_arm11kernel_svcaccess:
 push {r4, r5, lr}
 mov r1, #0
-ldr r0, =RUNNINGFWVER
+/*ldr r0, =RUNNINGFWVER
 ldr r0, [r0]
-/*cmp r0, #0x1F
+cmp r0, #0x1F
 ldreq r1, =0x1FF827CC
 cmp r0, #0x2E
 ldreq r1, =0x1FF822A8
 cmp r1, #0
 beq writepatch_arm11kernel_svcaccess_end*/
 
-cmp r0, #0x25
-ldrlt r4, =0xfff60000
-ldrge r4, =0xfff50000
-cmp r0, #0x37
-ldrge r4, =0xfff40000
+ldr r4, =arm11kernel_textvaddr
+ldr r4, [r4]
 ldr r5, =0x1FF80000
 
 bl writepatch_arm11kernel_getsvchandler_physaddr
@@ -89,13 +112,8 @@ mov r6, r0
 
 ldr r5, =0x1FF80000
 
-ldr r0, =RUNNINGFWVER
-ldr r0, [r0]
-cmp r0, #0x25
-ldrlt r4, =0xfff60000
-ldrge r4, =0xfff50000
-cmp r0, #0x37
-ldrge r4, =0xfff40000
+ldr r4, =arm11kernel_textvaddr
+ldr r4, [r4]
 
 bl writepatch_arm11kernel_getsvchandler_physaddr
 
@@ -129,13 +147,8 @@ mov r6, r0
 
 ldr r5, =0x1FF80000
 
-ldr r0, =RUNNINGFWVER
-ldr r0, [r0]
-cmp r0, #0x25
-ldrlt r4, =0xfff60000
-ldrge r4, =0xfff50000
-cmp r0, #0x37
-ldrge r4, =0xfff40000
+ldr r4, =arm11kernel_textvaddr
+ldr r4, [r4]
 
 mov r0, #0x73
 bl writepatch_arm11kernel_getsvctableadr
@@ -162,13 +175,8 @@ mov r6, r0
 
 ldr r5, =0x1FF80000
 
-ldr r0, =RUNNINGFWVER
-ldr r0, [r0]
-cmp r0, #0x25
-ldrlt r4, =0xfff60000
-ldrge r4, =0xfff50000
-cmp r0, #0x37
-ldrge r4, =0xfff40000
+ldr r4, =arm11kernel_textvaddr
+ldr r4, [r4]
 
 mov r0, #0x3
 bl writepatch_arm11kernel_getsvctableadr
@@ -185,7 +193,7 @@ pop {r4, r5, r6, pc}
 
 get_arm11debuginfo_physaddr:
 push {r4, lr}
-ldr r4, =RUNNINGFWVER
+/*ldr r4, =RUNNINGFWVER
 ldr r4, [r4]
 
 ldr r0, =0x1FFDF000
@@ -194,7 +202,8 @@ ldr r3, =0x1000
 cmp r4, #0x25
 subge r0, r0, r3
 cmp r4, #0x37
-ldrge r0, =0x1FFDD000
+ldrge r0, =0x1FFDD000*/
+ldr r0, =0x1FF80C00
 pop {r4, pc}
 .pool
 
@@ -202,6 +211,8 @@ write_arm11debug_patch:
 push {r4, r5, r6, r7, r8, lr}
 ldr r8, =RUNNINGFWVER
 ldr r8, [r8]
+
+bl arm11kernel_init_textvaddr
 
 bl get_arm11debuginfo_physaddr
 
@@ -243,11 +254,8 @@ ldreq r7, =0xfff60000*/
 //cmp r8, r2
 //ldreq r7, =0xfff50000
 //ldreq r6, =0x614
-cmp r8, #0x25
-ldrlt r7, =0xfff60000
-ldrge r7, =0xfff50000
-cmp r8, #0x37
-ldrge r7, =0xfff40000
+ldr r7, =arm11kernel_textvaddr
+ldr r7, [r7]
 
 ldr r0, =0xffff0000
 add r0, r0, #4
@@ -524,13 +532,19 @@ beq arm11kernel_waitdebuginfo_magic_lp
 bx lr
 
 arm11kernel_getdebugstateptr:
-ldr r1, arm11kernel_patch_fwver
+/*ldr r1, arm11kernel_patch_fwver
 ldr r0, =0xFFF3F000
 ldr r3, =0x1000
 cmp r1, #0x25
 subge r0, r0, r3
 cmp r1, #0x37
-ldrge r0, =0xFFF3D000
+ldrge r0, =0xFFF3D000*/
+ldr r0, =0xEFF80000
+ldr r1, arm11kernel_patch_fwver
+cmp r1, #0x37
+ldrge r0, =0xDFF80000
+ldr r1, =0xC00
+add r0, r0, r1
 bx lr
 
 .pool

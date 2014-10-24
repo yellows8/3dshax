@@ -4,7 +4,31 @@
 
 #include <nds/ndstypes.h>
 
+#include "arm9_a11kernel.h"
+
 extern u32 RUNNINGFWVER;
+
+u32 slabheap_physaddr = 0x1FFA0000;
+u32 slabheap_vaddr = 0;
+
+u32 arm11kernel_initialize_slabheapvaddr()
+{
+	u32 pos;
+	u32 *ptr;
+	u8 *ptr8;
+
+	for(pos=0; pos<0x100; pos++)
+	{
+		ptr8 = mmutable_convert_vaddr2physaddr((u32*)0x1FFF8000, 0xFFF00000 + (pos<<12));
+		if((u32)ptr8 == slabheap_physaddr)
+		{
+			slabheap_vaddr = 0xFFF00000 + (pos<<12);
+			return 0;
+		}
+	}
+
+	return 1;
+}
 
 u32 *get_kprocessptr(u64 procname, u32 num, u32 get_mmutableptr)
 {
@@ -13,7 +37,6 @@ u32 *get_kprocessptr(u64 procname, u32 num, u32 get_mmutableptr)
 	u32 kcodeset_adr=0;
 	u32 *wram = (u32*)0x1FF80000;
 	u32 *kprocess = NULL;
-	u32 slabheap_physaddr = 0x1FFA0000;
 	u32 kernelfcram_phys2vaddr_value = 0xd0000000;
 	u32 kprocess_adjustoffset = 0;
 
@@ -23,12 +46,17 @@ u32 *get_kprocessptr(u64 procname, u32 num, u32 get_mmutableptr)
 		kprocess_adjustoffset = 8;
 	}
 
+	if(slabheap_vaddr==0)
+	{
+		if(arm11kernel_initialize_slabheapvaddr())return NULL;
+	}
+
 	for(pos=0; pos<(0x80000>>2)-1; pos++)//kcodeset_adr = KCodeSet object arm11 kernel vaddr for the specified process name.
 	{
 		if(wram[pos]==((u32)procname) && wram[pos+1]==((u32)(procname>>32)))
 		{
 			kcodeset_adr = ((pos<<2) - 0x50) + 0x1FF80000;
-			kcodeset_adr = (kcodeset_adr - slabheap_physaddr) + 0xFFF00000;
+			kcodeset_adr = (kcodeset_adr - slabheap_physaddr) + slabheap_vaddr;
 			break;
 		}
 	}
