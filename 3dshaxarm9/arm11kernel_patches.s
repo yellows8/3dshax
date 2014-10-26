@@ -521,15 +521,21 @@ rfeia sp!
 .pool
 
 arm11kernel_waitdebuginfo_magic: @ r0=debuginfo ptr
+push {lr}
 ldr r1, =0x58584148
+mov r3, r0
+lsr r3, r3, #5
+lsl r3, r3, #5
+
 arm11kernel_waitdebuginfo_magic_lp:
-mov r2, #0
-mcr p15, 0, r2, c7, c14, 0
+//mov r2, #0
+//mcr p15, 0, r2, c7, c14, 0
+mcr p15, 0, r3, c7, c6, 1
 
 ldr r2, [r0]
 cmp r2, r1
 beq arm11kernel_waitdebuginfo_magic_lp
-bx lr
+pop {pc}
 
 arm11kernel_getdebugstateptr:
 /*ldr r1, arm11kernel_patch_fwver

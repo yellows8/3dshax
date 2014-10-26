@@ -408,7 +408,15 @@ void dump_arm11debuginfo()
 
 	if(debuginfo_ptr[1]==0x3131444c)//"LD11"
 	{
-		handle_debuginfo_ld11(debuginfo_ptr);
+		if((RUNNINGFWVER & 0x40000000) == 0)
+		{
+			handle_debuginfo_ld11(debuginfo_ptr);
+		}
+		else
+		{
+			filewrite(fileobj_debuginfo, (u32*)debuginfo_ptr, debuginfo_ptr[2], debuginfo_pos);
+			debuginfo_pos+= debuginfo_ptr[2];
+		}
 	}
 	else if(debuginfo_ptr[1]==0x35375653)//"SV75"
 	{
@@ -1236,6 +1244,7 @@ int main(void)
 	}
 
 	if((*((vu16*)0x10146000) & 0x40) == 0)ARM11CODELOAD_PROCNAME = 0x726564697073LL;//0x726564697073LL = "spider". Change the the code-load procname to this, when the Up button is pressed.
+	if((*((vu16*)0x10146000) & 0x80) == 0)ARM11CODELOAD_PROCNAME = 0x766c6fLL;//Same as above except with Miiverse applet + Down button.
 
 	//while(1);
 

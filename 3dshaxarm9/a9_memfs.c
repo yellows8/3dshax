@@ -7,6 +7,8 @@
 #include "arm9_svc.h"
 #include "arm9fs.h"
 
+extern u32 RUNNINGFWVER;
+
 /*void dump_fcramvram()
 {
 	u32 pos=0;
@@ -26,6 +28,7 @@
 
 void dump_fcramaxiwram()
 {
+	u32 size;
 	u32 pos=0;
 	u16 filepath[64];
 	u32 *fileobj = NULL;
@@ -34,7 +37,11 @@ void dump_fcramaxiwram()
 	memset(filepath, 0, 64*2);
 	for(pos=0; pos<strlen(path); pos++)filepath[pos] = (u16)path[pos];
 
-	dumpmem((u32*)0x20000000, 0x08000000);
+	size = 0x08000000;
+
+	if(RUNNINGFWVER & 0x40000000)size<<=1;
+
+	dumpmem((u32*)0x20000000, size);
 
 	if(openfile(sdarchive_obj, 4, filepath, (strlen(path)+1)*2, 7, &fileobj)!=0)return;
 	if(filewrite(fileobj, (u32*)0x1FF80000, 0x80000, 0)!=0)return;

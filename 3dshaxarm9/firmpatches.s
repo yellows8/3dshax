@@ -188,22 +188,26 @@ str r2, [r0, #0]
 ldr r2, [r1, #4]
 str r2, [r0, #4]*/
 
-ldr r1, =FIRMLAUNCH_FWVER
+/*ldr r1, =FIRMLAUNCH_FWVER
 ldr r1, [r1]
 mov r0, #0
 cmp r1, #0x1F
-ldreq r0, =0x0804d5c0 @ Patch the RSA verification function used for certs(tmd/tik/cert-chain/...), so that it returns 0 instead of -2011 for invalid signature.
+ldreq r0, =0x0804d5c0
 cmp r1, #0x2E
 ldreq r0, =0x080630bc
 cmp r1, #0x30
 ldreq r0, =0x080630c0
 cmp r1, #0x37
-ldreq r0, =0x080632bc
+ldreq r0, =0x080632bc*/
+
+mov r0, r4
+mov r1, r5
+mov r2, r7
+bl proc9_autolocate_certsigcheck_patchaddr
 cmp r0, #0
 beq patchfirm_arm9section_L1
 
-ldr r1, =0x2000
-ldr r2, =0x4770
+ldr r1, =0x2000 @ Patch the RSA verification function used for certs(tmd/tik/cert-chain/...), so that it returns 0 instead of -2011 for invalid signature.
 sub r0, r0, r4
 add r0, r0, r5
 strh r1, [r0] @ "mov r0, #0"
