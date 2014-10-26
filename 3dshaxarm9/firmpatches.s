@@ -213,7 +213,7 @@ add r0, r0, r5
 strh r1, [r0] @ "mov r0, #0"
 
 patchfirm_arm9section_L1:
-ldr r1, =FIRMLAUNCH_FWVER
+/*ldr r1, =FIRMLAUNCH_FWVER
 ldr r1, [r1]
 mov r0, #0
 cmp r1, #0x1F
@@ -223,7 +223,13 @@ ldreq r0, =0x0805d2c0
 cmp r1, #0x30
 ldreq r0, =0x0805d2c4
 cmp r1, #0x37
-ldreq r0, =0x0805d4c0
+ldreq r0, =0x0805d4c0*/
+
+mov r0, r4
+mov r1, r5
+mov r2, r7
+bl proc9_autolocate_mainsigcheck_patchaddr
+
 cmp r0, #0
 beq patchfirm_arm9section_L2
 

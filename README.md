@@ -53,7 +53,6 @@ The above doesn't really apply for functionality where addresses are located on-
 Some of the codebase automatically determines what addresses to patch on-the-fly. However some of the codebase still uses hard-coded addresses for each FIRM version.
 
 ## Code and patches which use hard-coded addresses
-* Process9 RSA sigcheck patches for main RSA padding check func(Not supported on FIRM system-versions v5.x/v6.x).
 * Process9 AES mutex enter/leave functions (Not supported on system-versions v5.x/v6.x)
 * CTRCARD cmd 0xc6 code (Not supported on FIRM system-versions v5.x/v6.x)
 * ARM11-kernel cmd-logging patch addresses/etc (Cmd-logging is not supported on FIRM system-version v5.x/v6.x)
@@ -64,7 +63,7 @@ Some of the codebase automatically determines what addresses to patch on-the-fly
 * Process9 patch for hooking code called from Process9 main(), for getting code execution after FIRM-launch under Process9.
 * Process9 FIRM-launch patches(for the function called by main() + addresses near the end of arm9mem).
 * Process9 PxiFS code + state/vtable ptrs
-* Process9 RSA sigcheck patch for certs.
+* Process9 RSA sigcheck patches: certs(including tmd/tik), and the main RSA padding check func.
 * ARM11-kernel patch addrs/etc
 * ...
 

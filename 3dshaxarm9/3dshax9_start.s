@@ -19,6 +19,7 @@
 .global proc9_waitfirmevent_hook_patchaddr
 .global proc9_autolocate_hookpatchaddr
 .global proc9_autolocate_certsigcheck_patchaddr
+.global proc9_autolocate_mainsigcheck_patchaddr
 .global generate_branch
 .global parse_branch
 .global parse_branch_thumb
@@ -54,6 +55,7 @@
 .type proc9_waitfirmevent_hook STT_FUNC
 .type proc9_autolocate_hookpatchaddr STT_FUNC
 .type proc9_autolocate_certsigcheck_patchaddr STT_FUNC
+.type proc9_autolocate_mainsigcheck_patchaddr STT_FUNC
 .type generate_branch STT_FUNC
 .type parse_branch STT_FUNC
 .type parse_branch_thumb STT_FUNC
@@ -1049,6 +1051,39 @@ bgt proc9_autolocate_certsigcheck_patchaddr_lp
 mov r0, #0
 
 proc9_autolocate_certsigcheck_patchaddr_end:
+add sp, sp, #8
+pop {r4, r5, r6, pc}
+.pool
+
+proc9_autolocate_mainsigcheck_patchaddr: @ inr0 = Process9 .text addr, inr1 = addr of Process9 .code, inr2 = .text size
+push {r0, r1, r4, r5, r6, lr}
+mov r6, r2
+ldr r4, =0x4d22b570
+ldr r5, =0x6869000c
+ldr r2, =0x080ff000
+
+proc9_autolocate_mainsigcheck_patchaddr_lp:
+ldr r3, [r1]
+cmp r3, r4
+bne proc9_autolocate_mainsigcheck_patchaddr_lpnext
+ldr r3, [r1, #4]
+cmp r3, r5
+bne proc9_autolocate_mainsigcheck_patchaddr_lpnext
+
+mov r0, r1
+ldr r1, [sp, #4]
+ldr r2, [sp, #0]
+sub r0, r0, r1
+add r0, r0, r2
+b proc9_autolocate_mainsigcheck_patchaddr_end
+
+proc9_autolocate_mainsigcheck_patchaddr_lpnext:
+add r1, r1, #4
+subs r6, r6, #4
+bgt proc9_autolocate_mainsigcheck_patchaddr_lp
+mov r0, #0
+
+proc9_autolocate_mainsigcheck_patchaddr_end:
 add sp, sp, #8
 pop {r4, r5, r6, pc}
 .pool
