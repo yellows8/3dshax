@@ -391,7 +391,9 @@ void dump_arm11debuginfo()
 	//u32 i;
 	u16 filepath[64];
 	char *path = (char*)"/3dshax_debug.bin";
-	//u32 *ptr, val=0;
+	//u32 *ptr;
+	u32 val=0;
+	vu32 *ptrpxi = (vu32*)0x10008000;
 
 	debuginfo_ptr = (vu32*)((u32)get_arm11debuginfo_physaddr() + 0x200);
 
@@ -403,20 +405,19 @@ void dump_arm11debuginfo()
 		if(openfile(sdarchive_obj, 4, filepath, (strlen(path)+1)*2, 6, &fileobj_debuginfo)!=0)return;
 	}
 
-	
+	val = *ptrpxi;
+	if((val & 0xf) == 0xf)
+	{
+		val &= ~0xf00;
+		val |= 0xf << 8;
+		*ptrpxi = val;
+	}
+
 	if(*debuginfo_ptr != 0x58584148)return;
 
 	if(debuginfo_ptr[1]==0x3131444c)//"LD11"
 	{
-		if((RUNNINGFWVER & 0x40000000) == 0)
-		{
-			handle_debuginfo_ld11(debuginfo_ptr);
-		}
-		else
-		{
-			filewrite(fileobj_debuginfo, (u32*)debuginfo_ptr, debuginfo_ptr[2], debuginfo_pos);
-			debuginfo_pos+= debuginfo_ptr[2];
-		}
+		handle_debuginfo_ld11(debuginfo_ptr);
 	}
 	else if(debuginfo_ptr[1]==0x35375653)//"SV75"
 	{
@@ -462,6 +463,16 @@ void dump_arm11debuginfo()
 	}*/
 
 	memset((u32*)debuginfo_ptr, 0, debuginfo_ptr[2]);
+
+	while(1)
+	{
+		val = *ptrpxi;
+		if((val & 0xf) == 0xe)break;
+	}
+
+	val &= ~0xf00;
+	val |= 0xe << 8;
+	*ptrpxi = val;
 }
 #endif
 

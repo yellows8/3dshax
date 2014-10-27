@@ -212,6 +212,16 @@ push {r4, r5, r6, r7, r8, lr}
 ldr r8, =RUNNINGFWVER
 ldr r8, [r8]
 
+ldr r0, =0x10008000
+ldr r1, [r0]
+ldr r2, =0xf00
+mov r3, #0
+bic r1, r1, r2
+and r3, r3, #0xf
+lsl r3, r3, #8
+orr r1, r1, r3
+str r1, [r0]
+
 bl arm11kernel_init_textvaddr
 
 bl get_arm11debuginfo_physaddr
@@ -520,19 +530,54 @@ rfeia sp!
 
 .pool
 
+arm11kernel_getpxiregbase_adr:
+ldr r1, arm11kernel_patch_fwver
+ldr r0, =0xFFFD2000
+cmp r1, #0x37
+ldrge r0, =0xFFFC0000
+bx lr
+.pool
+
+arm11kernel_sendpxisync_val:
+push {r0, lr}
+bl arm11kernel_getpxiregbase_adr
+ldr r1, [r0]
+ldr r2, =0xf00
+ldr r3, [sp, #0]
+bic r1, r1, r2
+and r3, r3, #0xf
+lsl r3, r3, #8
+orr r1, r1, r3
+str r1, [r0]
+pop {r0, pc}
+.pool
+
+arm11kernel_waitpxisync_val:
+push {r0, lr}
+bl arm11kernel_getpxiregbase_adr
+
+ldr r1, [sp, #0]
+
+arm11kernel_waitpxisync_val_lp:
+ldr r2, [r0]
+and r2, r2, #0xf
+
+cmp r2, r1
+bne arm11kernel_waitpxisync_val_lp
+pop {r0, pc}
+
 arm11kernel_waitdebuginfo_magic: @ r0=debuginfo ptr
 push {lr}
 ldr r1, =0x58584148
-mov r3, r0
-lsr r3, r3, #5
-lsl r3, r3, #5
+mov r3, #0
 
 arm11kernel_waitdebuginfo_magic_lp:
-//mov r2, #0
-//mcr p15, 0, r2, c7, c14, 0
-mcr p15, 0, r3, c7, c6, 1
+mcr p15, 0, r3, c7, c10, 4
+mcr p15, 0, r3, c7, c14, 0
+mcr p15, 0, r3, c7, c10, 4
 
 ldr r2, [r0]
+
 cmp r2, r1
 beq arm11kernel_waitdebuginfo_magic_lp
 pop {pc}
@@ -591,8 +636,12 @@ mov r6, r0
 
 bl arm11kernel_getdebugstateptr
 add r4, r0, #0x800
-add r0, r0, #0x200
-bl arm11kernel_waitdebuginfo_magic
+
+mov r0, #0xf
+bl arm11kernel_sendpxisync_val
+
+mov r0, #0xf
+bl arm11kernel_waitpxisync_val
 
 add r0, r4, #4
 mov r2, #0
@@ -724,8 +773,11 @@ mov r0, #0
 mcr p15, 0, r0, c7, c10, 5
 mcr p15, 0, r0, c7, c14, 0
 
-mov r0, r5
-bl arm11kernel_waitdebuginfo_magic
+mov r0, #0xe
+bl arm11kernel_sendpxisync_val
+
+mov r0, #0xe
+bl arm11kernel_waitpxisync_val
 
 #ifdef ENABLE_NETDEBUG
 cpsie i @ enable IRQs
@@ -807,8 +859,11 @@ cpsid i @ disable IRQs
 bl arm11kernel_getdebugstateptr
 add r4, r0, #0x200
 
-mov r0, r4
-bl arm11kernel_waitdebuginfo_magic
+mov r0, #0xf
+bl arm11kernel_sendpxisync_val
+
+mov r0, #0xf
+bl arm11kernel_waitpxisync_val
 
 mov r0, r4
 mov r1, #0
@@ -950,8 +1005,11 @@ mov r0, #0
 mcr p15, 0, r0, c7, c10, 5
 mcr p15, 0, r0, c7, c14, 0
 
-mov r0, r4
-bl arm11kernel_waitdebuginfo_magic
+mov r0, #0xe
+bl arm11kernel_sendpxisync_val
+
+mov r0, #0xe
+bl arm11kernel_waitpxisync_val
 
 arm11kernel_processcmd_patchend:
 cpsie i @ enable IRQs
@@ -1043,8 +1101,11 @@ cpsid i @ disable IRQs
 bl arm11kernel_getdebugstateptr
 add r4, r0, #0x200
 
-mov r0, r4
-bl arm11kernel_waitdebuginfo_magic
+mov r0, #0xf
+bl arm11kernel_sendpxisync_val
+
+mov r0, #0xf
+bl arm11kernel_waitpxisync_val
 
 ldr r2, =0x3131444c @ Debuginfo type = "LD11".
 str r2, [r4, #4]
@@ -1086,8 +1147,11 @@ mov r0, #0
 mcr p15, 0, r0, c7, c10, 5
 mcr p15, 0, r0, c7, c14, 0
 
-mov r0, r4
-bl arm11kernel_waitdebuginfo_magic
+mov r0, #0xe
+bl arm11kernel_sendpxisync_val
+
+mov r0, #0xe
+bl arm11kernel_waitpxisync_val
 
 arm11kernel_svc73_hook_end:
 cpsie i @ enable IRQs
