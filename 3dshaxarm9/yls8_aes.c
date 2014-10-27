@@ -33,31 +33,54 @@ extern u32 RUNNINGFWVER;
 
 u32 aesiv[4];
 
+void (*funcptr_aesmutex_enter)() = NULL;
+void (*funcptr_aesmutex_leave)() = NULL;
+
 void aesengine_waitdone();
 void aesengine_flushfifo();
 
 void ctr_add_counter( u8 *ctr, u32 carry );
 
+u32 parse_branch(u32 branchaddr, u32 branchval);
+
+void aes_mutex_ptrsinitialize()
+{
+	u32 *ptr = (u32*)0x08028000;
+	u32 pos;
+
+	for(pos=0; pos<(0x080ff000-0x08028000)>>2; pos++)
+	{
+		if(ptr[pos]==0xe8bd8008 && ptr[pos+1]==0x10011000)//"pop {r3, pc}" + reg addr
+		{
+			pos--;
+			ptr = (u32*)(parse_branch((u32)&ptr[pos], 0) | 1);
+			funcptr_aesmutex_leave = (void*)ptr;
+			funcptr_aesmutex_enter = (void*)(((u32)ptr)-0x18);
+			return;
+		}
+	}
+}
+
 void aes_mutexenter()
 {
-	void (*funcptr)() = (void*)0x805e4c1;//FW1F
+	if(funcptr_aesmutex_enter==NULL)
+	{
+		aes_mutex_ptrsinitialize();
+		if(funcptr_aesmutex_enter==NULL)return;
+	}
 
-	if(RUNNINGFWVER==0x2E)funcptr = (void*)0x805f7e5;
-	if(RUNNINGFWVER==0x30)funcptr = (void*)0x805f7e9;
-	if(RUNNINGFWVER==0x37)funcptr = (void*)0x805f9e9;
-
-	funcptr();
+	funcptr_aesmutex_enter();
 }
 
 void aes_mutexleave()
 {
-	void (*funcptr)() = (void*)0x805e4d9;//FW1F
+	if(funcptr_aesmutex_leave==NULL)
+	{
+		aes_mutex_ptrsinitialize();
+		if(funcptr_aesmutex_leave==NULL)return;
+	}
 
-	if(RUNNINGFWVER==0x2E)funcptr = (void*)0x805f7fd;
-	if(RUNNINGFWVER==0x30)funcptr = (void*)0x805f801;
-	if(RUNNINGFWVER==0x37)funcptr = (void*)0x805fa01;
-
-	funcptr();
+	funcptr_aesmutex_leave();
 }
 
 void aes_set_ctr(u32 *ctr)
