@@ -273,7 +273,8 @@ int net_kernelmode_handlecmd(u32 param)
 	u32* (*funcptr)() = (void*)0xfff51808;
 
 	if(*((u8*)0x1FF80002) < 35)funcptr = (void*)0xfff61808;
-	if(*((u8*)0x1FF80002) >= 44)funcptr = (void*)0xfff41808;
+	if(*((u8*)0x1FF80002) == 44)funcptr = (void*)0xfff41808;
+	if(*((u8*)0x1FF80002) >= 45)funcptr = (void*)0xfff01808;
 
 	cmdid = net_kernelmode_paramblock[0];
 	buf = (u32*)net_kernelmode_paramblock[1];
