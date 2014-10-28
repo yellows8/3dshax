@@ -672,6 +672,12 @@ addge r1, r1, #8
 mov r3, #0
 
 ldr r5, [r1, #0x54]
+
+ldr r3, arm11kernel_patch_fwver @ KProcess structure is different for the New3DS arm11kernel.
+lsr r3, r3, #30
+ands r3, r3, #1
+addne r1, r1, #8
+
 ldr r1, [r1, #0xa8]
 cmp r1, #0
 beq arm11kernel_exceptionregdump_writeprocname
@@ -709,6 +715,13 @@ ldr r1, [r1]
 sub r1, r1, #0x10
 
 arm11kernel_exceptionregdump_datadump_pclp:
+lsr r2, r1, #10 @ Make sure this addr is readable from kernel-mode.
+lsl r2, r2, #10
+mcr p15, 0, r2, c7, c8, 0
+mrc p15, 0, r2, c7, c4, 0
+tst r2, #1
+bne arm11kernel_exceptionregdump_L2_end
+
 ldr r2, [r1], #4
 str r2, [r0], #4
 add r3, r3, #4
@@ -747,6 +760,13 @@ bic r1, r1, #3
 //sub r1, r1, #0x10
 
 arm11kernel_exceptionregdump_L2:
+lsr r2, r1, #10 @ Make sure this addr is readable from kernel-mode.
+lsl r2, r2, #10
+mcr p15, 0, r2, c7, c8, 0
+mrc p15, 0, r2, c7, c4, 0
+tst r2, #1
+bne arm11kernel_exceptionregdump_L2_end
+
 ldr r2, [r1], #4
 str r2, [r0], #4
 add r3, r3, #4
@@ -903,6 +923,11 @@ ldr r3, arm11kernel_patch_fwver
 cmp r3, #0x37
 addge r0, r0, #8
 addge r1, r1, #8
+
+lsr r3, r3, #30 @ KProcess structure is different for the New3DS arm11kernel.
+ands r3, r3, #1
+addne r0, r0, #8
+addne r1, r1, #8
 
 ldr r0, [r0, #0xa8] @ r0/r1 = src/dst KProcess' KCodeSet
 ldr r1, [r1, #0xa8]
