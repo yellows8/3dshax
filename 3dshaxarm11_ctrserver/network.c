@@ -447,6 +447,8 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 	u64 filesize;
 	u32 handletype=0;
 	u32 *ptr;
+	u64 val64;
+	u64 *val64ptr;
 	u32 *cmdbuf = getThreadCommandBuffer();
 	GSP_FramebufferInfo framebufinfo;
 	FS_archive archive;
@@ -473,6 +475,16 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 	if(ret != -2)return ret;
 
 	cmdid &= 0xff;
+
+	if(cmdid==0x31)
+	{
+		val64ptr = (u64*)buf;
+		val64 = svc_getSystemTick();
+		svc_sleepThread(1000000000LL);
+		*val64ptr = svc_getSystemTick() - val64;
+		*bufsize = 8;
+		return 0;
+	}
 
 	if(cmdid==0x4e)
 	{

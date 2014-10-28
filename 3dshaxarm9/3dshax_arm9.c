@@ -503,6 +503,8 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 	int ret=0;
 	u32 rw, openflags;
 	u32 pos;
+	u64 val64;
+	u64 *val64ptr;
 	u32 *addr;
 	u32 size=0;
 	u32 tmpsize=0, tmpsize2=0;
@@ -617,6 +619,16 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 
 		call_arbitaryfuncptr((void*)buf[0], &buf[1]);
 
+		return 0;
+	}
+
+	if(cmdid==0x31)
+	{
+		val64ptr = (u64*)buf;
+		val64 = svcGetSystemTick();
+		svcSleepThread(1000000000LL);
+		*val64ptr = svcGetSystemTick() - val64;
+		*bufsize = 8;
 		return 0;
 	}
 
