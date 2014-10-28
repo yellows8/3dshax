@@ -103,10 +103,6 @@ void load_arm11code(u32 *loadptr, u32 maxloadsize, u64 procname)
 
 	//if(loadptr==NULL)app_physaddr = patch_mmutables(procname, 1, 0);
 
-	#ifndef DISABLE_ARM11KERNEL_SVCHANDLER_PATCH
-	writepatch_arm11kernel_svcaccess();
-	#endif
-
 	if(openfile(sdarchive_obj, 4, arm11code_filepath, 0x24, 1, &fileobj)!=0)return;
 	input_filesize = getfilesize(fileobj);
 	ptr = loadptr;

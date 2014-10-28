@@ -423,6 +423,10 @@ bl generate_branch @ Patch the svc75() code.
 str r0, [r5, r6]*/
 #endif
 
+#ifndef DISABLE_ARM11KERNEL_SVCHANDLER_PATCH
+bl writepatch_arm11kernel_svcaccess
+#endif
+
 pop {r4, r5, r6, r7, r8, pc}
 .pool
 

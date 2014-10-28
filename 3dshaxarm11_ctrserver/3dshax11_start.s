@@ -26,6 +26,7 @@ PROCESSNAME:
 
 codestart:
 push {r4, r5, r6, r7, r8, lr}
+
 adr r0, PROCESSNAME
 ldr r1, [r0, #0]
 ldr r2, [r0, #4]
@@ -38,6 +39,8 @@ beq clearbss @ When the PROCESSNAME wasn't changed, assume we're running under a
 ldr r1, =0xFFFF8001
 svc 0x27
 mov r6, r1
+cmp r0, #0
+bne fail
 
 ldr r3, =_end
 ldr r4, =0xfff
