@@ -753,6 +753,7 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 	}
 	#endif
 
+	#ifdef ENABLE_GAMECARD
 	if(cmdid==0xd0)
 	{
 		*bufsize = 0x44;
@@ -760,6 +761,7 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 		buf[0] = ctrcard_cmdc6(&buf[1]);
 		return 0;
 	}
+	#endif
 
 	#ifdef ENABLEAES
 	if(cmdid==0xe2)

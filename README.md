@@ -27,7 +27,7 @@ The FIRM-launch code loads the plaintext FIRM from SD "/firm.bin". The FWVER val
 * "DISABLE_NETDEBUG=1" Disable the loop in the arm11kernel debug exception handler(when procstarthook/arm11kernel_debug are enabled) which waits for a signal(terminate process / continue) from ctrserver.
 * "DISABLE_GETEXHDRHOOK=1" Disables the arm9 get-exheader hook. This option must be used when DISABLE_ARM11KERNEL_DEBUG/DISABLE_ARM11KERNEL_PROCSTARTHOOK is set, otherwise when doing a firm-launch the system will eventually trigger a fatal-error when dlp-module fails to get service-handles.
 * "ENABLE_LOADA9_x01FFB800=1" This enables arm9 code which loads the SD file @ "/x01ffb800.bin" to arm9-mem 0x01ffb800. This should only be used when NAND-redir is enabled, and when the SD nandimage is originally from another 3ds, converted for usage on another 3ds.
-* "ENABLE_GAMECARD=1" Enables 3ds gamecard reading code.
+* "ENABLE_GAMECARD=1" Enables 3ds gamecard reading code(including ctrcard cmd 0xc6 code).
 * "DISABLE_FSACCESSINFO_OVERWRITE=1" Disable exheader FS accessinfo overwrite with all 0xFF for the arm11code-load process.
 * "DISABLE_A9THREAD=1" Disables creation of the arm9 thread.
 * "ENABLE_CONFIGMEM_DEVUNIT=1" Enables writing val0 to configmem UNITINFO. This can be used to enable dev-mode for ErrDisp.
@@ -53,7 +53,6 @@ The above doesn't really apply for functionality where addresses are located on-
 Some of the codebase automatically determines what addresses to patch on-the-fly. However some of the codebase still uses hard-coded addresses for each FIRM version.
 
 ## Code and patches which use hard-coded addresses
-* CTRCARD cmd 0xc6 code (Not supported on FIRM system-versions v5.x/v6.x)
 * ARM11-kernel cmd-logging patch addresses/etc (Cmd-logging is not supported on FIRM system-version v5.x/v6.x)
 * ...
 
@@ -64,6 +63,7 @@ Some of the codebase automatically determines what addresses to patch on-the-fly
 * Process9 PxiFS code + state/vtable ptrs
 * Process9 RSA sigcheck patches: certs(including tmd/tik), and the main RSA padding check func.
 * Process9 AES mutex enter/leave functions
+* CTRCARD cmd 0xc6 code/state ptrs
 * ARM11-kernel patch addrs/etc
 * ...
 

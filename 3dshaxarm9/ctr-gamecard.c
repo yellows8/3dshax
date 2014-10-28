@@ -1,3 +1,5 @@
+#ifdef ENABLE_GAMECARD
+
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
@@ -9,6 +11,11 @@
 extern u32 RUNNINGFWVER;
 
 u32 *gamecard_archiveobj = NULL;
+u32 (*funcptr_ctrcard_cmdc6)(u32*, u32*) = NULL;
+u32 *gamecard_stateptr = NULL;
+
+u32 *locate_cmdhandler_code(u32 *ptr, u32 size, u32 *pool_cmpdata, u32 pool_cmpdata_wordcount, u32 locate_ldrcc);
+u32 parse_branch(u32 branchaddr, u32 branchval);
 
 /*u32 gamecardslot_getpowerstate()
 {
@@ -67,21 +74,56 @@ u32 ctrcard_cmdbf_begindataread(u64 mediaoffset, u16 total_datablocks)
 	return funcptr(ctx, 0, mediaoffset, total_datablocks);
 }*/
 
-u32 ctrcard_cmdc6(u32 *outbuf)
+void locatefunc_ctrcard_cmdc6()
 {
-	u32 (*funcptr)(u32*, u32*);
-	u32 ctx[1];
+	u32 *ptr;
+	u32 pos;
+	u32 pool_cmpdata[6] = {0xd9001830, 0x000100c6, 0x00010041, 0x00020284, 0x00020041, 0x00030284};
 
-	ctx[0] = 0;	
+	ptr = locate_cmdhandler_code((u32*)0x08028000, 0x080ff000-0x08028000, pool_cmpdata, 6, 1);
+	if(ptr==NULL)return;
 
-	if(RUNNINGFWVER==0x1F)funcptr = (void*)0x08035635;
-	if(RUNNINGFWVER==0x2E || RUNNINGFWVER==0x30)funcptr = (void*)0x08031cf1;
-	if(RUNNINGFWVER==0x37)funcptr = (void*)0x08031d35;
+	ptr = (u32*)ptr[0x6];//ptr = addr of code in pxips9 cmdhandler func for GetRomId.
+	pos = 0;
 
-	return funcptr(ctx, outbuf);
+	while(1)
+	{
+		if((ptr[pos] >> 24) == 0xeb)break;
+		pos++;
+	}
+
+	ptr = (u32*)parse_branch((u32)&ptr[pos], 0);//ptr = address of the function handling this command.
+	pos = 0;
+
+	while(1)
+	{
+		if((ptr[pos] >> 24) == 0xfa)break;
+		pos++;
+	}
+
+	funcptr_ctrcard_cmdc6 = (void*)(parse_branch((u32)&ptr[pos], 0) | 1);
+
+	while(1)//Locate the first word of the .pool.
+	{
+		if(ptr[pos] == 0xe8bd8010)break;
+		pos++;
+	}
+	pos++;
+
+	gamecard_stateptr = (u32*)ptr[pos];
 }
 
-#ifdef ENABLE_GAMECARD
+u32 ctrcard_cmdc6(u32 *outbuf)
+{
+	if(funcptr_ctrcard_cmdc6==NULL || gamecard_stateptr==NULL)
+	{
+		locatefunc_ctrcard_cmdc6();
+		if(funcptr_ctrcard_cmdc6==NULL || gamecard_stateptr==NULL)return ~0;
+	}
+
+	return funcptr_ctrcard_cmdc6(gamecard_stateptr, outbuf);
+}
+
 u32 gamecard_initarchiveobj()
 {
 	u32 lowpath[3];
@@ -116,7 +158,6 @@ u32 gamecard_readsectors(u32 *outbuf, u32 sector, u32 sectorcount)
 
 	return archive_readsectors(ptr, outbuf, sectorcount, sector);
 }
-#endif
 
 /*u32 read_gamecardsector(u64 mediaoffset, u32 *outbuf, u32 readsize, u16 total_datablocks)
 {
@@ -202,3 +243,6 @@ u32 gamecard_readsectors(u32 *outbuf, u32 sector, u32 sectorcount)
 	//*((u16*)0x807431c) = 0x2303;
 	//svcFlushProcessDataCache((u32*)0x807431c, 4);
 //}
+
+#endif
+
