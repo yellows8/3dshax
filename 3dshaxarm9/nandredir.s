@@ -42,6 +42,28 @@ blx r4
 pop {r4, pc}
 .pool*/
 
+nandredir_getsdstate_offset:
+ldr r0, =0x14f0
+ldr r1, =FIRMLAUNCH_FWVER
+ldr r1, [r1]
+lsr r2, r1, #30
+ands r2, r2, #1
+bne nandredir_getsdstate_offset_new3ds
+
+@ Old3DS:
+cmp r1, #0x38
+ldrge r0, =0x11f0
+b nandredir_getsdstate_offset_end
+
+nandredir_getsdstate_offset_new3ds:
+and r1, r1, #0xff
+cmp r1, #46
+ldrge r0, =0x11f0
+
+nandredir_getsdstate_offset_end:
+bx lr
+.pool
+
 arm9_nandredir_code:
 push {r0, r1, r2, r3, r4, r5, r6, r7, ip, lr}
 sub sp, sp, #0x40
@@ -83,7 +105,7 @@ str r0, arm9_nandredir_code_savaddr
 
 arm9_nandredir_code_debugend:*/
 
-ldr r0, =0x14f0
+bl nandredir_getsdstate_offset
 ldr r1, [r5, #4] @ Change the object ptr to the SD one.
 add r1, r1, r0
 ldr r2, =NANDREDIR_SECTORNUM @ Sector# of the NAND image "partition" on the SD card.
@@ -114,14 +136,16 @@ cmp r1, r2
 beq arm9_nandredir_rwcodefinal_end
 str r2, arm9_nandredir_code_hookflag
 
+bl nandredir_getsdstate_offset
+mov r3, r0
+
 ldr r2, =NANDREDIR_SECTORNUM
 ldr r2, [r2]
 ldr r1, [r4, #8]
 sub r1, r1, r2
 str r1, [r4, #8]
-ldr r2, =0x14f0
 ldr r1, [r4, #4]
-sub r1, r1, r2
+sub r1, r1, r3
 str r1, [r4, #4]
 
 /*ldr r1, arm9_nandredir_code_savaddr
