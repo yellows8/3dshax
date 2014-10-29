@@ -235,11 +235,9 @@ pop {r3, r4, r5, pc}
 
 closefile:
 bx lr
-/*push {lr} @ This doesn't seem to actually close the file?
-ldr r1, [r0]
+/*ldr r1, [r0] @ This doesn't seem to actually close the file?
 ldr r1, [r1, #4]
-blx r1
-pop {pc}*/
+bx r1*/
 
 fileread: @ r0=fileclass*, r1=buffer, r2=size, r3=filepos
 push {r0, r1, r2, r3, r4, r5, lr}
@@ -593,7 +591,7 @@ add r0, r0, #4
 ldr r6, =0xb005 @ "add sp, #20"
 ldr r7, =0xbdf0 @ "pop {r4, r5, r6, r7, pc}"
 
-initializeptr_fsvtables_lp1: @ Locate two words of the fileread vtable ptr. For the second one, the filewrite ptr is located @ the word right after that.
+initializeptr_fsvtables_lp1: @ Locate the fileread vtable ptr in a function's .pool, where the above instructions are immediately before it.
 ldr r3, [r0]
 cmp r3, r5
 bne initializeptr_fsvtables_lp1next

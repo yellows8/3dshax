@@ -536,9 +536,21 @@ rfeia sp!
 
 arm11kernel_getpxiregbase_adr:
 ldr r1, arm11kernel_patch_fwver
+lsr r2, r1, #30
+ands r2, r2, #1
+bne arm11kernel_getpxiregbase_adr_new3ds
+
 ldr r0, =0xFFFD2000
 cmp r1, #0x37
-ldrge r0, =0xFFFC0000
+ldreq r0, =0xFFFC0000
+cmp r1, #0x38
+ldrge r0, =0xFFFC4000
+b arm11kernel_getpxiregbase_adr_end
+
+arm11kernel_getpxiregbase_adr_new3ds:
+ldr r0, =0xFFFC0000
+
+arm11kernel_getpxiregbase_adr_end:
 bx lr
 .pool
 
