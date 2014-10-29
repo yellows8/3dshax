@@ -1012,26 +1012,7 @@ void thread_entry()
 	u32 debuginitialized = 0;
 	//u32 totalmenu_textoverwrite = 0;
 
-	//dumpmem((u32*)0x08000000, 0x100000);
-	//dumpmem((u32*)0x20000000, 0x100000);
-
-	//dumpmem((u32*)0x20000000, 0x100000);
-	//memset((u32*)0x2696e000, ~0, 0x134000);
-	//svcExitThread();
-
-	//while(*((vu16*)0x10146000) & 2);
-
 	if(FIRMLAUNCH_RUNNINGTYPE==0)svcSleepThread(2000000000LL);
-
-	//while((*((vu16*)0x10146000) & 2) == 0);
-
-	//*((u32*)0x808f194) = 0xe3a01001;//"mov r1, #1" Patch the code calling the function for pxiam9_cmd40() so that the mediatype is always value 1 for SD, so that the install for the updated NAND titles aren't finalized when mediatype=0.
-	//svcFlushProcessDataCache((u32*)0x808f194, 0x4);
-
-	//*((u32*)0x08086af8) = 0xe3a04002;//Patch the FIRM launch code so that it uses FIRM programID-low value 2 for NATIVE_FIRM, instead of using the one from PXI.
-	//svcFlushProcessDataCache((u32*)0x08086af8, 0x4);
-
-	//axiwram[0x9608>>2] = (axiwram[0x9608>>2] & ~(0xff<<24)) | 0xea000000;//Patch the conditional branch to an unconditional branch, for the check in svcCreateMemoryBlock which normally returns an error when memorytype==application.
 
 	if(RUNNINGFWVER==0x2E)
 	{
@@ -1054,9 +1035,6 @@ void thread_entry()
 	}
 	else if(RUNNINGFWVER==0x37)
 	{
-		*((u16*)0x0803e676) = 0x2002;
-		svcFlushProcessDataCache((u32*)0x0803e674, 0x4);//pxipm opentitle sd-flag check patch
-
 		*((u16*)0x0805ef38) |= 1;
 		svcFlushProcessDataCache((u32*)0x0805ef38, 0x4);//Patch the code which reads the arm9 access-control mount flags, so that all of these archives are accessible.
 	}
