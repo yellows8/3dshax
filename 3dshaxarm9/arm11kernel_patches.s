@@ -191,6 +191,104 @@ str r0, [r1]
 pop {r4, r5, r6, pc}
 .pool
 
+#ifdef ARM11KERNEL_ENABLECMDLOG
+arm11kernel_locate_cmdlogadr:
+push {r4, r5, r6, r7, lr}
+mov r4, r0
+
+ldr r5, =arm11kernel_textvaddr
+ldr r5, [r5]
+ldr r6, =0x24000
+
+arm11kernel_locate_cmdlogadr_lp0:
+ldr r0, =0x1FFF8000
+mov r1, r5
+bl mmutable_convert_vaddr2physaddr
+cmp r0, #0
+beq arm11kernel_locate_cmdlogadr_end
+
+mov r7, #0
+
+arm11kernel_locate_cmdlogadr_lp1: @ <v6.0 FIRM
+ldr r3, [r0, #0]
+ldr r2, =(0xe2001d3f-0x10) @ and r1, r0, #0xfc0
+add r2, r2, #0x10
+cmp r2, r3
+bne arm11kernel_locate_cmdlogadr_lp1_checkother
+ldr r3, [r0, #4]
+ldr r2, =(0xe200003f-0x10) @ and r0, r0, #0x3f
+add r2, r2, #0x10
+cmp r2, r3
+bne arm11kernel_locate_cmdlogadr_lp1_checkother
+ldr r3, [r0, #8]
+ldr r2, =(0xe1a01321-0x10) @ lsr r1, r1, #6
+add r2, r2, #0x10
+cmp r2, r3
+bne arm11kernel_locate_cmdlogadr_lp1_checkother
+ldr r3, [r0, #12]
+ldr r2, =(0xe3500000-0x10) @ cmp r0, #0
+add r2, r2, #0x10
+cmp r2, r3
+bne arm11kernel_locate_cmdlogadr_lp1_checkother
+
+add r0, r0, #8
+add r5, r5, r7
+add r5, r5, #8
+
+str r0, [r4, #0]
+str r5, [r4, #4]
+b arm11kernel_locate_cmdlogadr_end
+
+arm11kernel_locate_cmdlogadr_lp1_checkother: @ >=v6.0 FIRM
+ldr r3, [r0, #0]
+ldr r2, =(0xe5985094-0x10) @ ldr r5, [r8, #0x94]
+add r2, r2, #0x10
+cmp r2, r3
+bne arm11kernel_locate_cmdlogadr_lp1next
+ldr r3, [r0, #4]
+ldr r2, =(0xe5941098-0x10) @ ldr r1, [r4, #152]	; 0x98
+add r2, r2, #0x10
+cmp r2, r3
+bne arm11kernel_locate_cmdlogadr_lp1next
+ldr r3, [r0, #8]
+ldr r2, =(0xe1a03008-0x10) @ mov r3, r8
+add r2, r2, #0x10
+cmp r2, r3
+bne arm11kernel_locate_cmdlogadr_lp1next
+ldr r3, [r0, #12]
+ldr r2, =(0xe1a02004-0x10) @ mov r2, r4
+add r2, r2, #0x10
+cmp r2, r3
+bne arm11kernel_locate_cmdlogadr_lp1next
+
+add r0, r0, #0xc
+add r5, r5, r7
+add r5, r5, #0xc
+
+str r0, [r4, #0]
+str r5, [r4, #4]
+b arm11kernel_locate_cmdlogadr_end
+
+arm11kernel_locate_cmdlogadr_lp1next:
+add r0, r0, #4
+add r7, r7, #4
+ldr r1, =(0x1000-0x10)
+cmp r7, r1
+ble arm11kernel_locate_cmdlogadr_lp1
+
+ldr r1, =0x1000
+add r5, r5, r1
+sub r6, r6, r1
+cmp r6, #0
+bgt arm11kernel_locate_cmdlogadr_lp0
+
+mov r0, #0
+
+arm11kernel_locate_cmdlogadr_end:
+pop {r4, r5, r6, r7, pc}
+.pool
+#endif
+
 get_arm11debuginfo_physaddr:
 push {r4, lr}
 /*ldr r4, =RUNNINGFWVER
@@ -209,6 +307,7 @@ pop {r4, pc}
 
 write_arm11debug_patch:
 push {r4, r5, r6, r7, r8, lr}
+sub sp, sp, #12
 ldr r8, =RUNNINGFWVER
 ldr r8, [r8]
 
@@ -345,7 +444,7 @@ ldr r4, =0x1800
 add r4, r4, r7
 add r4, r4, r3
 
-mov r6, #0
+/*mov r6, #0
 cmp r8, #0x1F
 ldreq r6, =0x1f3a4 @ Patch the process_cmdbuf_sendreply() code.
 cmp r8, #0x2E
@@ -355,19 +454,28 @@ ldreq r6, =0x20250
 cmp r8, #0x37
 ldreq r6, =0x20500
 cmp r6, #0
+beq write_arm11debug_patch_cmdhookend*/
+
+mov r0, sp
+bl arm11kernel_locate_cmdlogadr
+cmp r0, #0
 beq write_arm11debug_patch_cmdhookend
 
-add r0, r7, r6
+ldr r0, [sp, #4]
+
+//add r0, r7, r6
 mov r1, r4
 mov r2, #1
 bl generate_branch
-cmp r8, #0x2E
+ldr r6, [sp, #0]
+/*cmp r8, #0x2E
 ldreq r6, =0x5f254//=0x5fd6c
 cmp r8, #0x30
 ldreq r6, =0x5f250
 cmp r8, #0x37
-ldreq r6, =0x5e500
-str r0, [r5, r6]
+ldreq r6, =0x5e500*/
+//str r0, [r5, r6]
+str r0, [r6]
 
 /*ldr r6, =0x1fe84
 add r0, r7, r6
@@ -427,6 +535,7 @@ str r0, [r5, r6]*/
 bl writepatch_arm11kernel_svcaccess
 #endif
 
+add sp, sp, #12
 pop {r4, r5, r6, r7, r8, pc}
 .pool
 
@@ -883,12 +992,12 @@ arm11kernel_processcmd_patch:
 push {r0, r1, r2, r3, r4, r5, r6, r7, r8, lr}
 
 ldr r5, arm11kernel_patch_fwver
-cmp r5, #0x1F
-lsreq r1, r1, #6
-streq r1, [sp, #4]
-//lsrne r2, r2, #6
-movne r2, r4
-strne r2, [sp, #8]
+cmp r5, #0x26
+lsrle r1, r1, #6
+strle r1, [sp, #4]
+//lsrgt r2, r2, #6
+movge r2, r4
+strge r2, [sp, #8]
 
 cpsid i @ disable IRQs
 
@@ -923,14 +1032,11 @@ ldrne r6, [sp, #0x94]
 ldrne r7, [sp, #0x98]*/
 
 ldr ip, arm11kernel_patch_fwver
-cmp ip, #0x1F
-ldreq r6, [sp, #0xbc] @ r6/r7 = src/dst KThread
-ldreq r7, [sp, #0xb8]
-cmp ip, #0x2E
-/*ldreq r6, [sp, #0xc0]
-ldreq r7, [sp, #0xbc]*/
-ldrge r6, [sp, #0x20]
-ldrge r7, [sp, #0x10]
+cmp ip, #0x26
+ldrle r6, [sp, #0xbc] @ r6/r7 = src/dst KThread
+ldrle r7, [sp, #0xb8]
+ldrgt r6, [sp, #0x20]
+ldrgt r7, [sp, #0x10]
 
 ldr r0, [r6, #0x80] @ r6/r7 = src/dst KThread's KProcess
 ldr r1, [r7, #0x80]
