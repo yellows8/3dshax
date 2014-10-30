@@ -38,7 +38,7 @@ u32 *get_kprocessptr(u64 procname, u32 num, u32 get_mmutableptr)
 	u32 *wram = (u32*)0x1FF80000;
 	u32 *kprocess = NULL;
 	u32 kernelfcram_phys2vaddr_value = 0xd0000000;
-	u32 kprocess_adjustoffset = 0;
+	u32 kprocess_adjustoffset = 0, kprocess_adjustoffset2 = 0;
 
 	if(RUNNINGFWVER>=0x37)
 	{
@@ -46,12 +46,15 @@ u32 *get_kprocessptr(u64 procname, u32 num, u32 get_mmutableptr)
 		kprocess_adjustoffset = 8;
 	}
 
+	kprocess_adjustoffset2 = kprocess_adjustoffset;
+	//if(RUNNINGFWVER & 0x40000000)kprocess_adjustoffset2+= 8;
+
 	if(slabheap_vaddr==0)
 	{
 		if(arm11kernel_initialize_slabheapvaddr())return NULL;
 	}
 
-	for(pos=0; pos<(0x80000>>2)-1; pos++)//kcodeset_adr = KCodeSet object arm11 kernel vaddr for the specified process name.
+	for(pos=(slabheap_physaddr - (u32)wram)>>2; pos<(0x80000>>2)-1; pos++)//kcodeset_adr = KCodeSet object arm11 kernel vaddr for the specified process name.
 	{
 		if(wram[pos]==((u32)procname) && wram[pos+1]==((u32)(procname>>32)))
 		{
@@ -73,7 +76,7 @@ u32 *get_kprocessptr(u64 procname, u32 num, u32 get_mmutableptr)
 			}
 			else
 			{
-			kprocess = &wram[pos - ((0xa8+kprocess_adjustoffset)>>2)];
+				kprocess = &wram[pos - ((0xa8+kprocess_adjustoffset2)>>2)];
 				break;
 			}
 		}

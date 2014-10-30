@@ -43,17 +43,16 @@ The FIRM-launch code loads the plaintext FIRM from SD "/firm.bin". The FWVER val
 # FIRM Compatibility
 Supported NATIVE_FIRM system-versions(versions where NATIVE_FIRM wasn't updated don't apply here):
 * v4.1
-* v5.x (mostly)
-* v6.x (mostly)
+* v5.x
+* v6.x
 * v7.x
 * v8.0
 
 The above doesn't really apply for functionality where addresses are located on-the-fly, unless specificly mentioned otherwise.
 
-Some of the codebase automatically determines what addresses to patch on-the-fly. However some of the codebase still uses hard-coded addresses for each FIRM version.
+Some of the codebase automatically determines what addresses to patch on-the-fly. However some of the codebase (minor/commented-out patch(es)) still uses hard-coded addresses for each FIRM version.
 
 ## Code and patches which use hard-coded addresses
-* ARM11-kernel cmd-logging patch addresses/etc (Cmd-logging is not supported on FIRM system-version v5.x/v6.x)
 * ...
 
 ## Code and patches where the addresses are automatically determined on-the-fly
@@ -65,5 +64,6 @@ Some of the codebase automatically determines what addresses to patch on-the-fly
 * Process9 AES mutex enter/leave functions
 * CTRCARD cmd 0xc6 code/state ptrs
 * ARM11-kernel patch addrs/etc
+* ARM11-kernel cmd-logging patch addresses/etc
 * ...
 

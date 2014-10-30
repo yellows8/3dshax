@@ -444,38 +444,17 @@ ldr r4, =0x1800
 add r4, r4, r7
 add r4, r4, r3
 
-/*mov r6, #0
-cmp r8, #0x1F
-ldreq r6, =0x1f3a4 @ Patch the process_cmdbuf_sendreply() code.
-cmp r8, #0x2E
-ldreq r6, =0x20254//=0x20d6c
-cmp r8, #0x30
-ldreq r6, =0x20250
-cmp r8, #0x37
-ldreq r6, =0x20500
-cmp r6, #0
-beq write_arm11debug_patch_cmdhookend*/
-
 mov r0, sp
 bl arm11kernel_locate_cmdlogadr
 cmp r0, #0
 beq write_arm11debug_patch_cmdhookend
 
 ldr r0, [sp, #4]
-
-//add r0, r7, r6
 mov r1, r4
 mov r2, #1
 bl generate_branch
-ldr r6, [sp, #0]
-/*cmp r8, #0x2E
-ldreq r6, =0x5f254//=0x5fd6c
-cmp r8, #0x30
-ldreq r6, =0x5f250
-cmp r8, #0x37
-ldreq r6, =0x5e500*/
-//str r0, [r5, r6]
-str r0, [r6]
+ldr r1, [sp, #0]
+str r0, [r1]
 
 /*ldr r6, =0x1fe84
 add r0, r7, r6
@@ -725,7 +704,7 @@ bx lr
 
 .pool
 
-KProcessmem_getphysicaladdr:
+/*KProcessmem_getphysicaladdr:
 push {r4, r5}
 mov r2, #0
 
@@ -750,8 +729,7 @@ cmp r2, #0
 moveq r0, #0
 bxeq lr
 bx r2
-
-.pool
+.pool*/
 
 arm11kernel_exceptionregdump:
 push {r4, r5, r6, lr}
@@ -991,15 +969,15 @@ bx lr
 arm11kernel_processcmd_patch:
 push {r0, r1, r2, r3, r4, r5, r6, r7, r8, lr}
 
+cpsid i @ disable IRQs
+
 ldr r5, arm11kernel_patch_fwver
 cmp r5, #0x26
 lsrle r1, r1, #6
 strle r1, [sp, #4]
 //lsrgt r2, r2, #6
-movge r2, r4
-strge r2, [sp, #8]
-
-cpsid i @ disable IRQs
+movgt r2, r4
+strgt r2, [sp, #8]
 
 bl arm11kernel_getdebugstateptr
 add r4, r0, #0x200
@@ -1038,7 +1016,7 @@ ldrle r7, [sp, #0xb8]
 ldrgt r6, [sp, #0x20]
 ldrgt r7, [sp, #0x10]
 
-ldr r0, [r6, #0x80] @ r6/r7 = src/dst KThread's KProcess
+ldr r0, [r6, #0x80] @ r0/r1 = src/dst KThread's KProcess
 ldr r1, [r7, #0x80]
 
 ldr r3, arm11kernel_patch_fwver
@@ -1130,21 +1108,17 @@ str r3, [r0], #4
 subs r2, r2, #4
 bgt arm11kernel_processcmd_patch_cpylp2
 
-cmp r5, #0
-/*ldreq r0, [sp, #0x98]
-ldrne r0, [sp, #0x94] @ r0 = src KThread's KProcess*/
+/*cmp r5, #0
 ldr r0, [r6, #0x80]
 add r1, r4, #0x20 @ r1 = src cmdbuf stored in the debuginfo
 add r2, r4, #0x220 @ r2 = output array of converted physical addrs, for the src cmdbuf.
 bl arm11kernel_convertcmd_vaddr2phys
 
 cmp r5, #0
-/*ldreq r0, [sp, #0x9c]
-ldrne r0, [sp, #0x98] @ r0 = dst KThread's KProcess*/
 ldr r0, [r7, #0x80]
 add r1, r4, #0x120 @ r1 = dst cmdbuf stored in the debuginfo
 add r2, r4, #0x320 @ r2 = output array of converted physical addrs, for the dst cmdbuf.
-blne arm11kernel_convertcmd_vaddr2phys
+blne arm11kernel_convertcmd_vaddr2phys*/
 
 ldr r1, =0x58584148
 str r1, [r4]
@@ -1164,7 +1138,7 @@ pop {r0, r1, r2, r3, r4, r5, r6, r7, r8, lr}
 bx lr
 .pool
 
-arm11kernel_convertcmd_vaddr2phys: @ r0 = dst KThread's KProcess, r1 = cmdbuf stored in the debuginfo, r2 = output array of converted physical addrs, for the dst cmdbuf.
+/*arm11kernel_convertcmd_vaddr2phys: @ r0 = dst KThread's KProcess, r1 = cmdbuf stored in the debuginfo, r2 = output array of converted physical addrs, for the dst cmdbuf.
 push {r4, r5, r6, r7, r8, r9, lr}
 sub sp, sp, #8
 mov r4, r0
@@ -1235,7 +1209,7 @@ arm11kernel_convertcmd_vaddr2phys_end:
 add sp, sp, #8
 pop {r4, r5, r6, r7, r8, r9, lr}
 bx lr
-.pool
+.pool*/
 #endif
 
 #ifdef ENABLE_ARM11KERNEL_PROCSTARTHOOK

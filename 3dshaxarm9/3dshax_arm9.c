@@ -379,6 +379,51 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 }
 
 #ifdef ENABLE_ARM11KERNEL_DEBUG
+#ifdef ARM11KERNEL_ENABLECMDLOG
+void arm11debuginfo_convertcmd_vaddr2phys(u64 procname, u32 *cmdbuf, u32 *outdata)
+{
+	u32 wordindex_translateparams = 0;
+	u32 total_cmdreq_words = 0;
+	u32 pos, type, shiftval, skipwords;
+	u32 addr, physaddr, size;
+	u32 *mmutable;
+
+	mmutable = (u32*)get_kprocessptr(procname, 0, 1);
+	if(mmutable==NULL)return;
+
+	wordindex_translateparams = ((cmdbuf[0] >> 6) & 0x3f) + 1;
+	total_cmdreq_words = cmdbuf[0] & 0x3f;
+	if(total_cmdreq_words == 0)return;
+	total_cmdreq_words+= wordindex_translateparams;
+
+	skipwords = 0;
+
+	for(pos = wordindex_translateparams; pos<total_cmdreq_words; pos += 2+skipwords)
+	{
+		type = cmdbuf[pos] & 0xe;
+		skipwords = cmdbuf[pos] >> 26;
+		if(type==0)continue;//This value is for the handle/processid header, so don't process those here.
+		skipwords = 0;
+		
+		shiftval = 4;
+		if(type==2)shiftval = 14;
+		if(type==4)shiftval = 8;
+
+		size = cmdbuf[pos] >> shiftval;
+		addr = cmdbuf[pos+1];
+		physaddr = addr;
+
+		if(addr>>28 != 0x2)//Don't convert the addr to physaddr when it's already a physaddr.
+		{
+			physaddr = (u32)mmutable_convert_vaddr2physaddr(mmutable, addr);
+		}
+
+		outdata[(pos - wordindex_translateparams)] = size;
+		outdata[(pos - wordindex_translateparams) + 1] = physaddr;
+	}
+}
+#endif
+
 void dump_arm11debuginfo()
 {
 	//u64 procname=0;
@@ -390,6 +435,7 @@ void dump_arm11debuginfo()
 	//u32 *ptr;
 	u32 val=0;
 	vu32 *ptrpxi = (vu32*)0x10008000;
+	u64 procname;
 
 	debuginfo_ptr = (vu32*)((u32)get_arm11debuginfo_physaddr() + 0x200);
 
@@ -411,32 +457,49 @@ void dump_arm11debuginfo()
 
 	if(*debuginfo_ptr != 0x58584148)return;
 
+	val = *ptrpxi;
+	if((val & 0xf) != 0xe)return;
+
 	if(debuginfo_ptr[1]==0x3131444c)//"LD11"
 	{
-		handle_debuginfo_ld11(debuginfo_ptr);
+		//handle_debuginfo_ld11(debuginfo_ptr);
 	}
 	else if(debuginfo_ptr[1]==0x35375653)//"SV75"
 	{
 		//procname = ((u64)debuginfo_ptr[3]) | (((u64)debuginfo_ptr[4])<<32);
 		//if(procname==ARM11CODELOAD_PROCNAME)patch_mmutables(procname, 1, 1);//Only enable this when loading arm11-code which doesn't change mem-permissions itself, etc.
 	}
-	else
+	else if(debuginfo_ptr[1]!=0x444d4344)
 	{
+		//setfilesize(fileobj_debuginfo, debuginfo_pos + debuginfo_ptr[2]);
 		filewrite(fileobj_debuginfo, (u32*)debuginfo_ptr, debuginfo_ptr[2], debuginfo_pos);
 		debuginfo_pos+= debuginfo_ptr[2];
 	}
 
+	#ifdef ARM11KERNEL_ENABLECMDLOG
 	if(debuginfo_ptr[1]==0x444d4344)//"DCMD"
 	{
+		procname = *((u64*)&debuginfo_ptr[0x10>>2]);
+		arm11debuginfo_convertcmd_vaddr2phys(procname, (u32*)&debuginfo_ptr[0x20>>2], (u32*)&debuginfo_ptr[0x220>>2]);
+
+		procname = *((u64*)&debuginfo_ptr[0x18>>2]);
+		arm11debuginfo_convertcmd_vaddr2phys(procname, (u32*)&debuginfo_ptr[0x120>>2], (u32*)&debuginfo_ptr[0x320>>2]);
+
+		//setfilesize(fileobj_debuginfo, debuginfo_pos + debuginfo_ptr[2]);
+		filewrite(fileobj_debuginfo, (u32*)debuginfo_ptr, debuginfo_ptr[2], debuginfo_pos);
+		debuginfo_pos+= debuginfo_ptr[2];
+
 		for(pos=(0x220>>2); pos<(0x420>>2); pos+=2)
 		{
 			if(debuginfo_ptr[pos]!=0 && debuginfo_ptr[pos+1]!=0)
 			{
+				//setfilesize(fileobj_debuginfo, debuginfo_ptr[pos] + debuginfo_pos);
 				filewrite(fileobj_debuginfo, (u32*)debuginfo_ptr[pos+1], debuginfo_ptr[pos], debuginfo_pos);
 				debuginfo_pos+= debuginfo_ptr[pos];
 			}
 		}
 	}
+	#endif
 
 	/*if(debuginfo_ptr[1]==0x33435847)//"GXC3"
 	{
@@ -454,18 +517,17 @@ void dump_arm11debuginfo()
 			ptr = NULL;
 		}
 
-		if(ptr)filewrite(fileobj_debuginfo, ptr, debuginfo_ptr[3+5], debuginfo_pos);
+		if(ptr)
+		{
+			//setfilesize(fileobj_debuginfo, debuginfo_ptr[3+5] + debuginfo_pos);
+			filewrite(fileobj_debuginfo, ptr, debuginfo_ptr[3+5], debuginfo_pos);
+		}
 		debuginfo_pos+= debuginfo_ptr[3+5];
 	}*/
 
 	memset((u32*)debuginfo_ptr, 0, debuginfo_ptr[2]);
 
-	while(1)
-	{
-		val = *ptrpxi;
-		if((val & 0xf) == 0xe)break;
-	}
-
+	val = *ptrpxi;
 	val &= ~0xf00;
 	val |= 0xe << 8;
 	*ptrpxi = val;
