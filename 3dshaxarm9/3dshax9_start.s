@@ -1186,14 +1186,14 @@ FIRM_contentid_totalversions:
 .word 16
 
 NEW3DS_FIRM_versions:
-.byte 45
+.byte 45, 46
 .align 2
 
 NEW3DS_sigword0_array:
-.word 0x79d0fb89
+.word 0x79d0fb89, 0x87b79d15
 
 NEW3DS_totalversions:
-.word 1
+.word 2
 
 FIRMLAUNCH_CLEARPARAMS:
 .word 1
