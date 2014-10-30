@@ -462,7 +462,7 @@ void dump_arm11debuginfo()
 
 	if(debuginfo_ptr[1]==0x3131444c)//"LD11"
 	{
-		//handle_debuginfo_ld11(debuginfo_ptr);
+		handle_debuginfo_ld11(debuginfo_ptr);
 	}
 	else if(debuginfo_ptr[1]==0x35375653)//"SV75"
 	{
