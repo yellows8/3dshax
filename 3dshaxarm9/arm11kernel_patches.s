@@ -968,25 +968,20 @@ bx lr
 #ifdef ARM11KERNEL_ENABLECMDLOG
 arm11kernel_processcmd_patch:
 push {r0, r1, r2, r3, r4, r5, r6, r7, r8, lr}
+mov r8, sp
+sub sp, sp, #0x420
 
-cpsid i @ disable IRQs
+//cpsid i @ disable IRQs
 
 ldr r5, arm11kernel_patch_fwver
 cmp r5, #0x26
 lsrle r1, r1, #6
-strle r1, [sp, #4]
+strle r1, [r8, #4]
 //lsrgt r2, r2, #6
 movgt r2, r4
-strgt r2, [sp, #8]
+strgt r2, [r8, #8]
 
-bl arm11kernel_getdebugstateptr
-add r4, r0, #0x200
-
-mov r0, #0xf
-bl arm11kernel_sendpxisync_val
-
-mov r0, #0xf
-bl arm11kernel_waitpxisync_val
+mov r4, sp
 
 mov r0, r4
 mov r1, #0
@@ -997,24 +992,24 @@ subs r2, r2, #4
 bgt arm11kernel_processcmd_patch_cleardebuginfo
 
 /*ldr r0, =0xfff7f3a8
-ldr lr, [sp, #32]
+ldr lr, [r8, #32]
 cmp r0, lr
 moveq r5, #1 @ process_cmdbuf_sendreply()
 movne r5, #0 @ process_cmdbuf_sendcmd()*/
 mov r5, #1
 
 /*cmp r5, #0  @ r6/r7 = src/dst KThread's KProcess
-//ldreq r0, [sp, #0x98]
-ldrne r6, [sp, #0x94]
-//ldreq r1, [sp, #0x9c]
-ldrne r7, [sp, #0x98]*/
+//ldreq r0, [r8, #0x98]
+ldrne r6, [r8, #0x94]
+//ldreq r1, [r8, #0x9c]
+ldrne r7, [r8, #0x98]*/
 
 ldr ip, arm11kernel_patch_fwver
 cmp ip, #0x26
-ldrle r6, [sp, #0xbc] @ r6/r7 = src/dst KThread
-ldrle r7, [sp, #0xb8]
-ldrgt r6, [sp, #0x20]
-ldrgt r7, [sp, #0x10]
+ldrle r6, [r8, #0xbc] @ r6/r7 = src/dst KThread
+ldrle r7, [r8, #0xb8]
+ldrgt r6, [r8, #0x20]
+ldrgt r7, [r8, #0x10]
 
 ldr r0, [r6, #0x80] @ r0/r1 = src/dst KThread's KProcess
 ldr r1, [r7, #0x80]
@@ -1054,6 +1049,13 @@ str r3, [r4, #28]
 cmp ip, #0x37
 ldrlt r3, =0xFFFD4000
 ldrge r3, =0xFFFC2000
+lsr r1, ip, #30
+ands r1, r1, #1
+bne arm11kernel_processcmd_padcheck_start
+cmp ip, #0x38
+ldrge r3, =0xFFFC6000
+
+arm11kernel_processcmd_padcheck_start:
 ldr r1, =CMDLOGGING_PADCHECK
 ldrh r3, [r3]
 tst r3, r1
@@ -1085,7 +1087,7 @@ arm11kernel_processcmd_procnamecheck_end:
 add r0, r4, #0x20
 /*cmp r5, #0
 moveq r1, fp
-ldrne r1, [sp, #0x78] @ r1 = src cmdbuf*/
+ldrne r1, [r8, #0x78] @ r1 = src cmdbuf*/
 ldr r1, [r6, #0x94]
 add r1, r1, #0x80
 mov r2, #0x100
@@ -1097,7 +1099,7 @@ bgt arm11kernel_processcmd_patch_cpylp
 
 add r0, r4, #0x120
 /*cmp r5, #0
-ldreq r1, [sp, #0x30]
+ldreq r1, [r8, #0x30]
 movne r1, fp @ r1 = dst cmdbuf*/
 ldr r1, [r7, #0x98]
 add r1, r1, #0x80
@@ -1122,6 +1124,25 @@ blne arm11kernel_convertcmd_vaddr2phys*/
 
 ldr r1, =0x58584148
 str r1, [r4]
+
+cpsid i @ disable IRQs
+
+mov r0, #0xf
+bl arm11kernel_sendpxisync_val
+
+mov r0, #0xf
+bl arm11kernel_waitpxisync_val
+
+bl arm11kernel_getdebugstateptr
+add r0, r0, #0x200
+mov r2, #0x420
+
+arm11kernel_processcmd_cpydebuginfo:
+ldr r3, [r4], #4
+str r3, [r0], #4
+subs r2, r2, #4
+bgt arm11kernel_processcmd_cpydebuginfo
+
 mov r0, #0
 mcr p15, 0, r0, c7, c10, 5
 mcr p15, 0, r0, c7, c14, 0
@@ -1132,8 +1153,11 @@ bl arm11kernel_sendpxisync_val
 mov r0, #0xe
 bl arm11kernel_waitpxisync_val
 
-arm11kernel_processcmd_patchend:
 cpsie i @ enable IRQs
+
+arm11kernel_processcmd_patchend:
+//cpsie i @ enable IRQs
+add sp, sp, #0x420
 pop {r0, r1, r2, r3, r4, r5, r6, r7, r8, lr}
 bx lr
 .pool

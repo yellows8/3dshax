@@ -457,8 +457,11 @@ void dump_arm11debuginfo()
 
 	if(*debuginfo_ptr != 0x58584148)return;
 
-	val = *ptrpxi;
-	if((val & 0xf) != 0xe)return;
+	while(1)
+	{
+		val = *ptrpxi;
+		if((val & 0xf) == 0xe)break;
+	}
 
 	if(debuginfo_ptr[1]==0x3131444c)//"LD11"
 	{
