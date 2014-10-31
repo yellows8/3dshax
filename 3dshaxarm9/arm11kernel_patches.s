@@ -774,12 +774,12 @@ cmp r3, #0x37
 addge r1, r1, #8
 mov r3, #0
 
-ldr r5, [r1, #0x54]
-
 ldr r3, arm11kernel_patch_fwver @ KProcess structure is different for the New3DS arm11kernel.
 lsr r3, r3, #30
 ands r3, r3, #1
 addne r1, r1, #8
+
+ldr r5, [r1, #0x54]
 
 ldr r1, [r1, #0xa8]
 cmp r1, #0

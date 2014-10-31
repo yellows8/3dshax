@@ -58,6 +58,26 @@ void gspGpuExit()
 	gspExit();
 }
 
+Result _ACU_WaitInternetConnection()
+{
+	Handle servhandle = 0;
+	Result ret=0;
+	u32 outval=0;
+
+	if((ret = srv_getServiceHandle(NULL, &servhandle, "ac:u"))!=0)return ret;
+
+	while(1)
+	{
+		ret = ACU_GetWifiStatus(servhandle, &outval);
+		if(ret==0 && outval!=0)break;
+	}
+
+	svc_closeHandle(servhandle);
+
+	return ret;
+}
+
+
 int main(int argc, char **argv)
 {
 	Result ret=0;
@@ -85,7 +105,7 @@ int main(int argc, char **argv)
 		else
 		{
 			gspheap_size = 0xc00000;
-			aptInit(APPID_WEB);
+			//aptInit(APPID_WEB);
 			//aptSetupEventHandler();
 
 			GSPGPU_AcquireRight(NULL, 0);
@@ -113,7 +133,7 @@ int main(int argc, char **argv)
 	fake_heap_start = (u32*)0x08048000;
 	fake_heap_end = (u32*)(0x08000000 + heap_size);
 
-	ACU_WaitInternetConnection();
+	_ACU_WaitInternetConnection();
 
 	CFGNOR_Initialize(1);
 

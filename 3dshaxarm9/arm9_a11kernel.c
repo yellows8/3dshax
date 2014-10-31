@@ -38,7 +38,7 @@ u32 *get_kprocessptr(u64 procname, u32 num, u32 get_mmutableptr)
 	u32 *wram = (u32*)0x1FF80000;
 	u32 *kprocess = NULL;
 	u32 kernelfcram_phys2vaddr_value = 0xd0000000;
-	u32 kprocess_adjustoffset = 0, kprocess_adjustoffset2 = 0;
+	u32 kprocess_adjustoffset = 0;
 
 	if(RUNNINGFWVER>=0x37)
 	{
@@ -46,8 +46,7 @@ u32 *get_kprocessptr(u64 procname, u32 num, u32 get_mmutableptr)
 		kprocess_adjustoffset = 8;
 	}
 
-	kprocess_adjustoffset2 = kprocess_adjustoffset;
-	//if(RUNNINGFWVER & 0x40000000)kprocess_adjustoffset2+= 8;
+	if(RUNNINGFWVER & 0x40000000)kprocess_adjustoffset+= 8;
 
 	if(slabheap_vaddr==0)
 	{
@@ -76,7 +75,7 @@ u32 *get_kprocessptr(u64 procname, u32 num, u32 get_mmutableptr)
 			}
 			else
 			{
-				kprocess = &wram[pos - ((0xa8+kprocess_adjustoffset2)>>2)];
+				kprocess = &wram[pos - ((0xa8+kprocess_adjustoffset)>>2)];
 				break;
 			}
 		}
