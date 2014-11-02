@@ -46,7 +46,8 @@ Supported NATIVE_FIRM system-versions(versions where NATIVE_FIRM wasn't updated 
 * v5.x
 * v6.x
 * v7.x
-* v8.0
+* v8.x
+* v9.x
 
 The above doesn't really apply for functionality where addresses are located on-the-fly, unless specificly mentioned otherwise.
 
@@ -67,3 +68,5 @@ Some of the codebase automatically determines what addresses to patch on-the-fly
 * ARM11-kernel cmd-logging patch addresses/etc
 * ...
 
+## Issues
+* SD file-writing is broken on New3DS v8.1+ FIRM and Old/New 3DS v9.0+ FIRM. While it works ok for small-ish data, FAT FS gets corrupted / not written correctly with larger sizes(for example, this means the AXIWRAM/FCRAM dumping code doesn't work at all).
