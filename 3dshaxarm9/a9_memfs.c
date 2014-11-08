@@ -44,6 +44,7 @@ void dump_fcramaxiwram()
 	dumpmem((u32*)0x20000000, size);
 
 	if(openfile(sdarchive_obj, 4, filepath, (strlen(path)+1)*2, 7, &fileobj)!=0)return;
+	setfilesize(fileobj, 0x80000);
 	if(filewrite(fileobj, (u32*)0x1FF80000, 0x80000, 0)!=0)return;
 	closefile(fileobj);
 }

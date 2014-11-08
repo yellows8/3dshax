@@ -69,4 +69,4 @@ Some of the codebase automatically determines what addresses to patch on-the-fly
 * ...
 
 ## Issues
-* SD file-writing is broken on New3DS v8.1+ FIRM and Old/New 3DS v9.0+ FIRM. While it works ok for small-ish data, FAT FS gets corrupted / not written correctly with larger sizes(for example, this means the AXIWRAM/FCRAM dumping code doesn't work at all).
+* SD file-writing is broken on New3DS v8.1+ FIRM and Old/New 3DS v9.0+ FIRM. While it works ok for small-ish data, FAT FS gets corrupted / not written correctly with larger sizes(this mainly affects cmdlogging).

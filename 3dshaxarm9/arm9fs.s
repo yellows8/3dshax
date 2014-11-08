@@ -163,6 +163,10 @@ cmp r0, #0
 bne dumpmem_end
 
 ldr r0, [sp, #8]
+ldr r1, [sp, #16]
+bl setfilesize
+
+ldr r0, [sp, #8]
 ldr r1, [sp, #12]
 ldr r2, [sp, #16]
 mov r3, #0
