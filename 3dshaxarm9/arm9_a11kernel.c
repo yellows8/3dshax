@@ -96,7 +96,11 @@ u8 *mmutable_convert_vaddr2physaddr(u32 *mmutable, u32 vaddr)
 
 	val = mmutable[vaddr >> 20];
 	if((val & 0x3) == 0x0 || (val & 0x3) == 0x3)return NULL;
-	if((val & 0x3) == 0x2)return (u8*)((val & ~0xFFFFF) | (vaddr & 0xFFFFF));
+	if((val & 0x3) == 0x2)
+	{
+		if(((val >> 18) & 1) == 0)return (u8*)((val & ~0xFFFFF) | (vaddr & 0xFFFFF));
+		return (u8*)((val & ~0xFFFFFF) | (vaddr & 0xFFFFFF));
+	}
 
 	ptr = (u32*)(val & ~0x3FF);
 	val = ptr[(vaddr >> 12) & 0xff];
