@@ -84,6 +84,10 @@ ifneq ($(strip $(NANDREDIR_SECTORNUM)),)
 	PARAMS	:=	$(PARAMS) NANDREDIR_SECTORNUM=$(NANDREDIR_SECTORNUM)
 endif
 
+ifneq ($(strip $(LOADA9_NEW3DSMEM)),)
+	PARAMS	:=	$(PARAMS) LOADA9_NEW3DSMEM=1
+endif
+
 ifneq ($(strip $(LOADA9_FCRAM)),)
 	PARAMS	:=	$(PARAMS) LOADA9_FCRAM=1
 endif
