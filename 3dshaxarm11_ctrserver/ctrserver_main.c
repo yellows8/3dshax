@@ -100,11 +100,12 @@ int main(int argc, char **argv)
 		if(PROCESSNAME == 0x706c64)//"dlp"
 		{
 			gspheap_size = 0x2000;
+			if(*((u8*)0x1FF80030) >= 6)gspheap_size = 0x500000;//New3DS
 			gspInit();
 		}
 		else
 		{
-			gspheap_size = 0xc00000;
+			gspheap_size = 0x500000;
 			//aptInit(APPID_WEB);
 			//aptSetupEventHandler();
 
@@ -114,7 +115,7 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		gspheap_size = 0xc00000;
+		gspheap_size = 0x500000;
 		aptInit(APPID_APPLICATION);
 		//aptSetupEventHandler();
 
