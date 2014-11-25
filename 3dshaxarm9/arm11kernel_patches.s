@@ -1074,7 +1074,11 @@ ldr r3, =CMDLOGGING_PROCNAME1
 
 cmp r2, r1 @ Ignore commands where the src/dst is not the above process(es).
 cmpne r0, r1
+#ifndef CMDLOGGING_PROCNAME1
 beq arm11kernel_processcmd_procnamecheck_end
+#else
+bne arm11kernel_processcmd_patchend
+#endif
 //beq arm11kernel_processcmd_patchend
 #ifdef CMDLOGGING_PROCNAME1
 cmp r2, r3
