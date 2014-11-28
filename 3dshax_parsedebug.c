@@ -44,11 +44,14 @@ void hexdump(void *ptr, int buflen)//This is based on code from ctrtool.
 
 void parse_debuginfo_exception(unsigned int *debuginfo)
 {
+	FILE *ftmp;
 	int i;
 	unsigned int regs[16];
 	unsigned int cpsr;
 	unsigned int exceptiontype;
+	unsigned char *ptr8;
 	char processname[16];
+	char str[256];
 
 	memset(processname, 0, 16);
 	strncpy(processname, (char*)&debuginfo[(0x50+4)>>2], 8);
@@ -95,8 +98,36 @@ void parse_debuginfo_exception(unsigned int *debuginfo)
 
 	if(enable_hexdump)
 	{
-		printf("Data dump:\n");
-		hexdump(&debuginfo[(0x68+4)>>2], 0x1b4-4);
+		if(exceptiontype!=1)
+		{
+			ftmp = fopen("3dshaxparsedebug_tmpcode.bin", "wb");
+
+			if(ftmp)
+			{
+				fwrite(&debuginfo[(0x68+4)>>2], 1, 0x20, ftmp);
+				fclose(ftmp);
+
+				snprintf(str, 255, "arm-none-eabi-objdump -D -b binary -m arm --adjust-vma=0x%0x", regs[15]-0x10);
+
+				if(cpsr & 0x20)strncat(str, " -M force-thumb", 255);
+
+				strncat(str, " 3dshaxparsedebug_tmpcode.bin", 255);
+
+				printf("\nDisassembly from pc-0x10(0x%08x):\n", regs[15]-0x10);
+				system(str);
+				printf("\n");
+
+				unlink("3dshaxparsedebug_tmpcode.bin");
+			}
+			else
+			{
+				printf("Failed to open file for writing: 3dshaxparsedebug_tmpcode.bin\n");
+			}
+		}
+
+		printf("Stack dump:\n");
+		hexdump(&debuginfo[(0x68+4+0x20)>>2], 0x1b4-4-0x20);
+		printf("\n");
 	}
 }
 
