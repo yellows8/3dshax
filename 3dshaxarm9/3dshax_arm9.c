@@ -66,6 +66,8 @@ u64 *thread_stack = (u64*)(0x02000000-THREAD_STACKSIZE);//The thread doesn't sta
 
 u64 ARM11CODELOAD_PROCNAME = 0x706c64;//0x706c64 = "dlp", 0x726564697073LL = "spider"
 
+extern u32 *arm11kernel_textvaddr;
+
 static char arm11codeload_servaccesscontrol[][8] = { //Service-access-control copied into the exheader for the pxipm get-exheader hook.
 "APT:U",
 "y2r:u",
@@ -115,12 +117,17 @@ void load_arm11code(u32 *loadptr, u32 maxloadsize, u64 procname)
 
 	if(loadptr)
 	{
-		if(loadptr[1]==0x58584148)
+		for(pos=1; pos<0x40; pos++)
 		{
-			if(loadptr[2]==0x434f5250 && loadptr[3]==0x454d414e)//Set the process-name when these fields are set correctly.
+			if(loadptr[pos+0]==0x58584148)
 			{
-				loadptr[2] = (u32)(procname);
-				loadptr[3] = (u32)(procname>>32);
+				if(loadptr[pos+1]==0x434f5250 && loadptr[pos+2]==0x454d414e)//Set the process-name when these fields are set correctly.
+				{
+					loadptr[pos+1] = (u32)(procname);
+					loadptr[pos+2] = (u32)(procname>>32);
+					if(loadptr[pos+3] == 0x5458544b)loadptr[pos+3] = (u32)arm11kernel_textvaddr;
+					break;
+				}
 			}
 		}
 	}
@@ -272,12 +279,18 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 	u32 *ptr, *ptr2;
 	u32 *mmutable;
 	u32 pos, pos2;
+
+	#ifdef ENABLE_REGIONFREE
 	u32 cmpblock[4] = {0xe3140001, 0x13844040, 0xe0100004, 0x13a00001};
+	#endif
+
+	#ifdef DISABLE_GAMECARDUPDATE
 	u32 cmpblock_nss[7] = {0xd9001830, 0x00010040, 0x00020080, 0xb2d05e00, 0xc8a05801, 0xc8a12402, 0x00030040};
+	#endif
 
 	procname = ((u64)debuginfo_ptr[5]) | (((u64)debuginfo_ptr[6])<<32);
 
-	codebin_vaddr = (u32*)debuginfo_ptr[4];
+	codebin_vaddr = debuginfo_ptr[4];
 	total_codebin_size = debuginfo_ptr[3]<<12;
 
 	mmutable = (u32*)get_kprocessptr(0x726564616f6cLL, 0, 1);//"loader"
@@ -561,8 +574,6 @@ int ctrserver_process_aescontrol(aescontrol *control)
 }
 #endif
 
-static u32 aesflag = 0;
-
 int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 {
 	int ret=0;
@@ -615,12 +626,6 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 
 	if(cmdid>=0x1 && cmdid<0x9)
 	{
-		/*if(!aesflag)
-		{
-			aesflag = 1;
-			//aes_mutexenter();
-		}*/
-
 		rw = 0;//0=read, 1=write
 		if((cmdid & 0xff)<0x05)rw = 1;
 

@@ -60,6 +60,8 @@ extern Handle SOCU_handle;
 
 extern u32* gxCmdBuf;
 
+extern u32 *arm11kernel_textvaddr;
+
 int ctrserver_recvdata(ctrserver *server, u8 *buf, int size);
 int ctrserver_senddata(ctrserver *server, u8 *buf, int size);
 
@@ -270,17 +272,23 @@ int net_kernelmode_handlecmd(u32 param)
 	u32 *bufsize;
 	int ret=0;
 	u32 *ptr;
-	u32* (*funcptr)() = (void*)0xfff51808;
-
-	if(*((u8*)0x1FF80002) < 35)funcptr = (void*)0xfff61808;
-	if(*((u8*)0x1FF80002) == 44)funcptr = (void*)0xfff41808;
-	if(*((u8*)0x1FF80002) >= 45)funcptr = (void*)0xfff01808;
+	u32* (*funcptr)() = NULL;
 
 	cmdid = net_kernelmode_paramblock[0];
 	buf = (u32*)net_kernelmode_paramblock[1];
 	bufsize = (u32*)net_kernelmode_paramblock[2];
 
 	cmdid &= 0xff;
+
+	if(((u32)arm11kernel_textvaddr) != 0x5458544b)
+	{
+		funcptr = (void*)(&arm11kernel_textvaddr[0x1808>>2]);
+	}
+	else
+	{
+		*bufsize = 0;
+		return -9;
+	}
 
 	ret = ctrserver_handlecmd_common(cmdid, buf, bufsize);
 	if(ret != -2)return ret;

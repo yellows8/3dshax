@@ -10,6 +10,8 @@
 .type write_arm11debug_patch STT_FUNC
 .type writepatch_arm11kernel_svcaccess STT_FUNC
 
+.global arm11kernel_textvaddr
+
 arm11kernel_textvaddr:
 .word 0
 

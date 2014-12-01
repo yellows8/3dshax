@@ -14,15 +14,19 @@
 .type svcControlProcessMemory STT_FUNC
 
 .global PROCESSNAME
+.global arm11kernel_textvaddr
 
 _start:
 b codestart
 
-.word 0x58584148 @ "HAXX", indicating that the following two words can be replaced with the process-name, by the code loader.
+.word 0x58584148 @ "HAXX", indicating that the following parameters can be set by the code loader.
 
 PROCESSNAME:
 .word 0x434f5250 @ "PROC"
 .word 0x454d414e @ "NAME"
+
+arm11kernel_textvaddr:
+.word 0x5458544b
 
 codestart:
 push {r4, r5, r6, r7, r8, lr}
