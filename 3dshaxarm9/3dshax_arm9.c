@@ -92,7 +92,8 @@ static char arm11codeload_servaccesscontrol[][8] = { //Service-access-control co
 "csnd:SND",
 "pm:app",
 "frd:u",
-"mic:u"
+"mic:u",
+"qtm:u"
 };
 
 void load_arm11code(u32 *loadptr, u32 maxloadsize, u64 procname)
