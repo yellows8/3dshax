@@ -1294,6 +1294,7 @@ int main(void)
 		{
 			#ifdef ENABLE_ARM11KERNEL_DEBUG
 			write_arm11debug_patch();
+			dump_arm11debuginfo();
 			#endif
 
 			#ifndef DISABLE_A9THREAD
