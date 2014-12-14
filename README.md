@@ -48,7 +48,7 @@ Supported NATIVE_FIRM system-versions(versions where NATIVE_FIRM wasn't updated 
 * v7.x
 * v8.x
 * v9.0-v9.2
-* v9.3
+* v9.3: FS stuff is broken hence arm11kernel stuff is broken too.
 
 The above doesn't really apply for functionality where addresses are located on-the-fly, unless specificly mentioned otherwise.
 
