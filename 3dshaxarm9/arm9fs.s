@@ -150,7 +150,7 @@ push {r0, r1, r4, lr}
 sub sp, sp, #12
 ldr r0, =sdarchive_obj
 ldr r0, [r0]
-mov r3, #7
+mov r3, #6
 str r3, [sp, #0]
 add r1, sp, #8
 str r1, [sp, #4]
@@ -165,6 +165,9 @@ bne dumpmem_end
 ldr r0, [sp, #8]
 ldr r1, [sp, #16]
 bl setfilesize
+mov r4, r0
+cmp r0, #0
+bne dumpmem_end
 
 ldr r0, [sp, #8]
 ldr r1, [sp, #12]
@@ -172,6 +175,8 @@ ldr r2, [sp, #16]
 mov r3, #0
 bl filewrite
 mov r4, r0
+cmp r0, #0
+bne dumpmem_end
 
 ldr r0, [sp, #8]
 bl closefile
