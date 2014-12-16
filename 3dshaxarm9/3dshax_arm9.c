@@ -61,8 +61,12 @@ u32 debuginfo_pos = 0;
 
 u16 arm11code_filepath[] = {0x2F, 0x33, 0x64, 0x73, 0x68, 0x61, 0x78, 0x5F, 0x61, 0x72, 0x6D, 0x31, 0x31, 0x2E, 0x62, 0x69, 0x6E, 0x00};//UTF-16 "/3dshax_arm11.bin"
 
-#define THREAD_STACKSIZE 0x800
-u64 *thread_stack = (u64*)(0x02000000-THREAD_STACKSIZE);//The thread doesn't start when the stack is located in .bss with LOADA9_NEW3DSMEM.
+#define THREAD_STACKSIZE 0xa00
+#ifndef LOADA9_NEW3DSMEM
+u64 *thread_stack = (u64*)(0x02000000-THREAD_STACKSIZE);
+#else
+u64 thread_stack[THREAD_STACKSIZE>>3];
+#endif
 
 u64 ARM11CODELOAD_PROCNAME = 0x706c64;//0x706c64 = "dlp", 0x726564697073LL = "spider"
 
@@ -1280,6 +1284,7 @@ int main(void)
 		//while(*((vu16*)0x10146000) & 2);
 
 		#ifndef DISABLE_A9THREAD
+		memset(thread_stack, 0, THREAD_STACKSIZE);
 		svcCreateThread(&threadhandle, thread_entry, 0, (u32*)&thread_stack[THREAD_STACKSIZE>>3], 0x3f, ~1);
 		#endif
 	}
@@ -1297,6 +1302,7 @@ int main(void)
 			#endif
 
 			#ifndef DISABLE_A9THREAD
+			memset(thread_stack, 0, THREAD_STACKSIZE);
 			svcCreateThread(&threadhandle, thread_entry, 0, (u32*)&thread_stack[THREAD_STACKSIZE>>3], 0x3f, ~1);
 			#endif
 
