@@ -50,7 +50,7 @@ Supported NATIVE_FIRM system-versions(versions where NATIVE_FIRM wasn't updated 
 * v9.0-v9.2
 * v9.3
 
-Starting(?) with v9.3 FIRM, FS stuff from the new thread is broken, hence arm11kernel stuff is broken too. This seems to be caused by thread stack issues? This is mostly only a problem on Old3DS, since with New3DS the stack is located in .bss instead of 0x01ffXXXX.
+Starting(?) with v9.3 FIRM, FS stuff from the new thread is broken, hence arm11kernel stuff is broken too. This seems to be caused by thread stack issues? This is mostly only a problem on Old3DS, since with New3DS(when using LOADA9_NEW3DSMEM) the stack is located in .bss instead of 0x01ffXXXX.
 
 The above doesn't really apply for functionality where addresses are located on-the-fly, unless specificly mentioned otherwise.
 
