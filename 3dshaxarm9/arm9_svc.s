@@ -84,3 +84,17 @@ svcCloseHandle:
 svc 0x23
 bx lr
 
+.global svcStartInterProcessDma
+.type svcStartInterProcessDma, %function
+svcStartInterProcessDma:
+	push {r0, r4, r5}
+	ldr  r0, [sp, #0xc]
+	ldr  r4, [sp, #0xc+0x4]
+	ldr  r5, [sp, #0xc+0x8]
+	svc  0x55
+	ldr  r2, [sp], #4
+	str  r1, [r2]
+	ldr  r4, [sp], #4
+	ldr  r5, [sp], #4
+	bx   lr
+

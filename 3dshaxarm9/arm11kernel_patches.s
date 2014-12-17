@@ -545,6 +545,14 @@ pop {r4, r5, r6, r7, r8, pc}
 
 
 arm9_undefhandler: //ARM9 Undef instruction handler
+/*ldr sp, =(0x1FF80C00+0x80)
+str lr, [sp] @ Save LR.
+mrs lr, cpsr @ Switch to system mode.
+orr lr, lr, #0x1f
+msr cpsr, lr
+ldr lr, =(0x1FF80C00+0x80)
+ldr lr, [lr] @ Load the saved LR.*/
+
 sub lr, lr, #4
 sub sp, sp, #8
 str lr, [sp], #4
@@ -563,6 +571,14 @@ push {lr}
 b arm9_exceptionhandler
 
 arm9_prefetchhandler: //ARM9 Prefetch abort handler
+/*ldr sp, =(0x1FF80C00+0x80)
+str lr, [sp] @ Save LR.
+mrs lr, cpsr @ Switch to system mode.
+orr lr, lr, #0x1f
+msr cpsr, lr
+ldr lr, =(0x1FF80C00+0x80)
+ldr lr, [lr] @ Load the saved LR.*/
+
 sub sp, sp, #8
 str lr, [sp], #4
 mrs lr, spsr
@@ -579,6 +595,14 @@ push {lr}
 b arm9_exceptionhandler
 
 arm9_daborthandler: //ARM9 Data abort handler
+/*ldr sp, =(0x1FF80C00+0x80)
+str lr, [sp] @ Save LR.
+mrs lr, cpsr @ Switch to system mode.
+orr lr, lr, #0x1f
+msr cpsr, lr
+ldr lr, =(0x1FF80C00+0x80)
+ldr lr, [lr] @ Load the saved LR.*/
+
 sub sp, sp, #8
 str lr, [sp], #4
 mrs lr, spsr

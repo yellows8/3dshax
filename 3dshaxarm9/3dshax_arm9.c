@@ -459,6 +459,8 @@ void dump_arm11debuginfo()
 	debuginfo_ptr = (vu32*)((u32)get_arm11debuginfo_physaddr() + 0x200);
 	debuginfo_arm9flag = (vu32*)((u32)get_arm11debuginfo_physaddr() + 0x20);
 
+	debuginfo_arm9flag[4]++;
+
 	if(fileobj_debuginfo==NULL)
 	{
 		memset(filepath, 0, 64*2);
@@ -485,7 +487,7 @@ void dump_arm11debuginfo()
 		while(1)
 		{
 			val = *ptrpxi;
-			if((val & 0xf) == 0xe)break;
+			if(((val & 0xf) == 0xe) || *debuginfo_arm9flag == 0x394d5241)break;
 		}
 	}
 
@@ -719,6 +721,39 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 		svcSleepThread(1000000000LL);
 		*val64ptr = svcGetSystemTick() - val64;
 		*bufsize = 8;
+		return 0;
+	}
+
+	if(cmdid==0x40)
+	{
+		if(*bufsize != (12 + 28))
+		{
+			buf[0] = ~0;
+			buf[1] = 0;
+			*bufsize = 8;
+			return 0;
+		}
+
+		buf[0] = svcStartInterProcessDma(&buf[1], 0xffff8001, (u32*)buf[0], 0xffff8001, (u32*)buf[1], buf[2], &buf[3]);
+		*bufsize = 8;
+
+		if(buf[0]==0)
+		{
+			svcCloseHandle(buf[0]);
+		}
+
+		return 0;
+	}
+
+	if(cmdid==0x62)
+	{
+		if(*bufsize != 0x4)
+		{
+			*bufsize = 0;
+			return 0;
+		}
+
+		buf[0] = svcCloseHandle(buf[0]);
 		return 0;
 	}
 

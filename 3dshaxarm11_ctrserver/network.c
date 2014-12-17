@@ -70,6 +70,8 @@ void call_arbitaryfuncptr(void* funcptr, u32 *regdata);
 Result svcControlProcessMemory(Handle kprocess, u32 addr0, u32 addr1, u32 size, u32 type, u32 permissions);
 Result svc_duplicateHandle(Handle* out, Handle original);
 
+s32 svcStartInterProcessDma(u32* dmahandle, u32 dstProcess, u32* dst, u32 srcProcess, u32* src, u32 size, u32 *config);
+
 Result FSUSER_ControlArchive(Handle handle, FS_archive archive)//This is from code by smea.
 {
 	u32* cmdbuf=getThreadCommandBuffer();
@@ -490,6 +492,21 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		val64 = svc_getSystemTick();
 		svc_sleepThread(1000000000LL);
 		*val64ptr = svc_getSystemTick() - val64;
+		*bufsize = 8;
+		return 0;
+	}
+
+	if(cmdid==0x40)
+	{
+		if(*bufsize != (12 + 28))
+		{
+			buf[0] = ~0;
+			buf[1] = 0;
+			*bufsize = 8;
+			return 0;
+		}
+
+		buf[0] = svcStartInterProcessDma(&buf[1], 0xffff8001, (u32*)buf[0], 0xffff8001, (u32*)buf[1], buf[2], &buf[3]);
 		*bufsize = 8;
 		return 0;
 	}
