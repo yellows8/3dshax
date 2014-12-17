@@ -464,6 +464,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 	FS_archive archive;
 	FS_path fileLowPath;
 	char namebuf[8];
+	u32 dmaconfig[24>>2];
 
 	if(cmdid & 0x400)
 	{
@@ -498,7 +499,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 
 	if(cmdid==0x40)
 	{
-		if(*bufsize != (12 + 28))
+		if(*bufsize != (12 + 24))
 		{
 			buf[0] = ~0;
 			buf[1] = 0;
@@ -506,7 +507,8 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 			return 0;
 		}
 
-		buf[0] = svcStartInterProcessDma(&buf[1], 0xffff8001, (u32*)buf[0], 0xffff8001, (u32*)buf[1], buf[2], &buf[3]);
+		memcpy(dmaconfig, &buf[3], 24);
+		buf[0] = svcStartInterProcessDma(&buf[1], 0xffff8001, (u32*)buf[0], 0xffff8001, (u32*)buf[1], buf[2], dmaconfig);
 		*bufsize = 8;
 		return 0;
 	}

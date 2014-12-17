@@ -614,6 +614,7 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 	u8 *buf8 = (u8*)buf;
 	u32 fsfile_ctx[8];
 	u16 filepath[0x100];
+	u32 dmaconfig[24>>2];
 
 	#ifdef ENABLEAES
 	if(cmdid==CMD_AESCONTROL)
@@ -726,7 +727,7 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 
 	if(cmdid==0x40)
 	{
-		if(*bufsize != (12 + 28))
+		if(*bufsize != (12 + 24))
 		{
 			buf[0] = ~0;
 			buf[1] = 0;
@@ -734,7 +735,9 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 			return 0;
 		}
 
-		buf[0] = svcStartInterProcessDma(&buf[1], 0xffff8001, (u32*)buf[0], 0xffff8001, (u32*)buf[1], buf[2], &buf[3]);
+		memcpy(dmaconfig, &buf[3], 24);
+
+		buf[0] = svcStartInterProcessDma(&buf[1], 0xffff8001, (u32*)buf[0], 0xffff8001, (u32*)buf[1], buf[2], dmaconfig);
 		*bufsize = 8;
 
 		if(buf[0]==0)
