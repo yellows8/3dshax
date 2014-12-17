@@ -516,9 +516,113 @@ str r0, [r5, r6]*/
 bl writepatch_arm11kernel_svcaccess
 #endif
 
+#ifdef ENABLE_ARM9DEBUGGING
+bl writepatches_arm9debugging
+#endif
+
 add sp, sp, #12
 pop {r4, r5, r6, r7, r8, pc}
 .pool
+
+#ifdef ENABLE_ARM9DEBUGGING
+writepatches_arm9debugging:
+push {r4, r5, r6, r7, r8, lr}
+
+ldr r0, =(0x08000018+0x4)
+adr r1, arm9_undefhandler
+str r1, [r0]
+
+ldr r0, =(0x08000020+0x4)
+adr r1, arm9_prefetchhandler
+str r1, [r0]
+
+ldr r0, =(0x08000028+0x4)
+adr r1, arm9_daborthandler
+str r1, [r0]
+
+pop {r4, r5, r6, r7, r8, pc}
+.pool
+
+
+arm9_undefhandler: //ARM9 Undef instruction handler
+sub lr, lr, #4
+sub sp, sp, #8
+str lr, [sp], #4
+mrs lr, spsr
+str lr, [sp], #4
+sub sp, sp, #8
+
+push {lr}
+
+ldr lr, [sp, #4]
+//sub lr, lr, #4
+push {lr}
+mov lr, #0
+push {lr}
+
+b arm9_exceptionhandler
+
+arm9_prefetchhandler: //ARM9 Prefetch abort handler
+sub sp, sp, #8
+str lr, [sp], #4
+mrs lr, spsr
+str lr, [sp], #4
+sub sp, sp, #8
+
+push {lr}
+
+ldr lr, [sp, #4]
+sub lr, lr, #4
+push {lr}
+mov lr, #1
+push {lr}
+b arm9_exceptionhandler
+
+arm9_daborthandler: //ARM9 Data abort handler
+sub sp, sp, #8
+str lr, [sp], #4
+mrs lr, spsr
+str lr, [sp], #4
+sub sp, sp, #8
+
+push {lr}
+
+ldr lr, [sp, #4]
+sub lr, lr, #8
+push {lr}
+mov lr, #2
+push {lr}
+b arm9_exceptionhandler
+
+arm9_exceptionhandler:
+stmdb sp, {sp, lr}^
+sub sp, sp, #8
+push {r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, sl, fp, ip, lr}
+mrs r4, cpsr @ Disable IRQ/FIQ
+orr r0, r4, #0xc0
+msr cpsr, r0
+
+bl arm11kernel_getdebugstateptr
+add r0, r0, #0x20
+ldr r1, =0x394d5241
+str r1, [r0]
+
+mov r0, sp
+bl arm11kernel_exceptionregdump
+
+msr cpsr, r4 @ Restore IRQ/FIQ
+pop {r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, sl, fp, ip, lr}
+ldm sp, {sp, lr}^
+add sp, sp, #8
+//add sp, sp, #12
+add sp, sp, #4
+ldr lr, [sp], #4
+add sp, sp, #4
+movs pc, lr
+//rfeia sp!
+
+.pool
+#endif
 
 .arch armv6
 .fpu vfp
@@ -646,6 +750,10 @@ bx lr
 
 arm11kernel_sendpxisync_val:
 push {r0, lr}
+bl debugging_checkrunningonarm9
+cmp r0, #0
+beq arm11kernel_sendpxisync_val_end
+
 bl arm11kernel_getpxiregbase_adr
 ldr r1, [r0]
 ldr r2, =0xf00
@@ -655,11 +763,17 @@ and r3, r3, #0xf
 lsl r3, r3, #8
 orr r1, r1, r3
 str r1, [r0]
+
+arm11kernel_sendpxisync_val_end:
 pop {r0, pc}
 .pool
 
 arm11kernel_waitpxisync_val:
 push {r0, lr}
+bl debugging_checkrunningonarm9
+cmp r0, #0
+beq arm11kernel_waitpxisync_val_end
+
 bl arm11kernel_getpxiregbase_adr
 
 ldr r1, [sp, #0]
@@ -670,74 +784,77 @@ and r2, r2, #0xf
 
 cmp r2, r1
 bne arm11kernel_waitpxisync_val_lp
+
+arm11kernel_waitpxisync_val_end:
 pop {r0, pc}
 
 arm11kernel_waitdebuginfo_magic: @ r0=debuginfo ptr
-push {lr}
+push {r4, r5, lr}
+mov r4, r0
+
+bl debugging_checkrunningonarm9
+mov r5, r0
+
 ldr r1, =0x58584148
 mov r3, #0
 
 arm11kernel_waitdebuginfo_magic_lp:
+cmp r5, #0
+beq arm11kernel_waitdebuginfo_magic_lpcheck
 mcr p15, 0, r3, c7, c10, 4
 mcr p15, 0, r3, c7, c14, 0
 mcr p15, 0, r3, c7, c10, 4
 
-ldr r2, [r0]
+arm11kernel_waitdebuginfo_magic_lpcheck:
+ldr r2, [r4]
 
 cmp r2, r1
 beq arm11kernel_waitdebuginfo_magic_lp
-pop {pc}
+pop {r4, r5, pc}
 
 arm11kernel_getdebugstateptr:
-/*ldr r1, arm11kernel_patch_fwver
-ldr r0, =0xFFF3F000
-ldr r3, =0x1000
-cmp r1, #0x25
-subge r0, r0, r3
-cmp r1, #0x37
-ldrge r0, =0xFFF3D000*/
+push {lr}
+bl debugging_checkrunningonarm9
+cmp r0, #0
+bne arm11kernel_getdebugstateptr_begin
+bl get_arm11debuginfo_physaddr
+b arm11kernel_getdebugstateptr_end
+
+arm11kernel_getdebugstateptr_begin:
 ldr r0, =0xEFF80000
 ldr r1, arm11kernel_patch_fwver
 cmp r1, #0x37
 ldrge r0, =0xDFF80000
+
 ldr r1, =0xC00
 add r0, r0, r1
-bx lr
+
+arm11kernel_getdebugstateptr_end:
+pop {pc}
 
 .pool
 
-/*KProcessmem_getphysicaladdr:
-push {r4, r5}
-mov r2, #0
-
-ldr r3, arm11kernel_patch_fwver
-cmp r3, #0x1F
-ldreq r2, =0xfff7a8c4
-cmp r3, #0x25
-ldreq r2, =0xfff6b3d8
-cmp r3, #0x26
-ldreq r2, =0xfff6b3d4
-cmp r3, #0x29
-cmpne r3, #0x2A
-ldreq r2, =0xfff6b7d0
-cmp r3, #0x2E
-ldreq r2, =0xfff6b810
-cmp r3, #0x30
-ldreq r2, =0xfff6b80c
-cmp r3, #0x37
-ldreq r2, =0xfff5b924
-pop {r4, r5}
-cmp r2, #0
-moveq r0, #0
+debugging_checkrunningonarm9: @ returns 1 for arm11, 0 for arm9.
+mov r0, #1
+#ifdef ENABLE_ARM9DEBUGGING
+mov r1, pc
+lsr r1, r1, #20
+mov r2, #0x1000
+sub r2, r2, #1
+cmp r1, r2
 bxeq lr
-bx r2
-.pool*/
+mov r0, #0
+#endif
+bx lr
 
 arm11kernel_exceptionregdump:
-push {r4, r5, r6, lr}
+push {r4, r5, r6, r7, lr}
 mov r6, r0
 
 //cpsid i @ disable IRQs
+
+bl debugging_checkrunningonarm9
+mov r7, r0
 
 bl arm11kernel_getdebugstateptr
 add r4, r0, #0x800
@@ -766,6 +883,13 @@ blt arm11kernel_exceptionregdump_L1
 mov r2, #0
 mov r3, r2
 mov r5, r2
+mov r1, r2
+
+cmp r7, #0
+ldreq r2, =0x636f7250
+ldreq r3, =0x39737365
+beq arm11kernel_exceptionregdump_writeprocname
+
 ldr r1, =0xffff9004 @ Load the process-name from the current KProcess' KCodeSet.
 ldr r1, [r1] @ r1 = current KProcess*
 cmp r1, #0
@@ -795,9 +919,17 @@ str r2, [r0], #4
 str r3, [r0], #4
 str r5, [r0], #4 @ process MMU table ptr.
 
+mov r1, #0
+mov r2, #0
+mov r3, #0
+cmp r7, #0
+beq arm11kernel_exceptionregdump_writedebugregs
+
 mrc p15, 0, r1, c5, c0, 0 @ Read DFSR "Data Fault Status Register".
 mrc p15, 0, r2, c5, c0, 1 @ Read IFSR "Instruction Fault Status Register".
 mrc p15, 0, r3, c6, c0, 0 @ Read FAR "Fault Address Register".
+
+arm11kernel_exceptionregdump_writedebugregs:
 str r1, [r0], #4
 str r2, [r0], #4
 str r3, [r0], #4
@@ -820,6 +952,8 @@ ldr r1, [r1]
 sub r1, r1, #0x10
 
 arm11kernel_exceptionregdump_datadump_pclp:
+cmp r7, #0
+beq arm11kernel_exceptionregdump_datadump_pclp_cpydata
 lsr r2, r1, #10 @ Make sure this addr is readable from kernel-mode.
 lsl r2, r2, #10
 mcr p15, 0, r2, c7, c8, 0
@@ -827,6 +961,7 @@ mrc p15, 0, r2, c7, c4, 0
 tst r2, #1
 bne arm11kernel_exceptionregdump_L2_end
 
+arm11kernel_exceptionregdump_datadump_pclp_cpydata:
 ldr r2, [r1], #4
 str r2, [r0], #4
 add r3, r3, #4
@@ -865,6 +1000,9 @@ bic r1, r1, #3
 //sub r1, r1, #0x10
 
 arm11kernel_exceptionregdump_L2:
+cmp r7, #0
+beq arm11kernel_exceptionregdump_L2_cpydata
+
 lsr r2, r1, #10 @ Make sure this addr is readable from kernel-mode.
 lsl r2, r2, #10
 mcr p15, 0, r2, c7, c8, 0
@@ -872,6 +1010,7 @@ mrc p15, 0, r2, c7, c4, 0
 tst r2, #1
 bne arm11kernel_exceptionregdump_L2_end
 
+arm11kernel_exceptionregdump_L2_cpydata:
 ldr r2, [r1], #4
 str r2, [r0], #4
 add r3, r3, #4
@@ -894,10 +1033,14 @@ add r2, r2, #4
 cmp r2, #0x200
 blt arm11kernel_exceptionregdump_blkcpy
 
+cmp r7, #0
+beq arm11kernel_exceptionregdump_finishpxiwait
+
 mov r0, #0
 mcr p15, 0, r0, c7, c10, 5
 mcr p15, 0, r0, c7, c14, 0
 
+arm11kernel_exceptionregdump_finishpxiwait:
 mov r0, #0xe
 bl arm11kernel_sendpxisync_val
 
@@ -905,7 +1048,11 @@ mov r0, #0xe
 bl arm11kernel_waitpxisync_val
 
 #ifdef ENABLE_NETDEBUG
-cpsie i @ enable IRQs
+//cpsie i @ enable IRQs
+mrs r4, cpsr @ Enable IRQs (msr/mrs is used here for arm9+arm11 support)
+bic r4, r4, #0x80
+msr cpsr, r4
+
 mov r0, r6
 bl arm11kernel_waitdebuginfo_magic
 
@@ -916,7 +1063,11 @@ ldr r1, [r0]
 cmp r1, r3
 beq arm11kernel_exceptionregdump_waitsignal
 str r3, [r0]
-cpsid i @ disable IRQs
+
+//cpsid i @ disable IRQs
+mrs r4, cpsr @ Disable IRQs (msr/mrs is used here for arm9+arm11 support)
+orr r4, r4, #0x80
+msr cpsr, r4
 
 ldr r2, =0x4d524554 @ "TERM"
 cmp r1, r2
@@ -925,6 +1076,14 @@ bne arm11kernel_exceptionregdump_exit
 #endif
 
 arm11kernel_exceptionregdump_end:
+cmp r7, #0
+bne arm11kernel_exceptionregdump_endexitproc
+
+arm11kernel_exceptionregdump_endlp: @ Just execute infinite loop for arm9 exceptions.
+b arm11kernel_exceptionregdump_endlp
+
+arm11kernel_exceptionregdump_endexitproc:
+
 ldr r4, arm11kernel_patch_killprocessaddr
 ldr r0, =0xffff9004
 ldr r0, [r0]
@@ -932,7 +1091,7 @@ ldr r0, [r0]
 blx r4 @ Terminate the current process.
 
 arm11kernel_exceptionregdump_exit:
-pop {r4, r5, r6, pc}
+pop {r4, r5, r6, r7, pc}
 .pool
 
 /*arm11kernel_gxcmd3debug:
@@ -1116,18 +1275,6 @@ str r3, [r0], #4
 subs r2, r2, #4
 bgt arm11kernel_processcmd_patch_cpylp2
 
-/*cmp r5, #0
-ldr r0, [r6, #0x80]
-add r1, r4, #0x20 @ r1 = src cmdbuf stored in the debuginfo
-add r2, r4, #0x220 @ r2 = output array of converted physical addrs, for the src cmdbuf.
-bl arm11kernel_convertcmd_vaddr2phys
-
-cmp r5, #0
-ldr r0, [r7, #0x80]
-add r1, r4, #0x120 @ r1 = dst cmdbuf stored in the debuginfo
-add r2, r4, #0x320 @ r2 = output array of converted physical addrs, for the dst cmdbuf.
-blne arm11kernel_convertcmd_vaddr2phys*/
-
 ldr r1, =0x58584148
 str r1, [r4]
 
@@ -1167,79 +1314,6 @@ add sp, sp, #0x420
 pop {r0, r1, r2, r3, r4, r5, r6, r7, r8, lr}
 bx lr
 .pool
-
-/*arm11kernel_convertcmd_vaddr2phys: @ r0 = dst KThread's KProcess, r1 = cmdbuf stored in the debuginfo, r2 = output array of converted physical addrs, for the dst cmdbuf.
-push {r4, r5, r6, r7, r8, r9, lr}
-sub sp, sp, #8
-mov r4, r0
-mov r5, r1
-mov r6, r2
-
-ldr r7, [r5]
-and r8, r7, #0x3f
-lsr r7, r7, #6
-and r7, r7, #0x3f
-add r7, r7, #1
-str r7, [sp]
-add r8, r8, r7
-cmp r7, r8
-beq arm11kernel_convertcmd_vaddr2phys_end
-
-arm11kernel_convertcmd_vaddr2phys_lp:
-ldr r9, [r5, r7, lsl #2]
-lsr r0, r9, #26
-and r9, r9, #0xe
-cmp r9, #0
-beq arm11kernel_convertcmd_vaddr2phys_lpend @ This value is for the handle/processid header, so don't process those here.
-
-mov r0, #4
-cmp r9, #2
-moveq r0, #14
-cmp r9, #4
-moveq r0, #8
-
-add r9, r7, #1
-ldr r1, [r5, r9, lsl #2]
-ldr r2, [r5, r7, lsl #2]
-lsr r2, r2, r0
-//cmp r2, #0x200
-//movgt r2, #0x200
-str r2, [sp, #4] @ Buffer size loaded from the header word.
-
-lsreq r3, r1, #28
-cmpeq r3, #0x2
-moveq r0, r1
-beq arm11kernel_convertcmd_vaddr2phys_getphysend
-
-add r0, r4, #0x54
-
-ldr r3, arm11kernel_patch_fwver
-cmp r3, #0x37
-addge r0, r0, #8
-
-bl KProcessmem_getphysicaladdr
-
-arm11kernel_convertcmd_vaddr2phys_getphysend:
-ldr r1, [sp]
-ldr r2, [sp, #4]
-sub r3, r7, r1
-add r9, r3, #1
-str r2, [r6, r3, lsl #2]
-str r0, [r6, r9, lsl #2]
-
-mov r0, #0
-
-arm11kernel_convertcmd_vaddr2phys_lpend:
-add r0, r0, #2
-add r7, r7, r0
-cmp r7, r8
-blt arm11kernel_convertcmd_vaddr2phys_lp
-
-arm11kernel_convertcmd_vaddr2phys_end:
-add sp, sp, #8
-pop {r4, r5, r6, r7, r8, r9, lr}
-bx lr
-.pool*/
 #endif
 
 #ifdef ENABLE_ARM11KERNEL_PROCSTARTHOOK

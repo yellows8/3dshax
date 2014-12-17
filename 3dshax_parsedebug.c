@@ -91,10 +91,13 @@ void parse_debuginfo_exception(unsigned int *debuginfo)
 
 	printf("cpsr: 0x%08x\n", cpsr);
 
-	printf("Process MMU table ptr: 0x%08x\n", debuginfo[(0x58+4)>>2]);
-	printf("DFSR: 0x%08x\n", debuginfo[(0x5c+4)>>2]);
-	printf("IFSR: 0x%08x\n", debuginfo[(0x60+4)>>2]);
-	printf("FAR: 0x%08x\n", debuginfo[(0x64+4)>>2]);
+	if(strncmp(processname, "Process9", 8))//Only print these for ARM11 processes.
+	{
+		printf("Process MMU table ptr: 0x%08x\n", debuginfo[(0x58+4)>>2]);
+		printf("DFSR: 0x%08x\n", debuginfo[(0x5c+4)>>2]);
+		printf("IFSR: 0x%08x\n", debuginfo[(0x60+4)>>2]);
+		printf("FAR: 0x%08x\n", debuginfo[(0x64+4)>>2]);
+	}
 
 	if(enable_hexdump)
 	{

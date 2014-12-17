@@ -447,6 +447,7 @@ void dump_arm11debuginfo()
 	//u64 procname=0;
 	u32 pos=0;
 	vu32 *debuginfo_ptr = NULL;//0x21b00000;//0x18300000
+	vu32 *debuginfo_arm9flag = NULL;
 	//u32 i;
 	u16 filepath[64];
 	char *path = (char*)"/3dshax_debug.bin";
@@ -456,6 +457,7 @@ void dump_arm11debuginfo()
 	u64 procname;
 
 	debuginfo_ptr = (vu32*)((u32)get_arm11debuginfo_physaddr() + 0x200);
+	debuginfo_arm9flag = (vu32*)((u32)get_arm11debuginfo_physaddr() + 0x20);
 
 	if(fileobj_debuginfo==NULL)
 	{
@@ -465,20 +467,26 @@ void dump_arm11debuginfo()
 		if(openfile(sdarchive_obj, 4, filepath, (strlen(path)+1)*2, 6, &fileobj_debuginfo)!=0)return;
 	}
 
-	val = *ptrpxi;
-	if((val & 0xf) == 0xf)
+	if(*debuginfo_arm9flag != 0x394d5241)
 	{
-		val &= ~0xf00;
-		val |= 0xf << 8;
-		*ptrpxi = val;
+		val = *ptrpxi;
+		if((val & 0xf) == 0xf)
+		{
+			val &= ~0xf00;
+			val |= 0xf << 8;
+			*ptrpxi = val;
+		}
 	}
 
 	if(*debuginfo_ptr != 0x58584148)return;
 
-	while(1)
+	if(*debuginfo_arm9flag != 0x394d5241)
 	{
-		val = *ptrpxi;
-		if((val & 0xf) == 0xe)break;
+		while(1)
+		{
+			val = *ptrpxi;
+			if((val & 0xf) == 0xe)break;
+		}
 	}
 
 	if(debuginfo_ptr[1]==0x3131444c)//"LD11"
@@ -548,10 +556,17 @@ void dump_arm11debuginfo()
 
 	memset((u32*)debuginfo_ptr, 0, debuginfo_ptr[2]);
 
-	val = *ptrpxi;
-	val &= ~0xf00;
-	val |= 0xe << 8;
-	*ptrpxi = val;
+	if(*debuginfo_arm9flag != 0x394d5241)
+	{
+		val = *ptrpxi;
+		val &= ~0xf00;
+		val |= 0xe << 8;
+		*ptrpxi = val;
+	}
+	else
+	{
+		*debuginfo_arm9flag = 0;
+	}
 }
 #endif
 
