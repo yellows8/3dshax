@@ -179,3 +179,12 @@ svcStartInterProcessDma:
 	ldr  r5, [sp], #4
 	bx   lr
 
+.global svcGetDmaState
+.type svcGetDmaState, %function
+svcGetDmaState:
+	str r0, [sp, #-0x4]!
+	svc 0x57
+	ldr r3, [sp], #4
+	str r1, [r3]
+	bx  lr
+

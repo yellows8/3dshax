@@ -71,6 +71,7 @@ Result svcControlProcessMemory(Handle kprocess, u32 addr0, u32 addr1, u32 size, 
 Result svc_duplicateHandle(Handle* out, Handle original);
 
 s32 svcStartInterProcessDma(u32* dmahandle, u32 dstProcess, u32* dst, u32 srcProcess, u32* src, u32 size, u32 *config);
+s32 svcGetDmaState(u32 *state, u32 dmahandle);
 
 Result FSUSER_ControlArchive(Handle handle, FS_archive archive)//This is from code by smea.
 {
@@ -510,6 +511,21 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		memcpy(dmaconfig, &buf[3], 24);
 		buf[0] = svcStartInterProcessDma(&buf[1], 0xffff8001, (u32*)buf[0], 0xffff8001, (u32*)buf[1], buf[2], dmaconfig);
 		*bufsize = 8;
+
+		if(buf[0]==0)
+		{
+			val = 0;
+
+			while(1)
+			{
+				buf[0] = (u32)svcGetDmaState(&val, buf[1]);
+				if(buf[0]!=0)break;
+				if(val>=2)break;
+			}
+
+			svc_closeHandle(buf[0]);
+		}
+
 		return 0;
 	}
 

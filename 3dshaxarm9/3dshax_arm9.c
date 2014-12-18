@@ -600,7 +600,7 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 {
 	int ret=0;
 	u32 rw, openflags;
-	u32 pos;
+	u32 pos, val;
 	u64 val64;
 	u64 *val64ptr;
 	u32 *addr;
@@ -742,6 +742,15 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 
 		if(buf[0]==0)
 		{
+			val = 0;
+
+			while(1)
+			{
+				buf[0] = (u32)svcGetDmaState(&val, buf[1]);
+				if(buf[0]!=0)break;
+				if(val>=2)break;
+			}
+
 			svcCloseHandle(buf[0]);
 		}
 
