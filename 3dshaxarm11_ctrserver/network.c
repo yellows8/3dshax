@@ -523,7 +523,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 				if(val>=2)break;
 			}
 
-			svc_closeHandle(buf[0]);
+			svc_closeHandle(buf[1]);
 		}
 
 		return 0;

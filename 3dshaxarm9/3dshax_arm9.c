@@ -751,7 +751,7 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 				if(val>=2)break;
 			}
 
-			svcCloseHandle(buf[0]);
+			svcCloseHandle(buf[1]);
 		}
 
 		return 0;
