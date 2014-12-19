@@ -498,6 +498,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		return 0;
 	}
 
+	#ifdef ENABLE_DMA
 	if(cmdid==0x40)
 	{
 		if(*bufsize != (12 + 24))
@@ -528,6 +529,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 
 		return 0;
 	}
+	#endif
 
 	if(cmdid==0x4e)
 	{

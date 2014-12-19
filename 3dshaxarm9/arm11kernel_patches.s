@@ -187,7 +187,7 @@ add r0, r0, #0xc
 ldr r1, [r1, #0xc]
 bl parse_branch
 
-adr r1, arm11kernel_patch_killprocessaddr
+ldr r1, =arm11kernel_patch_killprocessaddr
 str r0, [r1]
 
 pop {r4, r5, r6, pc}

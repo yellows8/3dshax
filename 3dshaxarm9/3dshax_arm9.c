@@ -63,7 +63,7 @@ u16 arm11code_filepath[] = {0x2F, 0x33, 0x64, 0x73, 0x68, 0x61, 0x78, 0x5F, 0x61
 
 #define THREAD_STACKSIZE 0xa00
 #ifndef LOADA9_NEW3DSMEM
-u64 *thread_stack = (u64*)(0x02000000-THREAD_STACKSIZE);
+u64 *thread_stack = (u64*)(0x08000c00/*0x02000000-THREAD_STACKSIZE*/);//Normally only random data is located around here(0x08000c00 size 0x1100).
 #else
 u64 thread_stack[THREAD_STACKSIZE>>3];
 #endif
@@ -725,6 +725,7 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 		return 0;
 	}
 
+	#ifdef ENABLE_DMA
 	if(cmdid==0x40)
 	{
 		if(*bufsize != (12 + 24))
@@ -756,6 +757,7 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 
 		return 0;
 	}
+	#endif
 
 	if(cmdid==0x62)
 	{
@@ -769,6 +771,7 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 		return 0;
 	}
 
+	#ifdef ENABLE_OLDFS
 	if(cmdid==0xc1)
 	{
 		openflags = buf[0];
@@ -851,6 +854,7 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 
 		return 0;
 	}
+	#endif
 
 	if(cmdid==0xc2)
 	{

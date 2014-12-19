@@ -34,6 +34,8 @@ The FIRM-launch code loads the plaintext FIRM from SD "/firm.bin". The FWVER val
 * "ENABLE_CONFIGMEM_DEVUNIT=1" Enables writing val0 to configmem UNITINFO. This can be used to enable dev-mode for ErrDisp.
 * "ENABLE_FIRMLAUNCH_HOOK=1" Enables hooking Process9 FIRM-launch once the system finishes fully booting after previous FIRM-launch(es). FIRM-launch parameters won't be cleared with this, so that launching titles with this works.
 * "ENABLE_REGIONFREE={val}" Enables the homemenu SMDH icon region check patch. This does not affect the region-lock via gamecard sysupdates, see DISABLE_GAMECARDUPDATE. "ENABLE_REGIONFREE=2" is the same as "ENABLE_REGIONFREE=1", except this also uses the "DISABLE_GAMECARDUPDATE=1" option at the same time. Note that this(SMDH region patch) may cause SD titles which normally aren't displayed, to be shown as presents or black icons.
+* "ENABLE_OLDFS=1" Enables old arm9 FS cmd-handling code(used via ctrserver), for the FS code only supported on old FIRM.
+* "ENABLE_DMA=1" Enables the cmd for use via ctrserver for the DMA SVCs.
 * "DISABLE_GAMECARDUPDATE=1" Disables gamecard sysupdates, this is required for launching gamecards from other regions.
 * "ENABLE_CMDLOGGING=1" Enables ARM11-kernel patches+code for logging commands.
 * "CMDLOGGING_PADCHECK=value" For cmd-logging, only do logging when any of the bits in the specified value is set for the current PAD register state.
@@ -50,8 +52,6 @@ Supported NATIVE_FIRM system-versions(versions where NATIVE_FIRM wasn't updated 
 * v8.x
 * v9.0-v9.2
 * v9.3
-
-Starting(?) with v9.3 FIRM, FS stuff from the new thread is broken, hence arm11kernel stuff is broken too. This seems to be caused by thread stack issues? This is mostly only a problem on Old3DS, since with New3DS(when using LOADA9_NEW3DSMEM) the stack is located in .bss instead of 0x01ffXXXX.
 
 The above doesn't really apply for functionality where addresses are located on-the-fly, unless specificly mentioned otherwise.
 
@@ -73,4 +73,4 @@ Some of the codebase automatically determines what addresses to patch on-the-fly
 * ...
 
 ## Issues
-* SD file-writing is broken on New3DS v8.1+ FIRM and Old/New 3DS v9.0+ FIRM. While it works ok for small-ish data, FAT FS gets corrupted / not written correctly with larger sizes(this mainly affects cmdlogging).
+* SD file-writing is broken on New3DS v8.1+ FIRM and Old/New 3DS v9.0+ FIRM. While it works ok for small-ish data, FAT FS gets corrupted / not written correctly with larger sizes(this mainly affects cmdlogging). This might be fixed now?

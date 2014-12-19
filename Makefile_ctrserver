@@ -64,6 +64,14 @@ ifneq ($(strip $(DISABLE_GAMECARDUPDATE)),)
 	PARAMS	:=	$(PARAMS) DISABLE_GAMECARDUPDATE=1
 endif
 
+ifneq ($(strip $(ENABLE_OLDFS)),)
+	PARAMS	:=	$(PARAMS) ENABLE_OLDFS=$(ENABLE_OLDFS)
+endif
+
+ifneq ($(strip $(ENABLE_DMA)),)
+	PARAMS	:=	$(PARAMS) ENABLE_DMA=$(ENABLE_DMA)
+endif
+
 ifneq ($(strip $(ENABLE_CMDLOGGING)),)
 	PARAMS	:=	$(PARAMS) ENABLE_CMDLOGGING=1
 endif
