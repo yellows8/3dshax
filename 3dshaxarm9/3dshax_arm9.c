@@ -100,7 +100,21 @@ static char arm11codeload_servaccesscontrol[][8] = { //Service-access-control co
 "qtm:u"
 };
 
-void load_arm11code(u32 *loadptr, u32 maxloadsize, u64 procname)
+#define ARM11PROCOVERRIDELIST_TOTALENTRIES 0x10
+
+typedef struct {
+	u64 procname;
+	char codebin_path[0x20];
+	char exheader_path[0x20];
+} s_arm11_processoverride_entry;
+
+typedef struct {
+	s_arm11_processoverride_entry processes[ARM11PROCOVERRIDELIST_TOTALENTRIES];
+} s_arm11_processoverride_list;
+
+s_arm11_processoverride_list *arm11_processoverride_list = (s_arm11_processoverride_list*)0x08001600;
+
+void load_arm11code(u32 *loadptr, u32 maxloadsize, u64 procname, u16 *filepath)
 {
 	//int i;
 	u32 *fileobj = NULL;
@@ -108,9 +122,15 @@ void load_arm11code(u32 *loadptr, u32 maxloadsize, u64 procname)
 	u32 *ptr = NULL;
 	u32 pos;
 
+	if(filepath==NULL)filepath = arm11code_filepath;
+
 	//if(loadptr==NULL)app_physaddr = patch_mmutables(procname, 1, 0);
 
-	if(openfile(sdarchive_obj, 4, arm11code_filepath, 0x24, 1, &fileobj)!=0)return;
+	pos = 0;
+	while(filepath[pos]!=0)pos++;
+	pos++;
+
+	if(openfile(sdarchive_obj, 4, filepath, pos*2, 1, &fileobj)!=0)return;
 	input_filesize = getfilesize(fileobj);
 	ptr = loadptr;
 	if(ptr==NULL)
@@ -285,6 +305,11 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 	u32 *mmutable;
 	u32 pos, pos2;
 
+	#ifdef ENABLE_ARM11PROCLIST_OVERRIDE
+	s_arm11_processoverride_entry *ent = NULL;
+	u16 tmp_path[0x20];
+	#endif
+
 	#ifdef ENABLE_REGIONFREE
 	u32 cmpblock[4] = {0xe3140001, 0x13844040, 0xe0100004, 0x13a00001};
 	#endif
@@ -306,9 +331,28 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 
 	if(procname==ARM11CODELOAD_PROCNAME)
 	{
-		load_arm11code(codebin_physaddr, total_codebin_size, procname);
+		load_arm11code(codebin_physaddr, total_codebin_size, procname, arm11code_filepath);
 		return;
 	}
+
+	#ifdef ENABLE_ARM11PROCLIST_OVERRIDE
+	for(pos=0; pos<ARM11PROCOVERRIDELIST_TOTALENTRIES; pos++)
+	{
+		ent = &arm11_processoverride_list->processes[pos];
+		if(ent->procname == 0)continue;
+		if(ent->procname == procname)
+		{
+			if(ent->codebin_path[0x1f]!=0 || ent->codebin_path[0]==0)return;
+
+			memset(tmp_path, 0, 0x20*2);
+
+			for(pos2=0; pos2<0x1f; pos2++)tmp_path[pos2] = (u16)ent->codebin_path[pos2];
+
+			load_arm11code(codebin_physaddr, total_codebin_size, procname, tmp_path);
+			return;
+		}
+	}
+	#endif
 
 	#ifdef ENABLE_REGIONFREE//SMDH icon region check patch. This does not affect the region-lock via gamecard sysupdates.
 	if(procname==0x756e656d)//"menu", Home Menu.
@@ -444,7 +488,6 @@ void arm11debuginfo_convertcmd_vaddr2phys(u64 procname, u32 *cmdbuf, u32 *outdat
 
 void dump_arm11debuginfo()
 {
-	//u64 procname=0;
 	u32 pos=0;
 	vu32 *debuginfo_ptr = NULL;//0x21b00000;//0x18300000
 	vu32 *debuginfo_arm9flag = NULL;
@@ -454,7 +497,7 @@ void dump_arm11debuginfo()
 	//u32 *ptr;
 	u32 val=0;
 	vu32 *ptrpxi = (vu32*)0x10008000;
-	u64 procname;
+	u64 procname=0;
 
 	debuginfo_ptr = (vu32*)((u32)get_arm11debuginfo_physaddr() + 0x200);
 	debuginfo_arm9flag = (vu32*)((u32)get_arm11debuginfo_physaddr() + 0x20);
@@ -606,15 +649,21 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 	u32 *addr;
 	u32 size=0;
 	u32 tmpsize=0, tmpsize2=0;
-	u32 chunksize;
 	u32 bufpos = 0;
-	u64 tmpsize64=0;
 	u32 *mmutable;
 	u32 *buf = (u32*)pxibuf[0];
+
+	#ifdef ENABLE_OLDFS
+	u32 chunksize;
+	u64 tmpsize64=0;
 	u8 *buf8 = (u8*)buf;
 	u32 fsfile_ctx[8];
 	u16 filepath[0x100];
+	#endif
+
+	#ifdef ENABLE_DMA
 	u32 dmaconfig[24>>2];
+	#endif
 
 	#ifdef ENABLEAES
 	if(cmdid==CMD_AESCONTROL)
@@ -982,6 +1031,12 @@ void pxipmcmd1_getexhdr(u32 *exhdr)
 	u8 *exhdr8 = (u8*)exhdr;
 	u32 pos;
 
+	#ifdef ENABLE_ARM11PROCLIST_OVERRIDE
+	u32 pos2;
+	s_arm11_processoverride_entry *ent = NULL;
+	u16 tmp_path[0x20];
+	#endif
+
 	if(exhdr[0] == ((u32)(ARM11CODELOAD_PROCNAME)) && exhdr[1] == ((u32)(ARM11CODELOAD_PROCNAME>>32)))//Only modify the exheader for this block when the exhdr name matches ARM11CODELOAD_PROCNAME.
 	{
 		servlist = &exhdr[0x250>>2];
@@ -998,6 +1053,29 @@ void pxipmcmd1_getexhdr(u32 *exhdr)
 	{
 		for(pos=0x248; pos<0x248+0x7; pos++)exhdr8[pos] = 0xFF;//Set FS accessinfo to all 0xFF.
 	}
+
+	#ifdef ENABLE_ARM11PROCLIST_OVERRIDE
+	for(pos=0; pos<ARM11PROCOVERRIDELIST_TOTALENTRIES; pos++)
+	{
+		ent = &arm11_processoverride_list->processes[pos];
+		if(ent->procname == 0)continue;
+		if(memcmp(&ent->procname, exhdr, 8)==0)
+		{
+			if(ent->exheader_path[0x1f]!=0 || ent->exheader_path[0]==0)return;
+
+			memset(tmp_path, 0, 0x20*2);
+
+			for(pos2=0; pos2<0x1f; pos2++)
+			{
+				if(ent->exheader_path[pos2] == 0)break;
+				tmp_path[pos2] = (u16)ent->exheader_path[pos2];
+			}
+
+			loadfile(exhdr, 0x400, tmp_path, (pos2+1) * 2);
+			return;
+		}
+	}
+	#endif
 }
 
 u32 *locate_cmdhandler_code(u32 *ptr, u32 size, u32 *pool_cmpdata, u32 pool_cmpdata_wordcount, u32 locate_ldrcc)
@@ -1302,10 +1380,38 @@ void thread_entry()
 	while(1);
 }
 
+void main_startupcommon()
+{
+	u32 threadhandle = 0;
+
+	#ifdef ENABLE_ARM11PROCLIST_OVERRIDE
+	u32 pos=0;
+	u16 tmp_path[0x20];
+	char *filepath = "/3dshax_proclistoverride.bin";
+	#endif
+
+	#ifndef DISABLE_A9THREAD
+	memset(thread_stack, 0, THREAD_STACKSIZE);
+	svcCreateThread(&threadhandle, thread_entry, 0, (u32*)&thread_stack[THREAD_STACKSIZE>>3], 0x3f, ~1);
+	#endif
+
+	#ifdef ENABLE_ARM11PROCLIST_OVERRIDE
+	memset(arm11_processoverride_list, 0, sizeof(s_arm11_processoverride_list));
+
+	memset(tmp_path, 0, 0x20*2);
+	for(pos=0; pos<strlen(filepath); pos++)
+	{
+		if(pos>=0x1f)break;
+		tmp_path[pos] = (u16)filepath[pos];
+	}
+
+	loadfile((u32*)arm11_processoverride_list, sizeof(s_arm11_processoverride_list), tmp_path, (pos+1) * 2);
+	#endif
+}
+
 int main(void)
 {
 	u32 pos=0;
-	u32 threadhandle = 0;
 	u32 *ptr;
 	u8 *ptr8;
 
@@ -1330,7 +1436,7 @@ int main(void)
 		{
 			FIRMLAUNCH_CLEARPARAMS = 1;
 			patch_proc9_launchfirm();
-			//load_arm11code(NULL, 0, 0x707041727443LL);
+			//load_arm11code(NULL, 0, 0x707041727443LL, arm11code_filepath);
 
 			writearm11_firmlaunch_usrpatch();
 			svcSleepThread(10000000000LL);
@@ -1338,7 +1444,7 @@ int main(void)
 
 		if((*((vu16*)0x10146000) & 0x200) == 0)//button L
 		{
-			load_arm11code(NULL, 0, 0x707041727443LL);
+			load_arm11code(NULL, 0, 0x707041727443LL, arm11code_filepath);
 		}
 
 		if((*((vu16*)0x10146000) & 1) == 0)
@@ -1349,10 +1455,7 @@ int main(void)
 
 		//while(*((vu16*)0x10146000) & 2);
 
-		#ifndef DISABLE_A9THREAD
-		memset(thread_stack, 0, THREAD_STACKSIZE);
-		svcCreateThread(&threadhandle, thread_entry, 0, (u32*)&thread_stack[THREAD_STACKSIZE>>3], 0x3f, ~1);
-		#endif
+		main_startupcommon();
 	}
 	else
 	{
@@ -1367,11 +1470,6 @@ int main(void)
 			write_arm11debug_patch();
 			#endif
 
-			#ifndef DISABLE_A9THREAD
-			memset(thread_stack, 0, THREAD_STACKSIZE);
-			svcCreateThread(&threadhandle, thread_entry, 0, (u32*)&thread_stack[THREAD_STACKSIZE>>3], 0x3f, ~1);
-			#endif
-
 			#ifdef ENABLE_CONFIGMEM_DEVUNIT
 			ptr8 = NULL;
 			while(ptr8 == NULL)ptr8 = (u32*)mmutable_convert_vaddr2physaddr(get_kprocessptr(0x697870, 0, 1), 0x1FF80014);
@@ -1382,6 +1480,8 @@ int main(void)
 			FIRMLAUNCH_CLEARPARAMS = 0;
 			patch_proc9_launchfirm();
 			#endif
+
+			main_startupcommon();
 		}
 	}
 
