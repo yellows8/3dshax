@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <inttypes.h>
@@ -778,18 +779,22 @@ int parsecmd_hexvalue(char *tokstr, char *delim, unsigned int *out)
 
 int parsecmd_memoryrw(ctrclient *client, char *customcmd)
 {
-	unsigned int type=0, in_address=0, mem_address=0, out=0;
+	FILE *f;
+	unsigned int type=0, in_address=0, start_address=0, mem_address=0, out=0;
 	unsigned int arm11usr=0;
 	unsigned int pos=0;
 	int ret=0;
 	unsigned int size, sz, chunksize;
 	unsigned int clearval=0;
 	unsigned int optype=0;
+	unsigned int disasm = 0;
+	unsigned int disasm_mode = 0;
 	unsigned char *databuf = NULL;
 	uint64_t val64=0;
 	char *procname = NULL;
 	char *str = NULL;
 	char procnamebuf[8];
+	char cmdstr[256];
 
 	memset(procnamebuf, 0, 8);
 
@@ -797,6 +802,12 @@ int parsecmd_memoryrw(ctrclient *client, char *customcmd)
 	{
 		optype = 0;
 		pos+= 7;
+	}
+	else if(strncmp(customcmd, "disasm", 6)==0)
+	{
+		optype = 0;
+		disasm = 1;
+		pos+= 6;
 	}
 	else if(strncmp(customcmd, "writemem", 8)==0)
 	{
@@ -816,7 +827,7 @@ int parsecmd_memoryrw(ctrclient *client, char *customcmd)
 
 	size = 0;
 
-	if(optype<2)
+	if(optype<2 && !disasm)
 	{
 		if(strncmp(&customcmd[pos], "8", 1)==0)
 		{
@@ -902,6 +913,14 @@ int parsecmd_memoryrw(ctrclient *client, char *customcmd)
 	{
 		printf("Invalid input address.\n");
 		return ret;
+	}
+	start_address = in_address;
+
+	if(disasm && (start_address & 1))
+	{
+		disasm_mode = 1;
+		in_address &= ~1;
+		start_address = in_address;
 	}
 
 	if(optype==2)
@@ -993,7 +1012,32 @@ int parsecmd_memoryrw(ctrclient *client, char *customcmd)
 
 	if(ret==0 && optype==0)
 	{
-		ret = parsecmd_writeoutput((unsigned int*)databuf, size);
+		if(!disasm)
+		{
+			ret = parsecmd_writeoutput((unsigned int*)databuf, size);
+		}
+		else
+		{
+			f = fopen("ctrclientyls8_tmpcode.bin", "wb");
+			if(f==NULL)
+			{
+				printf("Failed to open tmp file for writing.\n");
+			}
+			else
+			{
+				fwrite(databuf, 1, size, f);
+				fclose(f);
+
+				memset(cmdstr, 0, 256);
+				snprintf(cmdstr, 255, "arm-none-eabi-objdump -D -b binary -m arm --adjust-vma=0x%0x", start_address);
+				if(disasm_mode)strncat(cmdstr, " -M force-thumb", 255);
+				strncat(cmdstr, " ctrclientyls8_tmpcode.bin", 255);
+
+				system(cmdstr);
+
+				unlink("ctrclientyls8_tmpcode.bin");
+			}
+		}
 	}
 
 	if(optype<2)free(databuf);
@@ -1869,7 +1913,7 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 	{
 		ret = parsecmd_readctrcard(client, customcmd);
 	}
-	else if(strncmp(customcmd, "readmem", 7)==0 || strncmp(customcmd, "writemem", 8)==0 || strncmp(customcmd, "memset", 6)==0)
+	else if(strncmp(customcmd, "readmem", 7)==0 || strncmp(customcmd, "disasm", 6)==0 || strncmp(customcmd, "writemem", 8)==0 || strncmp(customcmd, "memset", 6)==0)
 	{
 		ret = parsecmd_memoryrw(client, customcmd);
 	}
