@@ -70,6 +70,8 @@ Result _ACU_WaitInternetConnection()
 	{
 		ret = ACU_GetWifiStatus(servhandle, &outval);
 		if(ret==0 && outval!=0)break;
+
+		svc_sleepThread(1000000000LL);
 	}
 
 	svc_closeHandle(servhandle);
