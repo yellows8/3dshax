@@ -72,6 +72,3 @@ Some of the codebase automatically determines what addresses to patch on-the-fly
 * ARM11-kernel patch addrs/etc
 * ARM11-kernel cmd-logging patch addresses/etc
 * ...
-
-## Issues
-* SD file-writing is broken on New3DS v8.1+ FIRM and Old/New 3DS v9.0+ FIRM. While it works ok for small-ish data, FAT FS gets corrupted / not written correctly with larger sizes(this mainly affects cmdlogging). This might be fixed now?
