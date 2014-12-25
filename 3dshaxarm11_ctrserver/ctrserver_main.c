@@ -147,13 +147,6 @@ int main(int argc, char **argv)
 		funcptr(ret);
 	}
 
-	ret = CSND_initialize(NULL);
-	if(ret!=0)
-	{
-		funcptr = (void*)0x444e5343;
-		funcptr(ret);
-	}
-
 	ret = SOC_Initialize((u32*)0x08000000, 0x48000);
 	if(ret!=0)
 	{

@@ -498,7 +498,6 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		return 0;
 	}
 
-	#ifdef ENABLE_DMA
 	if(cmdid==0x40)
 	{
 		if(*bufsize != (12 + 24))
@@ -529,7 +528,6 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 
 		return 0;
 	}
-	#endif
 
 	if(cmdid==0x4e)
 	{
@@ -793,6 +791,13 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		}
 		*bufsize = 4;
 		buf[0] = GX_SetTextureCopy(gxCmdBuf, (u32*)buf[0], buf[2], (u32*)buf[1], buf[3], buf[4], buf[5]);
+		return 0;
+	}
+
+	if(cmdid==0x5d)
+	{
+		buf[0] = CSND_initialize(NULL);
+		*bufsize = 4;
 		return 0;
 	}
 
