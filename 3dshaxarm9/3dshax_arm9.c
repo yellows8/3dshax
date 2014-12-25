@@ -1054,6 +1054,24 @@ void pxipmcmd1_getexhdr(u32 *exhdr)
 		for(pos=0x248; pos<0x248+0x7; pos++)exhdr8[pos] = 0xFF;//Set FS accessinfo to all 0xFF.
 	}
 
+	#ifdef ADDEXHDR_SYSMODULE_DEPENDENCY
+	if(exhdr[0]==ADDEXHDR_SYSMODULE_DEPENDENCY)//Add the dlp sysmodule to the specified process header.
+	{
+		for(pos=(0x40>>2); pos<(0x1c0>>2); pos+=2)
+		{
+			if(!(exhdr[pos]==0 && exhdr[pos+1]==0))continue;
+
+			exhdr[pos] = 0x00002c02;//nim module, so that most modules required for using networking gets loaded.
+			exhdr[pos+1] = 0x00040130;
+			exhdr[pos+2] = 0x00002b02;//ndm module
+			exhdr[pos+3] = 0x00040130;
+			exhdr[pos+4] = 0x00002802;//dlp module
+			exhdr[pos+5] = 0x00040130;
+			break;
+		}
+	}
+	#endif
+
 	#ifdef ENABLE_ARM11PROCLIST_OVERRIDE
 	for(pos=0; pos<ARM11PROCOVERRIDELIST_TOTALENTRIES; pos++)
 	{
