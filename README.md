@@ -30,6 +30,7 @@ The FIRM-launch code loads the plaintext FIRM from SD "/firm.bin". The FWVER val
 * "ENABLE_LOADA9_x01FFB800=1" This enables arm9 code which loads the SD file @ "/x01ffb800.bin" to arm9-mem 0x01ffb800. This should only be used when NAND-redir is enabled, and when the SD nandimage is originally from another 3ds, converted for usage on another 3ds.
 * "ENABLE_ARM11PROCLIST_OVERRIDE=1" This enables overriding the exheader and/or the loaded code binary at process-start, for any process(see 3dshax_arm9.c).
 * "ADDEXHDR_SYSMODULE_DEPENDENCY=hexvalue" This adds sysmodules to the specified process exheader, so that ctrserver under dlp module gets loaded + is accessible over the network(only needed for getting ctrserver to load eariler than normal).
+* "ADDEXHDR_SYSMODULE_DEPENDENCY_PADCHECK=hexvalue" When used the code for ADDEXHDR_SYSMODULE_DEPENDENCY only gets executed when the specified PAD button(s) are pressed.
 * "ENABLE_GAMECARD=1" Enables 3ds gamecard reading code(including ctrcard cmd 0xc6 code).
 * "DISABLE_FSACCESSINFO_OVERWRITE=1" Disable exheader FS accessinfo overwrite with all 0xFF for the arm11code-load process.
 * "DISABLE_A9THREAD=1" Disables creation of the arm9 thread.

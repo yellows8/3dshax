@@ -1055,21 +1055,28 @@ void pxipmcmd1_getexhdr(u32 *exhdr)
 	}
 
 	#ifdef ADDEXHDR_SYSMODULE_DEPENDENCY
-	if(exhdr[0]==ADDEXHDR_SYSMODULE_DEPENDENCY)//Add the dlp sysmodule to the specified process header.
+	#ifdef ADDEXHDR_SYSMODULE_DEPENDENCY_PADCHECK
+	if(!((*((vu16*)0x10146000) & ADDEXHDR_SYSMODULE_DEPENDENCY_PADCHECK)))
 	{
-		for(pos=(0x40>>2); pos<(0x1c0>>2); pos+=2)
+	#endif
+		if(exhdr[0]==ADDEXHDR_SYSMODULE_DEPENDENCY)//Add the dlp sysmodule to the specified process header.
 		{
-			if(!(exhdr[pos]==0 && exhdr[pos+1]==0))continue;
+			for(pos=(0x40>>2); pos<(0x1c0>>2); pos+=2)
+			{
+				if(!(exhdr[pos]==0 && exhdr[pos+1]==0))continue;
 
-			exhdr[pos] = 0x00002c02;//nim module, so that most modules required for using networking gets loaded.
-			exhdr[pos+1] = 0x00040130;
-			exhdr[pos+2] = 0x00002b02;//ndm module
-			exhdr[pos+3] = 0x00040130;
-			exhdr[pos+4] = 0x00002802;//dlp module
-			exhdr[pos+5] = 0x00040130;
-			break;
+				exhdr[pos] = 0x00002c02;//nim module, so that most modules required for using networking gets loaded.
+				exhdr[pos+1] = 0x00040130;
+				exhdr[pos+2] = 0x00002b02;//ndm module
+				exhdr[pos+3] = 0x00040130;
+				exhdr[pos+4] = 0x00002802;//dlp module
+				exhdr[pos+5] = 0x00040130;
+				break;
+			}
 		}
+	#ifdef ADDEXHDR_SYSMODULE_DEPENDENCY_PADCHECK
 	}
+	#endif
 	#endif
 
 	#ifdef ENABLE_ARM11PROCLIST_OVERRIDE
