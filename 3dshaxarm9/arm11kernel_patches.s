@@ -336,6 +336,13 @@ bl memset
 
 bl writepatch_arm11kernel_getkillprocessaddr
 
+#ifdef ENABLE_ARM11KERNEL_SVCBREAKPATCH
+mov r0, #0x3c
+bl writepatch_arm11kernel_getsvctableadr
+ldr r0, =0xE1200070
+str r0, [r1]
+#endif
+
 ldr r0, =arm11kernel_patch
 ldr r1, =arm11kernel_patchend
 sub r1, r1, r0

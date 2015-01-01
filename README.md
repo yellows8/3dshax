@@ -21,11 +21,19 @@ The FIRM-launch code loads the plaintext FIRM from SD "/firm.bin". The FWVER val
 * "DISABLEAES=1" Disables all arm9 AES code.
 * "DISABLENANDREDIR=1" Disables NAND->SD redirection.
 * "NANDREDIR_SECTORNUM={sectornum}" Sector-num base for the SD nandimage, for NAND-redir when enabled.
+* "ENABLE_DUMP_NANDIMAGE=1" Enables nandimage dumping to SD "/3dshax_dump.bin", when button Y is pressed once from the arm9 thread. To dump the physical NAND, "DISABLENANDREDIR=1" should be used.
+
 * "DISABLE_ARM9DEBUGGING=1" Disables ARM9 exception debugging, this is automatically disabled when DISABLE_ARM11KERNEL_DEBUG=1 is used. Note that ARM9 exception dumping currently only works with ctrserver, this doesn't work for writing the exception info to SD.
 * "DISABLE_ARM11KERNEL_DEBUG=1" Disables ARM11-kernel patches.
 * "DISABLE_ARM11KERNEL_PROCSTARTHOOK=1" Disables the ARM11-kernel process-start hook, used for loading arm11code(ctrserver) etc. This isn't needed when "DISABLE_ARM11KERNEL_DEBUG=1" is used.
 * "DISABLE_ARM11KERNEL_SVCHANDLER_PATCH=1" Disables the ARM11-kernel svc-handler patch, which when the patch is left enabled allows access to all SVCs.
 * "DISABLE_NETDEBUG=1" Disable the loop in the arm11kernel debug exception handler(when procstarthook/arm11kernel_debug are enabled) which waits for a signal(terminate process / continue) from ctrserver.
+* "ENABLE_CMDLOGGING=1" Enables ARM11-kernel patches+code for logging commands.
+* "CMDLOGGING_PADCHECK=value" For cmd-logging, only do logging when any of the bits in the specified value is set for the current PAD register state.
+* "CMDLOGGING_PROCNAME0=value" u32 value to compare the src/dst process-name with for filtering. This is required for cmd-logging.
+* "CMDLOGGING_PROCNAME1=value" Optional extra u32 value to compare the src/dst process-name with for filtering, for cmd-logging. When this is set, only commands where the src/dst are CMDLOGGING_PROCNAME0 and CMDLOGGING_PROCNAME1 are logged.
+* "ENABLE_ARM11KERNEL_SVCBREAKPATCH=1" This enables writing a bkpt instruction to the start of the ARM11-kernel code handling svcBreak.
+
 * "DISABLE_GETEXHDRHOOK=1" Disables the arm9 get-exheader hook. This option must be used when DISABLE_ARM11KERNEL_DEBUG/DISABLE_ARM11KERNEL_PROCSTARTHOOK is set, otherwise when doing a firm-launch the system will eventually trigger a fatal-error when dlp-module fails to get service-handles.
 * "ENABLE_LOADA9_x01FFB800=1" This enables arm9 code which loads the SD file @ "/x01ffb800.bin" to arm9-mem 0x01ffb800. This should only be used when NAND-redir is enabled, and when the SD nandimage is originally from another 3ds, converted for usage on another 3ds.
 * "ENABLE_ARM11PROCLIST_OVERRIDE=1" This enables overriding the exheader and/or the loaded code binary at process-start, for any process(see 3dshax_arm9.c).
@@ -37,14 +45,9 @@ The FIRM-launch code loads the plaintext FIRM from SD "/firm.bin". The FWVER val
 * "ENABLE_CONFIGMEM_DEVUNIT=1" Enables writing val0 to configmem UNITINFO. This can be used to enable dev-mode for ErrDisp.
 * "ENABLE_FIRMLAUNCH_HOOK=1" Enables hooking Process9 FIRM-launch once the system finishes fully booting after previous FIRM-launch(es). FIRM-launch parameters won't be cleared with this, so that launching titles with this works.
 * "ENABLE_REGIONFREE={val}" Enables the homemenu SMDH icon region check patch. This does not affect the region-lock via gamecard sysupdates, see DISABLE_GAMECARDUPDATE. "ENABLE_REGIONFREE=2" is the same as "ENABLE_REGIONFREE=1", except this also uses the "DISABLE_GAMECARDUPDATE=1" option at the same time. Note that this(SMDH region patch) may cause SD titles which normally aren't displayed, to be shown as presents or black icons.
+* "DISABLE_GAMECARDUPDATE=1" Disables gamecard sysupdates, this is required for launching gamecards from other regions.
 * "ENABLE_OLDFS=1" Enables old arm9 FS cmd-handling code(used via ctrserver), for the FS code only supported on old FIRM.
 * "ENABLE_DMA=1" Enables the cmd for use via ctrserver for the DMA SVCs.
-* "DISABLE_GAMECARDUPDATE=1" Disables gamecard sysupdates, this is required for launching gamecards from other regions.
-* "ENABLE_CMDLOGGING=1" Enables ARM11-kernel patches+code for logging commands.
-* "CMDLOGGING_PADCHECK=value" For cmd-logging, only do logging when any of the bits in the specified value is set for the current PAD register state.
-* "CMDLOGGING_PROCNAME0=value" u32 value to compare the src/dst process-name with for filtering. This is required for cmd-logging.
-* "CMDLOGGING_PROCNAME1=value" Optional extra u32 value to compare the src/dst process-name with for filtering, for cmd-logging. When this is set, only commands where the src/dst are CMDLOGGING_PROCNAME0 and CMDLOGGING_PROCNAME1 are logged.
-* "ENABLE_DUMP_NANDIMAGE=1" Enables nandimage dumping to SD "/3dshax_dump.bin", when button Y is pressed once from the arm9 thread. To dump the physical NAND, "DISABLENANDREDIR=1" should be used.
 
 # FIRM Compatibility
 Supported NATIVE_FIRM system-versions(versions where NATIVE_FIRM wasn't updated don't apply here):
