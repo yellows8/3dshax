@@ -1260,6 +1260,13 @@ bne arm11kernel_processcmd_patchend @ Only do logging / check procname when the 
 
 ldr r1, =CMDLOGGING_PROCNAME0
 
+#ifdef CMDLOGGING_IGNORE_PROCNAME //When this define is set, ignore commands where the src/dst matches the procname from this define.
+ldr r3, =CMDLOGGING_IGNORE_PROCNAME
+cmp r2, r3
+cmpne r0, r3
+beq arm11kernel_processcmd_patchend
+#endif
+
 #ifdef CMDLOGGING_PROCNAME1
 ldr r3, =CMDLOGGING_PROCNAME1
 #endif

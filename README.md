@@ -32,6 +32,7 @@ The FIRM-launch code loads the plaintext FIRM from SD "/firm.bin". The FWVER val
 * "CMDLOGGING_PADCHECK=value" For cmd-logging, only do logging when any of the bits in the specified value is set for the current PAD register state.
 * "CMDLOGGING_PROCNAME0=value" u32 value to compare the src/dst process-name with for filtering. This is required for cmd-logging.
 * "CMDLOGGING_PROCNAME1=value" Optional extra u32 value to compare the src/dst process-name with for filtering, for cmd-logging. When this is set, only commands where the src/dst are CMDLOGGING_PROCNAME0 and CMDLOGGING_PROCNAME1 are logged.
+* "CMDLOGGING_IGNORE_PROCNAME=value" Optional u32 value to compare the src/dst process-name with, when it matches the cmd will not be logged.
 * "ENABLE_ARM11KERNEL_SVCBREAKPATCH=1" This enables writing a bkpt instruction to the start of the ARM11-kernel code handling svcBreak.
 
 * "DISABLE_GETEXHDRHOOK=1" Disables the arm9 get-exheader hook. This option must be used when DISABLE_ARM11KERNEL_DEBUG/DISABLE_ARM11KERNEL_PROCSTARTHOOK is set, otherwise when doing a firm-launch the system will eventually trigger a fatal-error when dlp-module fails to get service-handles.
