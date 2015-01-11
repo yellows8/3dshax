@@ -440,50 +440,26 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 	}
 
 	#ifdef SAFE_FW_UPDATE
-	if(procname==0x6D696E00)// "nim"
+	if(procname==0x6D696E)// "nim"
 	{
-		char *ptr = (char*)mmutable_convert_vaddr2physaddr(mmutable, 0x10000000);
-		if(ptr==NULL) return;
+		char *ptr;
 		char *targeturl0 = "https://nus.";
 		char *targeturl1 = "https://ecs.";
 		char *replaceurl0 = "http://yls8.mtheall.com/3ds-soap/NetUpdateSOAP.php";//"http://192.168.1.33/NetUpdateSOAP";
 		char *replaceurl1 = "http://yls8.mtheall.com/3ds-soap/ECommerceSOAP.php";//"http://192.168.1.33/ECommerceSOAP";
-		u32 pos, i, found0=0, found1=0;
+		u32 pos, pos2;
 
-		for(pos=0; pos<0x53000; pos++)
+
+		for(pos=0; pos<0x53000; pos+=0x1000)
 		{
-			for(i=0; i<12; i++)
+			ptr = (char*)mmutable_convert_vaddr2physaddr(mmutable, 0x10000000 + pos);
+			if(ptr==NULL)continue;
+
+			for(pos2=0; pos2<0x1000; pos2++)
 			{
-				if(ptr[pos+i] != targeturl0[i])break;
+				if(!memcmp(&ptr[pos2], targeturl0, 11)) memcpy(&ptr[pos2], replaceurl0, 51);
 
-				if(i==11)
-				{
-					found0 = 1;
-					break;
-				}
-			}
-
-			for(i=0; i<12; i++)
-			{
-				if(ptr[pos+i] != targeturl1[i])break;
-
-				if(i==11)
-				{
-					found1 = 1;
-					break;
-				}
-			}
-
-			if(found0)
-			{
-				for(i=0; i<strlen(replaceurl0)+1; i++)ptr[pos+i] = replaceurl0[i];
-				found0 = 0;
-			}
-
-			if(found1)
-			{
-				for(i=0; i<strlen(replaceurl1)+1; i++)ptr[pos+i] = replaceurl1[i];
-				found1 = 0;
+				if(!memcmp(&ptr[pos2], targeturl1, 11)) memcpy(&ptr[pos2], replaceurl1, 51);
 			}
 		}
 
