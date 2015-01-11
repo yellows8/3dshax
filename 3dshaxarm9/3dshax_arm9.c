@@ -438,6 +438,57 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 		ptr[1] = 0x3a;*/
 		return;
 	}
+
+	#ifdef SAFE_FW_UPDATE
+	if(procname==0x6D696E00)// "nim"
+	{
+		char *ptr = (char*)mmutable_convert_vaddr2physaddr(mmutable, 0x0014E000);// // code RO
+		char *targeturl0 = "https://nus.";
+		char *targeturl1 = "https://ecs.";
+		char *replaceurl0 = "http://yls8.mtheall.com/3ds-soap/NetUpdateSOAP.php";//"http://192.168.1.33/NetUpdateSOAP";
+		char *replaceurl1 = "http://yls8.mtheall.com/3ds-soap/ECommerceSOAP.php";//"http://192.168.1.33/ECommerceSOAP";
+		u32 pos, i, found0=0, found1=0;
+
+		for(pos=0; pos<0x53000; pos++)
+		{
+			for(i=0; i<12; i++)
+			{
+				if(ptr[pos+i] != targeturl0[i])break;
+
+				if(i==11)
+				{
+					found0 = 1;
+					break;
+				}
+			}
+
+			for(i=0; i<12; i++)
+			{
+				if(ptr[pos+i] != targeturl1[i])break;
+
+				if(i==11)
+				{
+					found1 = 1;
+					break;
+				}
+			}
+
+			if(found0)
+			{
+				for(i=0; i<strlen(replaceurl0)+1; i++)ptr[pos+i] = replaceurl0[i];
+				found0 = 0;
+			}
+
+			if(found1)
+			{
+				for(i=0; i<strlen(replaceurl1)+1; i++)ptr[pos+i] = replaceurl1[i];
+				found1 = 0;
+			}
+		}
+
+		//physaddr[0x7d00>>2] = 0xe3a00000;//"mov r0, #0" Patch the NIM command code which returns whether a sysupdate is available.
+	}
+	#endif
 }
 
 #ifdef ENABLE_ARM11KERNEL_DEBUG

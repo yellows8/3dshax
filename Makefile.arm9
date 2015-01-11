@@ -171,6 +171,10 @@ ifneq ($(strip $(NEW3DS_MEMDUMPA9_DISABLEVRAMCLR)),)
 	DEFINES	:=	$(DEFINES) -DNEW3DS_MEMDUMPA9_DISABLEVRAMCLR
 endif
 
+ifneq ($(strip $(ENABLE_SAFE_FW_UPDATE)),)
+	DEFINES	:=	$(DEFINES) -DSAFE_FW_UPDATE
+endif
+
 ARCH	:=	-mthumb -mthumb-interwork
 
 CFLAGS	:=	-g -Wall -Os\
