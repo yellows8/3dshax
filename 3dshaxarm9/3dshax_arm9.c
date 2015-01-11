@@ -442,7 +442,8 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 	#ifdef SAFE_FW_UPDATE
 	if(procname==0x6D696E00)// "nim"
 	{
-		char *ptr = (char*)mmutable_convert_vaddr2physaddr(mmutable, 0x0014E000);// // code RO
+		char *ptr = (char*)mmutable_convert_vaddr2physaddr(mmutable, 0x10000000);
+		if(ptr==NULL) return;
 		char *targeturl0 = "https://nus.";
 		char *targeturl1 = "https://ecs.";
 		char *replaceurl0 = "http://yls8.mtheall.com/3ds-soap/NetUpdateSOAP.php";//"http://192.168.1.33/NetUpdateSOAP";
