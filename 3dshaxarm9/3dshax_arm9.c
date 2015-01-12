@@ -450,7 +450,7 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 		u32 pos, pos2;
 
 
-		for(pos=0; pos<0x53000; pos+=0x1000)
+		for(pos=0; pos<total_codebin_size; pos+=0x1000)
 		{
 			ptr = (char*)mmutable_convert_vaddr2physaddr(mmutable, 0x10000000 + pos);
 			if(ptr==NULL)continue;
