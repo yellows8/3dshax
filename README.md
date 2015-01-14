@@ -49,7 +49,7 @@ The FIRM-launch code loads the plaintext FIRM from SD "/firm.bin". The FWVER val
 * "DISABLE_GAMECARDUPDATE=1" Disables gamecard sysupdates, this is required for launching gamecards from other regions.
 * "ENABLE_OLDFS=1" Enables old arm9 FS cmd-handling code(used via ctrserver), for the FS code only supported on old FIRM.
 * "ENABLE_DMA=1" Enables the cmd for use via ctrserver for the DMA SVCs.
-* "ENABLE_SAFE_FW_UPDATE=1" Enables patching NIM to prevent updating beyond the latest exploitable firmware.
+* "ENABLE_SAFE_FW_UPDATE=1" Enables patching NIM so that it uses custom URLs for ECommerceSOAP and NetUpdateSOAP, see source. What the server returns is hard-coded.
 
 # FIRM Compatibility
 Supported NATIVE_FIRM system-versions(versions where NATIVE_FIRM wasn't updated don't apply here):
