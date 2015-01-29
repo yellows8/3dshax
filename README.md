@@ -50,6 +50,7 @@ The FIRM-launch code loads the plaintext FIRM from SD "/firm.bin". The FWVER val
 * "ENABLE_OLDFS=1" Enables old arm9 FS cmd-handling code(used via ctrserver), for the FS code only supported on old FIRM.
 * "ENABLE_DMA=1" Enables the cmd for use via ctrserver for the DMA SVCs.
 * "ENABLE_SAFE_FW_UPDATE=1" Enables patching NIM so that it uses custom URLs for ECommerceSOAP and NetUpdateSOAP, see source. What the server returns is hard-coded.
+* "ENABLE_THEMECACHENAME=1" Enables patching home menu's theme cache filenames so that home menu uses its own theme cache under 3dshax. This is particularly useful when used with menuhax to a) avoid infinite boot loops and b) avoid ROP crashes in mismatching home menu versions.
 
 # FIRM Compatibility
 Supported NATIVE_FIRM system-versions(versions where NATIVE_FIRM wasn't updated don't apply here):

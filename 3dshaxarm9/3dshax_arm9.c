@@ -354,14 +354,33 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 	}
 	#endif
 
-	#ifdef ENABLE_REGIONFREE//SMDH icon region check patch. This does not affect the region-lock via gamecard sysupdates.
+	#ifdef ENABLE_THEMECACHENAME || ENABLE_REGIONFREE
 	if(procname==0x756e656d)//"menu", Home Menu.
 	{
+		bool done=false;
 		for(pos=0; pos<total_codebin_size; pos+=0x1000)
 		{
 			ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x10000000 + pos);
 			if(ptr==NULL)continue;
+			u8* ptr8 = (u8*)ptr;
 
+			#ifdef ENABLE_THEMECACHENAME
+			//search for theme:/ and append a '_' if found
+			//this way 3dshax home menu will use its own set of theme cache extdata files and we avoid version mismatch issues or infinite hax loops !
+			char str[] = "theme:/";
+			int cur=0;
+			for(pos2=0; pos2<0x1000; pos2+=2)
+			{
+				if(cur==sizeof(str)-1){ptr8[pos2]='_'; cur=0;}
+				else if(ptr8[pos2] == str[cur])cur++;
+				else cur=0;
+			}
+			#else
+			if(done)return;
+			#endif
+
+			#ifdef ENABLE_REGIONFREE//SMDH icon region check patch. This does not affect the region-lock via gamecard sysupdates.
+			if(done)continue;
 			for(pos2=0; pos2<(0x1000-0x10); pos2+=4)
 			{
 				if(memcmp(&ptr[pos2>>2], cmpblock, 0x10)!=0)continue;
@@ -369,8 +388,9 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 				pos2+= 0xc;
 				ptr[pos2>>2] = 0xe3a00001;
 
-				return;
+				done=true;
 			}
+			#endif
 		}
 
 		return;
