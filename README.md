@@ -22,6 +22,7 @@ The FIRM-launch code loads the plaintext FIRM from SD "/firm.bin". The FWVER val
 * "DISABLENANDREDIR=1" Disables NAND->SD redirection.
 * "NANDREDIR_SECTORNUM={sectornum}" Sector-num base for the SD nandimage, for NAND-redir when enabled.
 * "ENABLE_DUMP_NANDIMAGE=1" Enables nandimage dumping to SD "/3dshax_dump.bin", when button Y is pressed once from the arm9 thread. To dump the physical NAND, "DISABLENANDREDIR=1" should be used.
+* "LOADA9_NEW3DSMEM=1" Use the new3ds arm9 .ld for using new3ds arm9mem, for much more space.
 
 * "DISABLE_ARM9DEBUGGING=1" Disables ARM9 exception debugging, this is automatically disabled when DISABLE_ARM11KERNEL_DEBUG=1 is used. Note that ARM9 exception dumping currently only works with ctrserver, this doesn't work for writing the exception info to SD.
 * "DISABLE_ARM11KERNEL_DEBUG=1" Disables ARM11-kernel patches.
