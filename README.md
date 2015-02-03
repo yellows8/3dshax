@@ -62,10 +62,11 @@ Supported NATIVE_FIRM system-versions(versions where NATIVE_FIRM wasn't updated 
 * v8.x
 * v9.0-v9.2
 * v9.3
+* v9.5
 
 The above doesn't really apply for functionality where addresses are located on-the-fly, unless specificly mentioned otherwise.
 
-Some of the codebase automatically determines what addresses to patch on-the-fly. However some of the codebase (minor/commented-out patch(es)) still uses hard-coded addresses for each FIRM version.
+Most of the codebase automatically determines what addresses to patch on-the-fly. Some minor/commented-out patch(es) still uses hard-coded addresses for each FIRM version.
 
 ## Code and patches which use hard-coded addresses
 * ...
@@ -81,3 +82,4 @@ Some of the codebase automatically determines what addresses to patch on-the-fly
 * ARM11-kernel patch addrs/etc
 * ARM11-kernel cmd-logging patch addresses/etc
 * ...
+

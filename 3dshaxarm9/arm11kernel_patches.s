@@ -93,7 +93,8 @@ cmp r2, r3
 addne r1, r1, #4
 bne writepatch_arm11kernel_svcaccess_lp
 
-mov r2, #0
+//mov r2, #0
+ldr r2, =0xe1a00000
 str r2, [r1] @ Patch out the ARM11 kernel branch in the SVC handler which is executed when the process doesn't have access to a SVC.
 
 writepatch_arm11kernel_svcaccess_end:
