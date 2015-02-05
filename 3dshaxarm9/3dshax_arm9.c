@@ -1008,7 +1008,11 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 
 		*bufsize = 0;
 
+		aes_mutexenter();
+
 		aes_set_xkey(buf[0], &buf[1]);
+
+		aes_mutexleave();
 
 		return 0;
 	}
