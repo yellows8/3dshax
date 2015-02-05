@@ -1383,8 +1383,9 @@ void network_stuff(u32 *payloadptr, u32 payload_maxsize)
 		if(net_server.sockfd<0)
 		{
 			if(net_server.sockfd == -EWOULDBLOCK)continue;
-			((u32*)0x84000000)[9] = (u32)net_server.sockfd;
-			break;
+			//((u32*)0x84000000)[9] = (u32)net_server.sockfd;
+			//break;
+			continue;
 		}
 
 		*((u32*)0x08050000) = addrlen;
