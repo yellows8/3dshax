@@ -3,6 +3,6 @@
 
 void dump_fcramvram();
 void dump_fcramaxiwram();
-void loadfile_charpath(char *path, u32 *addr, u32 maxsize);
+u32 loadfile_charpath(char *path, u32 *addr, u32 maxsize);
 
 #endif

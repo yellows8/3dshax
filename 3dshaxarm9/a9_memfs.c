@@ -49,7 +49,7 @@ void dump_fcramaxiwram()
 	closefile(fileobj);
 }
 
-void loadfile_charpath(char *path, u32 *addr, u32 maxsize)
+u32 loadfile_charpath(char *path, u32 *addr, u32 maxsize)
 {
 	u32 ret=0;
 	u32 pos=0;
@@ -62,7 +62,7 @@ void loadfile_charpath(char *path, u32 *addr, u32 maxsize)
 
 	if((ret = openfile(sdarchive_obj, 4, filepath, (strlen(path)+1)*2, 1, &fileobj))!=0)
 	{
-		return;
+		return ret;
 	}
 
 	filesize = getfilesize(fileobj);
@@ -70,11 +70,13 @@ void loadfile_charpath(char *path, u32 *addr, u32 maxsize)
 
 	if((ret = fileread(fileobj, addr, filesize, 0))!=0)
 	{
-		return;
+		return ret;
 	}
 
 	closefile(fileobj);
 
 	svcFlushProcessDataCache(addr, filesize);
+
+	return 0;
 }
 

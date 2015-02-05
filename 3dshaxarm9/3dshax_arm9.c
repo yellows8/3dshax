@@ -1289,6 +1289,55 @@ void arm9_pxipmcmd1_getexhdr_writepatch_autolocate(u32 *startptr, u32 size)
 	//physaddr[0x7d00>>2] = 0xe3a00000;//"mov r0, #0" Patch the NIM command code which returns whether a sysupdate is available.
 }*/
 
+#ifdef ENABLE_LOADSD_AESKEYS
+void loadsd_aeskeys(u32 *buffer)//This is called from firmlaunch_hookpatches.s.
+{
+	u64 *ptr64;
+	u64 normalkey_bitmask, keyx_bitmask, keyy_bitmask;
+	u32 keyslot, pos;
+
+	if(buffer==NULL)return;
+
+	memset(buffer, 0, 0xc18);
+
+	if(loadfile_charpath("/3dshax_aeskeydata.bin", buffer, 0xc18)!=0)return;
+
+	ptr64 = (u64*)buffer;
+	normalkey_bitmask = ptr64[0];
+	keyx_bitmask = ptr64[1];
+	keyy_bitmask = ptr64[2];
+
+	aes_mutexenter();
+
+	pos = 0x18;
+	for(keyslot=0; keyslot<0x40; keyslot++)
+	{
+		if((normalkey_bitmask >> keyslot) & 1)
+		{
+			aes_set_key(keyslot, &buffer[pos>>2]);
+		}
+
+		pos+=0x10;
+
+		if((keyx_bitmask >> keyslot) & 1)
+		{
+			aes_set_xkey(keyslot, &buffer[pos>>2]);
+		}
+
+		pos+=0x10;
+
+		if((keyy_bitmask >> keyslot) & 1)
+		{
+			aes_set_ykey(keyslot, &buffer[pos>>2]);
+		}
+
+		pos+=0x10;
+	}
+
+	aes_mutexleave();
+}
+#endif
+
 void thread_entry()
 {
 	u32 pos=0;

@@ -156,6 +156,11 @@ strne r2, [r0, #4]
 strne r2, [r0, #8]
 strne r2, [r0, #12]
 
+#ifdef ENABLE_LOADSD_AESKEYS
+ldr r0, =0x20F00000
+bl loadsd_aeskeys
+#endif
+
 add sp, sp, #12
 pop {r0, r1, r2, r3, r4, lr}
 add lr, lr, #4

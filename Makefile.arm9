@@ -179,6 +179,10 @@ ifneq ($(strip $(ENABLE_SAFE_FW_UPDATE)),)
 	DEFINES	:=	$(DEFINES) -DSAFE_FW_UPDATE
 endif
 
+ifneq ($(strip $(ENABLE_LOADSD_AESKEYS)),)
+	DEFINES	:=	$(DEFINES) -DENABLE_LOADSD_AESKEYS
+endif
+
 ARCH	:=	-mthumb -mthumb-interwork
 
 CFLAGS	:=	-g -Wall -Os\

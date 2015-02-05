@@ -144,6 +144,10 @@ ifneq ($(strip $(ENABLE_SAFE_FW_UPDATE)),)
 	PARAMS	:=	$(PARAMS) ENABLE_SAFE_FW_UPDATE=1
 endif
 
+ifneq ($(strip $(ENABLE_LOADSD_AESKEYS)),)
+	PARAMS	:=	$(PARAMS) ENABLE_LOADSD_AESKEYS=1
+endif
+
 .PHONY: clean
 
 all:	3dshax_arm9.bin 3dshax_arm11_ctrserver.bin
