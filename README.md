@@ -55,6 +55,13 @@ The FIRM-launch code loads the plaintext FIRM from SD "/firm.bin". The FWVER val
 
 * "ENABLE_LOADSD_AESKEYS=1" During firmlaunch, enable loading AES keyslots keydata from SD, see 3dshax_arm9.c.
 
+* "NEW3DS_ARM9BINLDR_PATCHADDR0=address" Write NEW3DS_ARM9BINLDR_PATCHADDR0_VAL to {address}, from the new3ds arm9bin loader entrypoint hook.
+* "NEW3DS_ARM9BINLDR_PATCHADDR0_VAL=val"
+* "NEW3DS_ARM9BINLDR_PATCHADDR1=address"
+* "NEW3DS_ARM9BINLDR_PATCHADDR1_VAL=val"
+* "NEW3DS_ARM9BINLDR_CLRMEM=address" Clear the memory starting at address with size from NEW3DS_ARM9BINLDR_CLRMEM_SIZE, from the new3ds arm9bin loader entrypoint hook.
+* "NEW3DS_ARM9BINLDR_CLRMEM_SIZE=val"
+
 # FIRM Compatibility
 Supported NATIVE_FIRM system-versions(versions where NATIVE_FIRM wasn't updated don't apply here):
 * v4.1

@@ -290,7 +290,7 @@ lsl r5, r5, #30
 orr r5, r5, r2
 str r5, [r4] @ RUNNINGFWVER = 0x40000000 | FIRM_VERSIONMINOR
 
-ldr r0, =0x08006800
+ldr r0, =0x08006000
 ldr r1, =0x080ff000
 bl new3ds_hookloader_entrypoint
 
@@ -300,6 +300,39 @@ pop {r4, r5, pc}
 
 new3ds_hookloader_entrypoint: @ Hook the new3ds entrypoint word in the arm9bin loader. r0=startaddr, r1=endaddr, r2=unused, r3=arm9 entrypoint from FIRM hdr
 mov r5, r0
+
+#ifdef NEW3DS_ARM9BINLDR_PATCHADDR0
+ldr r2, =0x08006000
+ldr r0, =NEW3DS_ARM9BINLDR_PATCHADDR0
+sub r0, r0, r2
+add r0, r0, r5
+ldr r4, =NEW3DS_ARM9BINLDR_PATCHADDR0_VAL
+str r4, [r0]
+#endif
+
+#ifdef NEW3DS_ARM9BINLDR_PATCHADDR1
+ldr r2, =0x08006000
+ldr r0, =NEW3DS_ARM9BINLDR_PATCHADDR1
+sub r0, r0, r2
+add r0, r0, r5
+ldr r4, =NEW3DS_ARM9BINLDR_PATCHADDR1_VAL
+str r4, [r0]
+#endif
+
+#ifdef NEW3DS_ARM9BINLDR_CLRMEM
+ldr r2, =0x08006000
+ldr r0, =NEW3DS_ARM9BINLDR_CLRMEM
+ldr r6, =NEW3DS_ARM9BINLDR_CLRMEM_SIZE
+sub r0, r0, r2
+add r0, r0, r5
+mov r4, #0
+
+new3ds_hookloader_entrypoint_clrmemlp:
+str r4, [r0], #4
+subs r6, r6, #4
+bgt new3ds_hookloader_entrypoint_clrmemlp
+#endif
+
 ldr r2, =0x0801B01C
 
 #ifdef LOADA9_FCRAM
