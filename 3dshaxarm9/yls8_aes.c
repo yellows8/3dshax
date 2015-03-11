@@ -30,6 +30,7 @@
 #define AES_CHUNKSIZE 0xffff0
 
 extern u32 RUNNINGFWVER;
+extern u32 proc9_textstartaddr;
 
 u32 aesiv[4];
 
@@ -45,10 +46,10 @@ u32 parse_branch(u32 branchaddr, u32 branchval);
 
 void aes_mutex_ptrsinitialize()
 {
-	u32 *ptr = (u32*)0x08028000;
+	u32 *ptr = (u32*)proc9_textstartaddr;
 	u32 pos;
 
-	for(pos=0; pos<(0x080ff000-0x08028000)>>2; pos++)
+	for(pos=0; pos<(0x080ff000-proc9_textstartaddr)>>2; pos++)
 	{
 		if(ptr[pos]==0xe8bd8008 && ptr[pos+1]==0x10011000)//"pop {r3, pc}" + reg addr
 		{

@@ -401,8 +401,12 @@ mvn r4, r4
 
 mov r0, #1 @ Locate the pxifs cmdhandler jump-table.
 str r0, [sp]
-ldr r0, =0x08028000
-ldr r1, =(0x000ff000-0x28000)
+
+ldr r0, =proc9_textstartaddr
+ldr r0, [r0]
+ldr r1, =0x080ff000
+sub r1, r1, r0
+
 adr r2, pxifs_cmdhandler_poolcmpdata
 mov r3, #7
 bl locate_cmdhandler_code
@@ -453,7 +457,8 @@ push {r4, r5, lr}
 mov r4, #0
 mvn r4, r4
 
-ldr r0, =0x08028000
+ldr r0, =proc9_textstartaddr
+ldr r0, [r0]
 ldr r1, =0x080ff000
 ldr r2, =0x567890ae
 ldr r5, =0x0074002f
@@ -574,7 +579,8 @@ push {r4, r5, r6, r7, lr}
 mov r4, #0
 mvn r4, r4
 
-ldr r0, =0x08028000
+ldr r0, =proc9_textstartaddr
+ldr r0, [r0]
 ldr r1, =0x080ff000
 ldr r2, =0x4453434e
 

@@ -10,6 +10,8 @@
 
 extern u32 RUNNINGFWVER;
 
+extern u32 proc9_textstartaddr;
+
 u32 *gamecard_archiveobj = NULL;
 u32 (*funcptr_ctrcard_cmdc6)(u32*, u32*) = NULL;
 u32 *gamecard_stateptr = NULL;
@@ -80,7 +82,7 @@ void locatefunc_ctrcard_cmdc6()
 	u32 pos;
 	u32 pool_cmpdata[6] = {0xd9001830, 0x000100c6, 0x00010041, 0x00020284, 0x00020041, 0x00030284};
 
-	ptr = locate_cmdhandler_code((u32*)0x08028000, 0x080ff000-0x08028000, pool_cmpdata, 6, 1);
+	ptr = locate_cmdhandler_code((u32*)proc9_textstartaddr, 0x080ff000-proc9_textstartaddr, pool_cmpdata, 6, 1);
 	if(ptr==NULL)return;
 
 	ptr = (u32*)ptr[0x6];//ptr = addr of code in pxips9 cmdhandler func for GetRomId.

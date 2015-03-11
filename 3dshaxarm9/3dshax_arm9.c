@@ -48,6 +48,8 @@ extern u32 RUNNINGFWVER;
 extern u32 FIRMLAUNCH_CLEARPARAMS;
 extern u32 arm9_rsaengine_txtwrite_hooksz;
 
+extern u32 proc9_textstartaddr;
+
 void pxidev_cmdhandler_cmd0();
 void mountcontent_nandsd_writehookstub();
 
@@ -190,7 +192,7 @@ u32 *proc9_locate_main_endaddr()//Returns a ptr to the last instruction in Proce
 	u32 *ptr;
 	u32 pos;
 
-	ptr = (u32*)parse_branch(0x08028014, 0);//ptr = address of Process9 main()
+	ptr = (u32*)parse_branch(proc9_textstartaddr + 0x14, 0);//ptr = address of Process9 main()
 
 	pos = 0;
 	while(1)
@@ -1384,9 +1386,9 @@ void thread_entry()
 		svcFlushProcessDataCache((u32*)0x0805ef38, 0x4);//Patch the code which reads the arm9 access-control mount flags, so that all of these archives are accessible.
 	}
 
-	patch_pxidev_cmdhandler_cmd0((u32*)0x08028000, 0x080ff000-0x08028000);
+	patch_pxidev_cmdhandler_cmd0((u32*)proc9_textstartaddr, 0x080ff000-proc9_textstartaddr);
 	#ifdef ENABLE_GETEXHDRHOOK
-	arm9_pxipmcmd1_getexhdr_writepatch_autolocate((u32*)0x08028000, 0x080ff000-0x08028000);
+	arm9_pxipmcmd1_getexhdr_writepatch_autolocate((u32*)proc9_textstartaddr, 0x080ff000-proc9_textstartaddr);
 	#endif
 
 	writepatch_arm11kernel_kernelpanicbkpt((u32*)0x1FF80000, 0x80000);

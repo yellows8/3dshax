@@ -40,6 +40,8 @@
 .global FIRMLAUNCH_CLEARPARAMS
 .global arm9_rsaengine_txtwrite_hooksz
 
+.global proc9_textstartaddr
+
 .global FIRM_contentid_versions
 .global FIRM_sigword0_array
 .global FIRM_contentid_totalversions
@@ -101,6 +103,9 @@ cmp r0, #3
 beq startcode_type3
 
 push {r4, lr}
+ldr r0, =initialize_proc9_textstartaddr
+bl launchcode_kernelmode
+
 /*cmp r0, #0
 bne _start_code_fsinitdone*/
 
@@ -529,6 +534,102 @@ mrc 15, 0, r0, cr6, cr7, 0
 bic r0, r0, #1
 mcr 15, 0, r0, cr6, cr7, 0 @ Disable region6/region7 for the arm9 kernel region, so that user-mode can access the arm9 kernel region.
 bx lr
+.pool
+
+initialize_proc9_textstartaddr:
+push {r4, r5, r6, lr}
+sub sp, sp, #0x20
+
+ldr r0, =proc9_textstartaddr
+mov r1, #0
+str r1, [r0]
+
+mrc 15, 0, r0, cr6, cr0, 0 @ Copy all memory protection base/size registers to stack.
+str r0, [sp, #0x0]
+mrc 15, 0, r0, cr6, cr1, 0
+str r0, [sp, #0x4]
+mrc 15, 0, r0, cr6, cr2, 0
+str r0, [sp, #0x8]
+mrc 15, 0, r0, cr6, cr3, 0
+str r0, [sp, #0xC]
+mrc 15, 0, r0, cr6, cr4, 0
+str r0, [sp, #0x10]
+mrc 15, 0, r0, cr6, cr5, 0
+str r0, [sp, #0x14]
+mrc 15, 0, r0, cr6, cr6, 0
+str r0, [sp, #0x18]
+mrc 15, 0, r0, cr6, cr7, 0
+str r0, [sp, #0x1C]
+
+mrc 15, 0, r6, c5, c0, 2 @ "read data access permission bits"
+
+mov r1, #0
+mov r4, #0
+mvn r5, #0
+
+initialize_proc9_textstartaddr_lp:
+lsl r2, r1, #2
+ldr r0, [sp, r2]
+tst r0, #1
+beq initialize_proc9_textstartaddr_lp_next @ Skip disabled mem-regions.
+
+mov r2, r0
+
+lsr r2, r2, #24
+cmp r2, #0x08
+bne initialize_proc9_textstartaddr_lp_next @ High-byte of mem-region base address must be 0x08.
+
+mov r2, r1
+lsl r2, r2, #2
+mov r3, r6
+lsr r3, r3, r2
+and r3, r3, #0xf
+cmp r3, #0x1 @ Check that the current mem-region has data permissions priv=RW/usr=none.
+bne initialize_proc9_textstartaddr_lp_next
+
+mov r4, #1
+mov r5, r1
+
+initialize_proc9_textstartaddr_lp_next:
+add r1, r1, #1
+cmp r1, #8
+blt initialize_proc9_textstartaddr_lp
+
+ldr r0, =0x01FFF470
+mvn r2, #0
+str r2, [r0]
+
+cmp r4, #0
+beq initialize_proc9_textstartaddr_end
+
+ldr r0, =0x01FFF470
+mvn r2, #1
+str r2, [r0]
+
+lsl r0, r5, #2
+ldr r0, [sp, r0]
+mov r2, r0
+
+lsr r2, r2, #12
+lsl r2, r2, #12
+ldr r3, =0x08000000
+cmp r2, r3
+beq initialize_proc9_textstartaddr_end @ If the base address of the found mem-region is 0x08000000, then Process9 isn't running.
+
+lsr r0, r0, #1 @ Get byte-size of mem-region.
+and r0, r0, #0x1F
+sub r0, r0, #0xB
+ldr r1, =0x1000
+lsl r1, r1, r0
+
+add r2, r2, r1
+
+ldr r0, =proc9_textstartaddr
+str r2, [r0]
+
+initialize_proc9_textstartaddr_end:
+add sp, sp, #0x20
+pop {r4, r5, r6, pc}
 .pool
 
 getsp:
@@ -1235,6 +1336,9 @@ FIRMLAUNCH_CLEARPARAMS:
 .word 1
 
 new3ds_entrypointhookword:
+.word 0
+
+proc9_textstartaddr:
 .word 0
 
 /*twlbootldrenc_arm7:
