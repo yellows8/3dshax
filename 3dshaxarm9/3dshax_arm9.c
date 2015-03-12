@@ -197,7 +197,7 @@ u32 *proc9_locate_main_endaddr()//Returns a ptr to the last instruction in Proce
 	pos = 0;
 	while(1)
 	{
-		if(ptr[pos]==0xe8bd4010)break;//"pop {r4, lr}"
+		if((ptr[pos] & ~0xfff) == 0xe8bd4000)break;//"pop {... lr}"
 		pos++;
 	}
 	pos++;

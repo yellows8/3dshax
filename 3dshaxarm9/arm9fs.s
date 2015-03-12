@@ -252,6 +252,24 @@ fileread: @ r0=fileclass*, r1=buffer, r2=size, r3=filepos
 push {r0, r1, r2, r3, r4, r5, lr}
 sub sp, sp, #24
 
+ldr r5, =RUNNINGFWVER
+ldr r5, [r5]
+cmp r5, #0x09
+bge fileread_l0
+mov r5, #0x30
+b fileread_begin
+
+fileread_l0:
+cmp r5, #0x18
+bge fileread_l1
+
+mov r5, #0x34
+b fileread_begin
+
+fileread_l1:
+mov r5, #0x38
+
+fileread_begin:
 mov r0, #0
 bl fs_getvtableptr_rw
 
@@ -272,7 +290,7 @@ ldr r2, [sp, #36]
 mov r3, #0
 
 ldr r4, [r0]
-ldr r4, [r4, #0x38]
+ldr r4, [r4, r5]
 blx r4 //readfile
 
 fileread_end:
@@ -284,6 +302,24 @@ filewrite: @ r0=fileclass*, r1=buffer, r2=size, r3=filepos
 push {r0, r1, r2, r3, r4, r5, lr}
 sub sp, sp, #24
 
+ldr r5, =RUNNINGFWVER
+ldr r5, [r5]
+cmp r5, #0x09
+bge filewrite_l0
+mov r5, #0x34
+b filewrite_begin
+
+filewrite_l0:
+cmp r5, #0x18
+bge filewrite_l1
+
+mov r5, #0x38
+b filewrite_begin
+
+filewrite_l1:
+mov r5, #0x3c
+
+filewrite_begin:
 mov r0, #1
 bl fs_getvtableptr_rw
 
@@ -305,7 +341,7 @@ ldr r2, [sp, #36]
 mov r3, #0
 
 ldr r4, [r0]
-ldr r4, [r4, #0x3c]
+ldr r4, [r4, r5]
 blx r4 //writefile
 
 add sp, sp, #32
@@ -313,27 +349,51 @@ pop {r2, r3, r4, r5, pc}
 .pool
 
 getfilesize:
-push {lr}
+push {r4, lr}
 sub sp, sp, #8
 add r1, sp, #0
+
+ldr r4, =RUNNINGFWVER
+ldr r4, [r4]
+cmp r4, #0x18
+bge getfilesize_l0
+mov r4, #20
+b getfilesize_l1
+
+getfilesize_l0:
+mov r4, #16
+
+getfilesize_l1:
 ldr r2, [r0]
-ldr r2, [r2, #16]
+ldr r2, [r2, r4]
 blx r2
 ldr r0, [sp, #0]
 add sp, sp, #8
-pop {pc}
-
-setfilesize:
-push {r4, lr}
-mov r3, #0
-mov r2, r1
-ldr r4, [r0]
-ldr r4, [r4, #20]
-blx r4
 pop {r4, pc}
 
+setfilesize:
+push {r4, r5, lr}
+mov r3, #0
+mov r2, r1
+
+ldr r5, =RUNNINGFWVER
+ldr r5, [r5]
+cmp r5, #0x18
+bge setfilesize_l0
+mov r5, #24
+b setfilesize_l1
+
+setfilesize_l0:
+mov r5, #20
+
+setfilesize_l1:
+ldr r4, [r0]
+ldr r4, [r4, r5]
+blx r4
+pop {r4, r5, pc}
+
 archive_readsectors: @ r0=archiveclass*, r1=buffer, r2=sectorcount, r3=mediaoffset/sector#
-push {r0, r1, r2, r3, r4, lr}
+push {r0, r1, r2, r3, r4, r5, lr}
 sub sp, sp, #24
 
 mov r0, #0
@@ -351,12 +411,23 @@ mov r1, r3
 mov r2, #0
 ldr r3, [sp, #36]
 
+ldr r5, =RUNNINGFWVER
+ldr r5, [r5]
+cmp r5, #0x18
+bge archive_readsectors_l0
+mov r5, #0x0
+b archive_readsectors_l1
+
+archive_readsectors_l0:
+mov r5, #0x8
+
+archive_readsectors_l1:
 ldr r4, [r0]
-ldr r4, [r4, #0x8]
+ldr r4, [r4, r5]
 blx r4
 
 add sp, sp, #28
-pop {r1, r2, r3, r4, pc}
+pop {r1, r2, r3, r4, r5, pc}
 .pool
 
 pxifs_openarchive: @ inr0=ptr where the archiveobj* will be written, inr1=archiveid, and inr2=lowpath*
@@ -395,6 +466,7 @@ pop {r4, r5, pc}
 
 initializeptr_pxifsopenarchive:
 push {r4, lr}
+sub sp, sp, #4
 
 mov r4, #0
 mvn r4, r4
@@ -407,12 +479,43 @@ ldr r0, [r0]
 ldr r1, =0x080ff000
 sub r1, r1, r0
 
-adr r2, pxifs_cmdhandler_poolcmpdata
+adr r2, pxifs_cmdhandler_poolcmpdata @ >=FW18
 mov r3, #7
 bl locate_cmdhandler_code
 cmp r0, #0
-beq initializeptr_pxifsopenarchive_end
+bne initializeptr_pxifsopenarchive_jumptablefound
 
+mov r0, #1
+str r0, [sp]
+
+ldr r0, =proc9_textstartaddr
+ldr r0, [r0]
+ldr r1, =0x080ff000
+sub r1, r1, r0
+
+adr r2, pxifs_cmdhandler_poolcmpdata_old0
+mov r3, #3
+bl locate_cmdhandler_code
+cmp r0, #0
+bne initializeptr_pxifsopenarchive_jumptablefound
+
+mov r0, #1
+str r0, [sp]
+
+ldr r0, =proc9_textstartaddr
+ldr r0, [r0]
+ldr r1, =0x080ff000
+sub r1, r1, r0
+
+adr r2, pxifs_cmdhandler_poolcmpdata_old1
+mov r3, #4
+bl locate_cmdhandler_code
+cmp r0, #0
+bne initializeptr_pxifsopenarchive_jumptablefound
+
+b initializeptr_pxifsopenarchive_end
+
+initializeptr_pxifsopenarchive_jumptablefound:
 mov r1, #0x12
 lsl r1, r1, #2
 ldr r0, [r0, r1] @ r0 = jump-addr in the pxifs cmdhandler for cmd 0x12, OpenArchive.
@@ -448,6 +551,8 @@ mov r4, #0
 
 initializeptr_pxifsopenarchive_end:
 mov r0, r4
+
+add sp, sp, #4
 pop {r4, pc}
 .pool
 
@@ -603,17 +708,25 @@ ldr r2, =fs_vtableptr_fileread
 str r5, [r2]
 add r0, r0, #4
 
-ldr r6, =0xb005 @ "add sp, #20"
 ldr r7, =0xbdf0 @ "pop {r4, r5, r6, r7, pc}"
 
 initializeptr_fsvtables_lp1: @ Locate the fileread vtable ptr in a function's .pool, where the above instructions are immediately before it.
+ldr r6, =0xb005 @ "add sp, #20"
+
 ldr r3, [r0]
 cmp r3, r5
 bne initializeptr_fsvtables_lp1next
+
 sub r2, r0, #4
 ldrh r3, [r2, #0]
 cmp r3, r6
+beq initializeptr_fsvtables_lp1_l0
+
+add r6, r6, #4
+cmp r3, r6
 bne initializeptr_fsvtables_lp1next
+
+initializeptr_fsvtables_lp1_l0:
 ldrh r3, [r2, #2]
 cmp r3, r7
 bne initializeptr_fsvtables_lp1next
@@ -640,6 +753,12 @@ pop {r4, r5, r6, r7, pc}
 
 pxifs_cmdhandler_poolcmpdata:
 .word 0xd9001830, 0x000101c2, 0xe0e046be, 0x000100c1, 0x00020142, 0x00020041, 0x00030244
+
+pxifs_cmdhandler_poolcmpdata_old0:
+.word 0xd9001830, 0x000101c2, 0xc8a044dc
+
+pxifs_cmdhandler_poolcmpdata_old1:
+.word 0xd9001830, 0x000101c2, 0xe0e046be, 0xc8a044dc
 
 pxifsopenarchive_adr:
 .word 0
