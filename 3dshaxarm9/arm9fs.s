@@ -252,6 +252,7 @@ fileread: @ r0=fileclass*, r1=buffer, r2=size, r3=filepos
 push {r0, r1, r2, r3, r4, r5, lr}
 sub sp, sp, #24
 
+#ifdef ENABLE_OLDFS_AUTOLOCATE
 ldr r5, =RUNNINGFWVER
 ldr r5, [r5]
 cmp r5, #0x09
@@ -267,6 +268,8 @@ mov r5, #0x34
 b fileread_begin
 
 fileread_l1:
+#endif
+
 mov r5, #0x38
 
 fileread_begin:
@@ -302,6 +305,7 @@ filewrite: @ r0=fileclass*, r1=buffer, r2=size, r3=filepos
 push {r0, r1, r2, r3, r4, r5, lr}
 sub sp, sp, #24
 
+#ifdef ENABLE_OLDFS_AUTOLOCATE
 ldr r5, =RUNNINGFWVER
 ldr r5, [r5]
 cmp r5, #0x09
@@ -317,6 +321,8 @@ mov r5, #0x38
 b filewrite_begin
 
 filewrite_l1:
+#endif
+
 mov r5, #0x3c
 
 filewrite_begin:
@@ -353,6 +359,7 @@ push {r4, lr}
 sub sp, sp, #8
 add r1, sp, #0
 
+#ifdef ENABLE_OLDFS_AUTOLOCATE
 ldr r4, =RUNNINGFWVER
 ldr r4, [r4]
 cmp r4, #0x18
@@ -361,6 +368,8 @@ mov r4, #20
 b getfilesize_l1
 
 getfilesize_l0:
+#endif
+
 mov r4, #16
 
 getfilesize_l1:
@@ -376,6 +385,7 @@ push {r4, r5, lr}
 mov r3, #0
 mov r2, r1
 
+#ifdef ENABLE_OLDFS_AUTOLOCATE
 ldr r5, =RUNNINGFWVER
 ldr r5, [r5]
 cmp r5, #0x18
@@ -384,6 +394,8 @@ mov r5, #24
 b setfilesize_l1
 
 setfilesize_l0:
+#endif
+
 mov r5, #20
 
 setfilesize_l1:
@@ -411,6 +423,7 @@ mov r1, r3
 mov r2, #0
 ldr r3, [sp, #36]
 
+#ifdef ENABLE_OLDFS_AUTOLOCATE
 ldr r5, =RUNNINGFWVER
 ldr r5, [r5]
 cmp r5, #0x18
@@ -419,6 +432,8 @@ mov r5, #0x0
 b archive_readsectors_l1
 
 archive_readsectors_l0:
+#endif
+
 mov r5, #0x8
 
 archive_readsectors_l1:
@@ -485,6 +500,7 @@ bl locate_cmdhandler_code
 cmp r0, #0
 bne initializeptr_pxifsopenarchive_jumptablefound
 
+#ifdef ENABLE_OLDFS_AUTOLOCATE
 mov r0, #1
 str r0, [sp]
 
@@ -512,6 +528,7 @@ mov r3, #4
 bl locate_cmdhandler_code
 cmp r0, #0
 bne initializeptr_pxifsopenarchive_jumptablefound
+#endif
 
 b initializeptr_pxifsopenarchive_end
 
@@ -720,11 +737,15 @@ bne initializeptr_fsvtables_lp1next
 sub r2, r0, #4
 ldrh r3, [r2, #0]
 cmp r3, r6
+#ifndef ENABLE_OLDFS_AUTOLOCATE
+bne initializeptr_fsvtables_lp1next
+#else
 beq initializeptr_fsvtables_lp1_l0
 
 add r6, r6, #4
 cmp r3, r6
 bne initializeptr_fsvtables_lp1next
+#endif
 
 initializeptr_fsvtables_lp1_l0:
 ldrh r3, [r2, #2]

@@ -105,6 +105,10 @@ ifneq ($(strip $(ENABLE_OLDFS)),)
 	DEFINES	:=	$(DEFINES) -DENABLE_OLDFS=1
 endif
 
+ifneq ($(strip $(ENABLE_OLDFS_AUTOLOCATE)),)
+	DEFINES	:=	$(DEFINES) -DENABLE_OLDFS_AUTOLOCATE=1
+endif
+
 ifneq ($(strip $(ENABLE_DMA)),)
 	DEFINES	:=	$(DEFINES) -DENABLE_DMA=1
 endif

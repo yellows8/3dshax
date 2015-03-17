@@ -49,6 +49,7 @@ The FIRM-launch code loads the plaintext FIRM from SD "/firm.bin". The FWVER val
 * "ENABLE_REGIONFREE={val}" Enables the homemenu SMDH icon region check patch. This does not affect the region-lock via gamecard sysupdates, see DISABLE_GAMECARDUPDATE. "ENABLE_REGIONFREE=2" is the same as "ENABLE_REGIONFREE=1", except this also uses the "DISABLE_GAMECARDUPDATE=1" option at the same time. Note that this(SMDH region patch) may cause SD titles which normally aren't displayed, to be shown as presents or black icons.
 * "DISABLE_GAMECARDUPDATE=1" Disables gamecard sysupdates, this is required for launching gamecards from other regions.
 * "ENABLE_OLDFS=1" Enables old arm9 FS cmd-handling code(used via ctrserver), for the FS code only supported on old FIRM.
+* "ENABLE_OLDFS_AUTOLOCATE=1" Enable auto-locating FS code with very old FIRM, not related to "ENABLE_OLDFS=1".
 * "ENABLE_DMA=1" Enables the cmd for use via ctrserver for the DMA SVCs.
 * "ENABLE_SAFE_FW_UPDATE=1" Enables patching NIM so that it uses custom URLs for ECommerceSOAP and NetUpdateSOAP, see source. What the server returns is hard-coded.
 * "ENABLE_THEMECACHENAME=1" Enables patching home menu's theme cache filenames so that home menu uses its own theme cache under 3dshax. This is particularly useful when used with menuhax to a) avoid infinite boot loops and b) avoid ROP crashes in mismatching home menu versions.

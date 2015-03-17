@@ -88,6 +88,10 @@ ifneq ($(strip $(ENABLE_OLDFS)),)
 	PARAMS	:=	$(PARAMS) ENABLE_OLDFS=$(ENABLE_OLDFS)
 endif
 
+ifneq ($(strip $(ENABLE_OLDFS_AUTOLOCATE)),)
+	PARAMS	:=	$(PARAMS) ENABLE_OLDFS_AUTOLOCATE=1
+endif
+
 ifneq ($(strip $(ENABLE_DMA)),)
 	PARAMS	:=	$(PARAMS) ENABLE_DMA=$(ENABLE_DMA)
 endif
