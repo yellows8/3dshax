@@ -1046,7 +1046,7 @@ arm11kernel_exceptionregdump_L2_cpydata:
 ldr r2, [r1], #4
 str r2, [r0], #4
 add r3, r3, #4
-cmp r3, #0x190
+cmp r3, #0x168
 blt arm11kernel_exceptionregdump_L2
 
 arm11kernel_exceptionregdump_L2_end:

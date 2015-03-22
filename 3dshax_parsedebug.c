@@ -129,7 +129,7 @@ void parse_debuginfo_exception(unsigned int *debuginfo)
 		}
 
 		printf("Stack dump:\n");
-		hexdump(&debuginfo[(0x68+4+0x20)>>2], 0x1b4-4-0x20);
+		hexdump(&debuginfo[(0x8c)>>2], 0x168);
 		printf("\n");
 	}
 }
