@@ -210,6 +210,7 @@ void patch_proc9_launchfirm()
 	u32 *ptr;
 	u32 *arm9_patchaddr;
 	u32 pos, pos2;
+	u32 val0, val1;
 
 	ptr = (u32*)parse_branch((u32)proc9_locate_main_endaddr(), 0);//ptr = address of launch_firm function called @ the end of main().
 
@@ -218,6 +219,8 @@ void patch_proc9_launchfirm()
 	{
 		if(ptr[pos]==0xe12fff32)break;//"blx r2"
 		pos++;
+
+		if(((u32)&ptr[pos]) >= 0x080ff000)while(1);
 	}
 	arm9_patchaddr = (u32*)&ptr[pos];
 
@@ -229,6 +232,8 @@ void patch_proc9_launchfirm()
 	{
 		if(ptr[pos]==0xe12fff3c)break;//"blx ip"
 		pos++;
+
+		if(((u32)&ptr[pos]) >= 0x080ff000)while(1);
 	}
 
 	ptr[pos] = 0xe3a00000;//patch the fileread blx for the 0x100-byte FIRM header to "mov r0, #0".
@@ -240,39 +245,81 @@ void patch_proc9_launchfirm()
 	{
 		if(ptr[pos]==0xe3a03b02)break;//"mov r3, #0x800"
 		pos++;
+
+		if(((u32)&ptr[pos]) >= 0x080ff000)while(1);
 	}
 
-	ptr[pos + (0x30 >> 2)] = 0xe3a00000;//patch the RSA signature verification func call.
+	while(1)
+	{
+		if(ptr[pos]==0xe1a04000)break;//"mov r4, r0"
+		pos++;
+
+		if(((u32)&ptr[pos]) >= 0x080ff000)while(1);
+	}
+
+	pos--;
+	ptr[pos] = 0xe3a00000;//patch the RSA signature verification func call.
 
 	while(1)
 	{
 		if((ptr[pos] & ~0xFFFFF) == 0xe2700000)break;//"rsbs"
 		pos++;
+
+		if(((u32)&ptr[pos]) >= 0x080ff000)while(1);
 	}
-
-	ptr[pos + (0x34 >> 2)] = 0xe3a00000;//patch the func-call which reads the encrypted ncch firm data.
-	ptr[pos + ((0x34+0x3c) >> 2)] = 0xe1a00000;//patch out the func-call which is immediately after the fs_closefile call. (FS shutdown stuff)
-
-	pos += ((0x34+0x3c) >> 2);
 
 	while(1)
 	{
-		if(ptr[pos]==0x00044846)break;
+		if(ptr[pos] == 0xe2100102)break;//"ands r0, r0, #0x80000000"
 		pos++;
+
+		if(((u32)&ptr[pos]) >= 0x080ff000)while(1);
 	}
-	pos+=2;
+
+	pos--;
+
+	ptr[pos] = 0xe3a00000;//patch the func-call which reads the encrypted ncch firm data.
+
+	while(1)
+	{
+		if((ptr[pos] & 0xffc00000) == 0xfac00000)break;//"blx"
+		pos++;
+
+		if(((u32)&ptr[pos]) >= 0x080ff000)while(1);
+	}
+
+	pos++;
+	ptr[pos] = 0xe1a00000;//patch out the func-call which is immediately after the fs_closefile call. (FS shutdown stuff)
+
+	while(1)//This will not work with pre-FW0B FIRM(<2.1.0), since those FIRM do not have PXI-word 0xaee97647 in the .pool.
+	{
+		if(ptr[pos]==0xaee97647)break;
+		pos++;
+
+		if(((u32)&ptr[pos]) >= 0x080ff000)while(1);
+	}
+	pos--;
+
+	val1 = ptr[pos];
+
+	pos--;
+	while(ptr[pos]==0)pos--;
+
+	val0 = ptr[pos];
 
 	pos2 = pos;
 	while(1)
 	{
 		if(ptr[pos2]==0x00044837)break;
 		pos2--;
+
+		if(pos2==0)while(1);
 	}
 	pos2++;
 
 	svcFlushProcessDataCache(ptr, 0x630);
 
-	init_arm9patchcode3((u32*)ptr[pos], (u32*)ptr[pos+1], (u32*)ptr[pos2]);
+	init_arm9patchcode3((u32*)val0, (u32*)val1, (u32*)ptr[pos2]);
 }
 
 /*void get_kernelmode_sp()
@@ -1343,7 +1390,7 @@ void loadsd_aeskeys(u32 *buffer)//This is called from firmlaunch_hookpatches.s.
 	aes_mutexleave();
 }
 #endif
-
+void twlstuff();
 void thread_entry()
 {
 	u32 pos=0;
@@ -1358,6 +1405,7 @@ void thread_entry()
 	//u32 *ptr;
 	u32 debuginitialized = 0;
 	//u32 totalmenu_textoverwrite = 0;
+	u32 *mmutable, *ptr;
 
 	if(FIRMLAUNCH_RUNNINGTYPE==0)svcSleepThread(2000000000LL);
 
@@ -1407,7 +1455,13 @@ void thread_entry()
 			#ifdef ENABLE_DUMP_NANDIMAGE
 			dump_nandimage();
 			#endif
-
+			
+			/*mmutable = (u32*)get_kprocessptr(0x707041727443LL, 0, 1);
+			if(mmutable)
+			{
+				ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x2e772c);
+				if(ptr)*ptr = 0xE1200070;
+			}*/
 			//memset((u32*)0x18000000, pos | (pos<<8) | (pos<<16) | (pos<<24), 0x00600000);
 			////memset(&framebuf_addr[(0x46500)>>2], 0x88888888, 0x46500);
 
@@ -1419,7 +1473,7 @@ void thread_entry()
 			if(FIRMLAUNCH_RUNNINGTYPE==0)write_arm11debug_patch();
 			#endif
 			debuginitialized = 1;
-
+			//launchcode_kernelmode(twlstuff);
 			//if(RUNNINGFWVER==0x2E)axiwram[0x14ab0>>2] = 0xE1200070;//Patch the start of the svc7c handler(at the push instruction) with: "bkpt #0".
 
 			//dumpmem((u32*)0x01ffb700, arm9_rsaengine_txtwrite_hooksz);
