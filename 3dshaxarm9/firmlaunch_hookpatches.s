@@ -10,28 +10,14 @@
 .type arm9_stub2 STT_FUNC
 .type init_arm9patchcode3 STT_FUNC
 
-#define ENABLE_FIRMBOOT
-
 arm9_stub:
 ldr r3, =arm9_debugcode
 blx r3
 .pool
-//.arm
-
-/*#ifdef ENABLE_FIRMBOOT
-arm9_stub2:
-ldr pc, =arm9_debugcode2
-//bx r0
-.pool
-#endif*/
 
 arm9_debugcode:
 push {r0, r1, r2, r3, r4, lr}
 sub sp, sp, #12
-
-/*ldr r0, =0x20000000
-ldr r1, =0x1000
-bl dumpmem*/
 
 ldr r0, =sdarchive_obj
 ldr r0, [r0]
@@ -62,10 +48,18 @@ bl fileread
 cmp r0, #0
 bne arm9_debugcode_fail
 
-ldr r0, =0x24000000
+ldr r0, =0x24000000 @ <v9.5 FIRM
 ldr r1, =0x21000000
 mov r2, #0x100
 bl memcpy
+
+ldr r0, =0x01fffc00 @ >=v9.5 FIRM. FIRM-launching with v9.5 FIRM already running is still broken even with this.
+ldr r1, =0x21000000
+mov r2, #0x100
+bl memcpy
+
+/*adr r0, drainwritebuffer
+blx launchcode_kernelmode*/
 
 ldr r0, =0x21000000
 bl init_firmlaunch_fwver
@@ -173,23 +167,6 @@ bl memset
 arm9_debugcode_failend:
 b arm9_debugcode_failend
 .pool
-
-#ifdef ENABLE_FIRMBOOT
-/*arm9_debugcode2:
-push {r0, r1, r2, r3, lr}
-ldr r0, =0x20000000//0x203a02b0
-//mov r1, #0
-ldr r1, =0xc0c0c0c0
-ldr r2, =0x400000//0x38400
-bl memset
-pop {r0, r1, r2, r3, lr}
-//bx lr
-mov r2, #0
-mov r1, r2
-ldr pc, =0x80ff914
-arm9_debugcode2_end:
-b arm9_debugcode2_end
-.pool*/
 
 init_arm9patchcode3:
 push {r4, r5, lr}
@@ -344,7 +321,10 @@ init_firmlaunch_fwver_end:
 pop {r4, r5, r6, r7, r8, pc}
 .pool
 
-#endif
+/*drainwritebuffer:
+mov r0, #0
+mcr 15, 0, r0, c7, c10, 4 @ Drain write buffer
+bx lr*/
 
 firmbin_filepath:
 .hword 0x2F, 0x66, 0x69, 0x72, 0x6D, 0x2E, 0x62, 0x69, 0x6E, 0x00 //UTF-16 "/firm.bin"
