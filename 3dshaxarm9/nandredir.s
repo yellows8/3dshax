@@ -53,6 +53,9 @@ bne nandredir_getsdstate_offset_new3ds
 @ Old3DS:
 cmp r1, #0x38
 ldrge r0, =0x11f0
+bge nandredir_getsdstate_offset_end
+cmp r1, #0x18
+ldrls r0, =0x14d8
 b nandredir_getsdstate_offset_end
 
 nandredir_getsdstate_offset_new3ds:
