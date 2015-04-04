@@ -744,6 +744,8 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 	u64 val64;
 	u64 *val64ptr;
 	u32 *addr;
+	u16 *ptr16;
+	u8 *ptr8;
 	u32 size=0;
 	u32 tmpsize=0, tmpsize2=0;
 	u32 bufpos = 0;
@@ -803,14 +805,32 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 			if(*bufsize != (4 + rw*4))return 0;
 
 			addr = (u32*)buf[0];
+			ptr16 = (u16*)addr;
+			ptr8 = (u8*)addr;
 
 			if((cmdid & 0xff) == 0x01 || (cmdid & 0xff) == 0x05)size = 1;
 			if((cmdid & 0xff) == 0x02 || (cmdid & 0xff) == 0x06)size = 2;
 			if((cmdid & 0xff) == 0x03 || (cmdid & 0xff) == 0x07)size = 4;
 
 			buf[0] = 0;
-			if(rw==0)memcpy(buf, addr, size);
-			if(rw==1)memcpy(addr, &buf[1], size);
+
+			if(rw==0)*bufsize = size;
+
+			if(size==1)//Don't use memcpy here since that would use byte-copies when u16/u32 copies were intended.
+			{
+				if(rw==0)buf[0] = *ptr8;
+				if(rw==1)*ptr8 = buf[1];
+			}
+			else if(size==2)
+			{
+				if(rw==0)buf[0] = *ptr16;
+				if(rw==1)*ptr16 = buf[1];
+			}
+			else if(size==4)
+			{
+				if(rw==0)buf[0] = *addr;
+				if(rw==1)*addr = buf[1];
+			}
 
 			if(rw==1)*bufsize = 0;
 		}
@@ -868,6 +888,56 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 		svcSleepThread(1000000000LL);
 		*val64ptr = svcGetSystemTick() - val64;
 		*bufsize = 8;
+		return 0;
+	}
+
+	if(cmdid==0x32 || cmdid==0x33)
+	{
+		if(*bufsize < 8)return 0;
+
+		rw = 0;//read
+		if(cmdid==0x33)rw = 1;//rw val1 = write
+
+		if(!rw)size = buf[2];
+		if(rw)size = *bufsize - 8;
+		addr = (u32*)buf[0];
+		tmpsize = buf[1];
+
+		ptr16 = (u16*)addr;
+		ptr8 = (u8*)addr;
+
+		bufpos = 0;
+		if(rw)bufpos = 0x8;
+
+		if(!rw)*bufsize = size;
+		if(rw)*bufsize = 0;
+
+		while(size)
+		{
+			for(pos=0; pos<tmpsize; pos+=4)//Don't use memcpy here for sizes >=4, because that uses byte-copies when size is <16(newlib memcpy).
+			{
+				tmpsize2 = tmpsize - pos;
+				if(tmpsize2 >= 4)
+				{
+					if(!rw)buf[bufpos>>2] = addr[pos>>2];
+					if(rw)addr[pos>>2] = buf[bufpos>>2];
+				}
+				else if(tmpsize2 == 2)
+				{
+					if(!rw)buf[bufpos>>2] = ptr16[pos>>1];
+					if(rw)ptr16[pos>>1] = buf[bufpos>>2];
+				}
+				else
+				{
+					if(!rw)memcpy(&buf[bufpos>>2], &ptr8[pos], tmpsize2);
+					if(rw)memcpy(&ptr8[pos], &buf[bufpos>>2], tmpsize2);
+				}
+
+				bufpos+=4;
+				size-=4;
+			}
+		}
+
 		return 0;
 	}
 

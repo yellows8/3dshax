@@ -450,6 +450,57 @@ int cmd_memset(ctrclient *client, unsigned int address, unsigned int value, unsi
 	return 0;
 }
 
+int cmd_memoryreprw(ctrclient *client, unsigned int address, unsigned char *buf, unsigned int chunksize, unsigned int size, unsigned int rw, unsigned int type)
+{
+	unsigned int cmdid;
+	unsigned int header[2];
+
+	cmdid = 0x32;
+	if(rw)cmdid++;
+
+	//type0 = arm11-usrmode under the ctrserver process, type1 = arm9, type2 = arm11kernel-mode
+	if(!type)
+	{
+		cmdid |= 0x800;
+	}
+	else if(type==2)
+	{
+		cmdid |= 0x400;
+	}
+
+	if(ctrclient_sendlong(client, cmdid)!=1)return 1;
+	if(!rw)
+	{
+		if(ctrclient_sendlong(client, 12)!=1)return 1;
+	}
+	else
+	{
+		if(ctrclient_sendlong(client, 8+size)!=1)return 1;
+	}
+
+	if(ctrclient_sendlong(client, address)!=1)return 1;
+
+	if(ctrclient_sendlong(client, chunksize)!=1)return 1;
+
+	if(!rw)
+	{
+		if(ctrclient_sendlong(client, size)!=1)return 1;
+	}
+
+	if(!rw)
+	{
+		if(ctrclient_recvbuffer(client, header, 8)!=1)return 1;
+		if(ctrclient_recvbuffer(client, buf, size)!=1)return 1;
+	}
+	else
+	{
+		if(ctrclient_sendbuffer(client, buf, size)!=1)return 1;
+		if(ctrclient_recvbuffer(client, header, 8)!=1)return 1;
+	}
+
+	return 0;
+}
+
 int cmd_sendservicecmd(ctrclient *client, unsigned int handle, unsigned int handletype, unsigned int *inbuf, unsigned int insize, unsigned int **outbuf, unsigned int *outsize)
 {
 	unsigned int header[4];
@@ -1041,6 +1092,175 @@ int parsecmd_memoryrw(ctrclient *client, char *customcmd)
 	}
 
 	if(optype<2)free(databuf);
+
+	return ret;
+}
+
+int parsecmd_memoryreprw(ctrclient *client, char *customcmd)
+{
+	unsigned int type=0, in_address=0, mem_address=0, out=0;
+	unsigned int arm11usr=0;
+	unsigned int pos=0;
+	int ret=0;
+	unsigned int size, sz, chunksize;
+	unsigned int optype=0;
+	unsigned char *databuf = NULL;
+	uint64_t val64=0;
+	char *procname = NULL;
+	char *str = NULL;
+	char procnamebuf[8];
+
+	memset(procnamebuf, 0, 8);
+
+	if(strncmp(customcmd, "readrepmem", 10)==0)
+	{
+		optype = 0;
+		pos+= 10;
+	}
+	else if(strncmp(customcmd, "writerepmem", 11)==0)
+	{
+		optype = 1;
+		pos+= 11;
+	}
+	else
+	{
+		printf("Invalid memoryrw command-type.\n");
+		return 4;
+	}
+
+	size = 0;
+
+	if(customcmd[pos]==':')
+	{
+		pos++;
+		if(strncmp(&customcmd[pos], "11 ", 3)==0)
+		{
+			type = 0;
+			pos+= 2;
+		}
+		else if(strncmp(&customcmd[pos], "11usr=", 6)==0)
+		{
+			arm11usr = 1;
+			type = 1;
+			pos+= 6;
+		}
+		else if(strncmp(&customcmd[pos], "9 ", 2)==0)
+		{
+			type = 1;
+			pos++;
+		}
+		else if(strncmp(&customcmd[pos], "11kern", 6)==0)
+		{
+			type = 2;
+			pos+= 6;
+		}
+		else
+		{
+			printf("Invalid memory access type.\n");
+			return 4;
+		}
+	}
+	else
+	{
+		printf("Specify a mem-access type.\n");
+		return 4;
+	}
+
+	if(arm11usr)
+	{
+		procname = strtok(&customcmd[pos], " ");
+		if(procname==NULL)
+		{
+			printf("Invalid input paramaters(procname).\n");
+			return 4;
+		}
+
+		if(strncmp(procname, "0x", 2)!=0)
+		{
+			strncpy(procnamebuf, procname, 8);
+		}
+		else
+		{
+			sscanf(procname, "%"PRIx64, &val64);
+			memcpy(procnamebuf, &val64, 8);
+		}
+
+		str = NULL;
+	}
+	else
+	{
+		str = &customcmd[pos];
+	}
+
+	ret = parsecmd_hexvalue(str, " ", &in_address);
+	if(ret!=0)
+	{
+		printf("Invalid input address.\n");
+		return ret;
+	}
+
+	ret = parsecmd_hexvalue(NULL, " ", &chunksize);
+	if(ret!=0)
+	{
+		printf("Invalid clear value.\n");
+		return ret;
+	}
+
+	if(size==0)
+	{
+		ret = parsecmd_hexvalue(NULL, " ", &size);
+		if(ret!=0)
+		{
+			printf("Invalid input size.\n");
+			return ret;
+		}
+	}
+
+	sz = size;
+	if(sz<4)sz = 4;
+	databuf = (unsigned char*)malloc(sz);
+	if(databuf==NULL)
+	{
+		printf("Failed to allocate databuf.\n");
+		return 5;
+	}
+	memset(databuf, 0, sz);
+
+	if(optype==1)
+	{
+		ret = parsecmd_inputhexdata((unsigned int*)databuf, size);
+		if(ret!=0)
+		{
+			free(databuf);
+			return ret;
+		}
+	}
+
+	mem_address = in_address;
+
+	if(arm11usr)
+	{
+		out = 0;
+		ret = cmd_getprocinfo_vaddrconv(client, procnamebuf, in_address, 0, &out);
+		if(ret == 0 && (out==~0 || out==~1))
+		{
+			if(out==~0)printf("Failed to find the specified process.\n");
+			if(out==~1)printf("The specified virtual memory is not mapped: 0x%08x.\n", in_address);
+
+			ret = 7;
+		}
+		else
+		{
+			mem_address = out;
+			printf("Using physical address: 0x%08x (in_address = 0x%08x)\n", mem_address, in_address);
+		}
+	}
+
+	if(ret==0)ret = cmd_memoryreprw(client, mem_address, databuf, chunksize, size, optype, type);
+
+	if(ret==0 && optype==0)ret = parsecmd_writeoutput((unsigned int*)databuf, size);
+
+	free(databuf);
 
 	return ret;
 }
@@ -1916,6 +2136,10 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 	else if(strncmp(customcmd, "readmem", 7)==0 || strncmp(customcmd, "disasm", 6)==0 || strncmp(customcmd, "writemem", 8)==0 || strncmp(customcmd, "memset", 6)==0)
 	{
 		ret = parsecmd_memoryrw(client, customcmd);
+	}
+	else if(strncmp(customcmd, "readrepmem", 10)==0 || strncmp(customcmd, "writerepmem", 11)==0)
+	{
+		ret = parsecmd_memoryreprw(client, customcmd);
 	}
 	else if(strncmp(customcmd, "directfilerw", 12)==0)
 	{

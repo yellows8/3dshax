@@ -191,7 +191,11 @@ static Result init_arm9access()
 int ctrserver_handlecmd_common(u32 cmdid, u32 *buf, u32 *bufsize)
 {
 	u32 *addr;
+	u16 *ptr16;
+	u8 *ptr8;
 	u32 size;
+	u32 tmpsize=0, tmpsize2=0;
+	u32 pos, bufpos = 0;
 	//int ret=0;
 	int rw=0;
 
@@ -207,14 +211,32 @@ int ctrserver_handlecmd_common(u32 cmdid, u32 *buf, u32 *bufsize)
 			if(*bufsize != (4 + rw*4))return 0;
 
 			addr = (u32*)buf[0];
+			ptr16 = (u16*)addr;
+			ptr8 = (u8*)addr;
 
 			if((cmdid & 0xff) == 0x01 || (cmdid & 0xff) == 0x05)size = 1;
 			if((cmdid & 0xff) == 0x02 || (cmdid & 0xff) == 0x06)size = 2;
 			if((cmdid & 0xff) == 0x03 || (cmdid & 0xff) == 0x07)size = 4;
 
 			buf[0] = 0;
-			if(rw==0)memcpy(buf, addr, size);
-			if(rw==1)memcpy(addr, &buf[1], size);
+
+			if(rw==0)*bufsize = size;
+
+			if(size==1)//Don't use memcpy here since that would use byte-copies when u16/u32 copies were intended.
+			{
+				if(rw==0)buf[0] = *ptr8;
+				if(rw==1)*ptr8 = buf[1];
+			}
+			else if(size==2)
+			{
+				if(rw==0)buf[0] = *ptr16;
+				if(rw==1)*ptr16 = buf[1];
+			}
+			else if(size==4)
+			{
+				if(rw==0)buf[0] = *addr;
+				if(rw==1)*addr = buf[1];
+			}
 
 			if(rw==1)*bufsize = 0;
 		}
@@ -265,6 +287,56 @@ int ctrserver_handlecmd_common(u32 cmdid, u32 *buf, u32 *bufsize)
 		return 0;
 	}
 
+	if(cmdid==0x32 || cmdid==0x33)
+	{
+		if(*bufsize < 8)return 0;
+
+		rw = 0;//read
+		if(cmdid==0x33)rw = 1;//rw val1 = write
+
+		if(!rw)size = buf[2];
+		if(rw)size = *bufsize - 8;
+		addr = (u32*)buf[0];
+		tmpsize = buf[1];
+
+		ptr16 = (u16*)addr;
+		ptr8 = (u8*)addr;
+
+		bufpos = 0;
+		if(rw)bufpos = 0x8;
+
+		if(!rw)*bufsize = size;
+		if(rw)*bufsize = 0;
+
+		while(size)
+		{
+			for(pos=0; pos<tmpsize; pos+=4)//Don't use memcpy here for sizes >=4, because that uses byte-copies when size is <16(newlib memcpy).
+			{
+				tmpsize2 = tmpsize - pos;
+				if(tmpsize2 >= 4)
+				{
+					if(!rw)buf[bufpos>>2] = addr[pos>>2];
+					if(rw)addr[pos>>2] = buf[bufpos>>2];
+				}
+				else if(tmpsize2 == 2)
+				{
+					if(!rw)buf[bufpos>>2] = ptr16[pos>>1];
+					if(rw)ptr16[pos>>1] = buf[bufpos>>2];
+				}
+				else
+				{
+					if(!rw)memcpy(&buf[bufpos>>2], &ptr8[pos], tmpsize2);
+					if(rw)memcpy(&ptr8[pos], &buf[bufpos>>2], tmpsize2);
+				}
+
+				bufpos+=4;
+				size-=4;
+			}
+		}
+
+		return 0;
+	}
+
 	return -2;
 }
 
@@ -276,6 +348,8 @@ int net_kernelmode_handlecmd(u32 param)
 	int ret=0;
 	u32 *ptr;
 	u32* (*funcptr)() = NULL;
+	vu32 *regaddr;
+	u32 val, tmpval, count, count2, pos, size, i;
 
 	cmdid = net_kernelmode_paramblock[0];
 	buf = (u32*)net_kernelmode_paramblock[1];
@@ -324,6 +398,78 @@ int net_kernelmode_handlecmd(u32 param)
 
 			*bufsize = 0;
 		}
+	}
+
+	if(cmdid==0x98)
+	{
+		if(*bufsize < 12)return 0;
+
+		regaddr = (vu32*)buf[0];//PXI registers base addr
+
+		tmpval = (regaddr[1] >> 10) & 1;
+		regaddr[1] &= ~(1<<10);
+
+		count = buf[1];//Total PXI command requests to send.
+		count2 = buf[2];//Total PXI command responses to receive.
+		pos = 3;
+
+		for(i=0; i<count; i++)
+		{
+			while(regaddr[1] & 2);
+			regaddr[2] = buf[pos];
+			pos++;
+
+			((vu8*)regaddr)[3] |= (0x40);
+
+			val = buf[pos];
+			pos++;
+
+			size = ((val>>6) & 0x3f) + (val & 0x3f);
+
+			while(regaddr[1] & 2);
+			regaddr[2] = val;
+
+			while(size)
+			{
+				while(regaddr[1] & 2);
+				regaddr[2] = buf[pos];
+				pos++;
+				size--;
+			}
+		}
+
+		*bufsize = 4;
+		buf[0] = count2;
+		pos = 1;
+
+		for(i=0; i<count2; i++)
+		{
+			while(regaddr[1] & 0x100);
+			buf[pos] = regaddr[3];
+			pos++;
+			*bufsize += 4;
+
+			while(regaddr[1] & 0x100);
+			val = regaddr[3];
+			buf[pos] = val;
+			pos++;
+			*bufsize += 4;
+
+			size = ((val>>6) & 0x3f) + (val & 0x3f);
+
+			while(size)
+			{
+				while(regaddr[1] & 0x100);
+				buf[pos] = regaddr[3];
+				pos++;
+				size--;
+				*bufsize += 4;
+			}
+		}
+
+		regaddr[1] |= tmpval<<10;
+
+		return 0;
 	}
 
 	return ret;
