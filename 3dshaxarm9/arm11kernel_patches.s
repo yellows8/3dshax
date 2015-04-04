@@ -143,6 +143,36 @@ writepatch_arm11kernel_getsvctableadr_end:
 pop {r4, r5, r6, pc}
 .pool
 
+#ifdef ENABLE_ARM9DEBUGGING
+arm9kernel_getsvctableadr: @ inr0: val0=return physaddr of jumptable, non-zero=return addr for the specified SVC. The address is returned in r0.
+push {r4, r5, r6, lr}
+mov r4, r0
+
+ldr r0, =0x08000014
+ldr r0, [r0]
+
+mov r1, r0
+ldr r3, =0xe1b0f00e
+
+arm9kernel_getsvctableadr_lp:
+ldr r2, [r1]
+cmp r2, r3
+addne r1, r1, #4
+bne arm9kernel_getsvctableadr_lp
+
+add r0, r1, #4 @ r0 = addr of arm9kernel svc jump-table
+cmp r4, #0
+beq arm9kernel_getsvctableadr_end
+
+mov r1, r4
+lsl r1, r1, #2
+ldr r0, [r0, r1] @ addr of the specified handler, from the jump-table
+
+arm9kernel_getsvctableadr_end:
+pop {r4, r5, r6, pc}
+.pool
+#endif
+
 #ifdef ENABLE_ARM11KERNEL_PROCSTARTHOOK
 writepatch_arm11kernel_svc73:
 push {r4, r5, r6, lr}
@@ -546,6 +576,11 @@ str r1, [r0]
 
 ldr r0, =(0x08000028+0x4)
 adr r1, arm9_daborthandler
+str r1, [r0]
+
+mov r0, #0x3c
+bl arm9kernel_getsvctableadr
+ldr r1, =0xE1200070
 str r1, [r0]
 
 pop {r4, r5, r6, r7, r8, pc}
