@@ -2179,7 +2179,7 @@ int main(int argc, char *argv[])
 	unsigned char *ctr = NULL;
 	unsigned char tmpkey[16];
 	char serveradr[256];
-	char customcmd[256];
+	char customcmd[1024];
 	char outpath[256];
 
 	int argi;
