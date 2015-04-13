@@ -1305,6 +1305,8 @@ beq arm11kernel_processcmd_patchend
 
 #ifdef CMDLOGGING_PROCNAME1
 ldr r3, =CMDLOGGING_PROCNAME1
+#elif CMDLOGGING_ALTPROCNAME
+ldr r3, =CMDLOGGING_ALTPROCNAME
 #endif
 
 cmp r2, r1 @ Ignore commands where the src/dst is not the above process(es).
@@ -1316,6 +1318,12 @@ bne arm11kernel_processcmd_patchend
 #endif
 //beq arm11kernel_processcmd_patchend
 #ifdef CMDLOGGING_PROCNAME1
+cmp r2, r3
+cmpne r0, r3
+beq arm11kernel_processcmd_procnamecheck_end
+#endif
+
+#ifdef CMDLOGGING_ALTPROCNAME
 cmp r2, r3
 cmpne r0, r3
 beq arm11kernel_processcmd_procnamecheck_end
