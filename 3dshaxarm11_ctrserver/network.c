@@ -220,7 +220,7 @@ int ctrserver_handlecmd_common(u32 cmdid, u32 *buf, u32 *bufsize)
 
 			buf[0] = 0;
 
-			if(rw==0)*bufsize = size;
+			if(rw==0)*bufsize = 4;
 
 			if(size==1)//Don't use memcpy here since that would use byte-copies when u16/u32 copies were intended.
 			{

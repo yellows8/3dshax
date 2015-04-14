@@ -32,7 +32,8 @@ The FIRM-launch code loads the plaintext FIRM from SD "/firm.bin". The FWVER val
 * "ENABLE_CMDLOGGING=1" Enables ARM11-kernel patches+code for logging commands.
 * "CMDLOGGING_PADCHECK=value" For cmd-logging, only do logging when any of the bits in the specified value is set for the current PAD register state.
 * "CMDLOGGING_PROCNAME0=value" u32 value to compare the src/dst process-name with for filtering. This is required for cmd-logging.
-* "CMDLOGGING_PROCNAME1=value" Optional extra u32 value to compare the src/dst process-name with for filtering, for cmd-logging. When this is set, only commands where the src/dst are CMDLOGGING_PROCNAME0 and CMDLOGGING_PROCNAME1 are logged.
+* "CMDLOGGING_PROCNAME1=value" Optional extra u32 value to compare the src/dst process-name with for filtering, for cmd-logging. When this is set, only commands where the src and dst are CMDLOGGING_PROCNAME0 and CMDLOGGING_PROCNAME1 are logged(for example, for logging commands sent to a certain sysmodule sent by a certain process).
+* "CMDLOGGING_ALTPROCNAME=value" Optional extra u32 value to compare the src/dst process-name with for filtering, for cmd-logging. This can be used to log all service commands sent/received by the procnames specified  by CMDLOGGING_PROCNAME0 and CMDLOGGING_ALTPROCNAME(not just commands sent to each other like with CMDLOGGING_PROCNAME1). CMDLOGGING_PROCNAME1 must not be used when this option is used.
 * "CMDLOGGING_IGNORE_PROCNAME=value" Optional u32 value to compare the src/dst process-name with, when it matches the cmd will not be logged.
 * "ENABLE_ARM11KERNEL_SVCBREAKPATCH=1" This enables writing a bkpt instruction to the start of the ARM11-kernel code handling svcBreak.
 
