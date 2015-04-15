@@ -10,28 +10,14 @@
 .type arm9_stub2 STT_FUNC
 .type init_arm9patchcode3 STT_FUNC
 
-#define ENABLE_FIRMBOOT
-
 arm9_stub:
 ldr r3, =arm9_debugcode
 blx r3
 .pool
-//.arm
-
-/*#ifdef ENABLE_FIRMBOOT
-arm9_stub2:
-ldr pc, =arm9_debugcode2
-//bx r0
-.pool
-#endif*/
 
 arm9_debugcode:
 push {r0, r1, r2, r3, r4, r5, lr}
 sub sp, sp, #12
-
-/*ldr r0, =0x20000000
-ldr r1, =0x1000
-bl dumpmem*/
 
 ldr r0, =sdarchive_obj
 ldr r0, [r0]
@@ -49,10 +35,6 @@ ldreq r2, =twlfirmbin_filepath
 moveq r5, #1
 ldrne r2, =firmbin_filepath
 movne r5, #0
-
-/*mov r0, sp
-ldr r1, =0x1000
-bl dumpmem*/
 
 mov r3, #0x14
 bl openfile
@@ -75,7 +57,12 @@ bl fileread
 cmp r0, #0
 bne arm9_debugcode_fail
 
-ldr r0, =0x24000000
+ldr r0, =0x24000000 @ <v9.5 FIRM
+ldr r1, =0x21000000
+mov r2, #0x100
+bl memcpy
+
+ldr r0, =0x01fffc00 @ >=v9.5 FIRM. FIRM-launching with v9.5 FIRM already running is still broken even with this.
 ldr r1, =0x21000000
 mov r2, #0x100
 bl memcpy
@@ -171,6 +158,11 @@ strne r2, [r0, #0]
 strne r2, [r0, #4]
 strne r2, [r0, #8]
 strne r2, [r0, #12]
+
+#ifdef ENABLE_LOADSD_AESKEYS
+ldr r0, =0x20F00000
+bl loadsd_aeskeys
+#endif
 
 add sp, sp, #12
 pop {r0, r1, r2, r3, r4, r5, lr}
@@ -367,4 +359,3 @@ twlfirmbin_filepath:
 
 arm9_patchcode3_finishjumpadr:
 .word 0
-
