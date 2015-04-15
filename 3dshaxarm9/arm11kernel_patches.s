@@ -1357,6 +1357,15 @@ str r3, [r0], #4
 subs r2, r2, #4
 bgt arm11kernel_processcmd_patch_cpylp2
 
+#ifdef CMDLOGGING_CMDHDR_FILTER
+mov r2, r0
+sub r2, r2, #0x100
+ldr r2, [r2]
+ldr r3, =CMDLOGGING_CMDHDR_FILTER
+cmp r2, r3
+bne arm11kernel_processcmd_patchend
+#endif
+
 ldr r1, =0x58584148
 str r1, [r4]
 

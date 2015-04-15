@@ -29,7 +29,8 @@ mov r1, #4
 
 //lower half word so it'll work on n3ds too
 ldrh r2, [sp, #12+4*7]
-ldrh r3, =0x00000102 // TWL_FIRM tidlow
+mov r3, #0x100
+add r3, r3, #0x2 // TWL_FIRM tidlow
 cmp r2, r3
 ldreq r2, =twlfirmbin_filepath
 moveq r5, #1
@@ -176,23 +177,6 @@ bl memset
 arm9_debugcode_failend:
 b arm9_debugcode_failend
 .pool
-
-#ifdef ENABLE_FIRMBOOT
-/*arm9_debugcode2:
-push {r0, r1, r2, r3, lr}
-ldr r0, =0x20000000//0x203a02b0
-//mov r1, #0
-ldr r1, =0xc0c0c0c0
-ldr r2, =0x400000//0x38400
-bl memset
-pop {r0, r1, r2, r3, lr}
-//bx lr
-mov r2, #0
-mov r1, r2
-ldr pc, =0x80ff914
-arm9_debugcode2_end:
-b arm9_debugcode2_end
-.pool*/
 
 init_arm9patchcode3:
 push {r4, r5, lr}
@@ -347,8 +331,6 @@ init_firmlaunch_fwver_end:
 pop {r4, r5, r6, r7, r8, pc}
 .pool
 
-#endif
-
 firmbin_filepath:
 .hword 0x2F, 0x66, 0x69, 0x72, 0x6D, 0x2E, 0x62, 0x69, 0x6E, 0x00 //UTF-16 "/firm.bin"
 .align 2
@@ -359,3 +341,4 @@ twlfirmbin_filepath:
 
 arm9_patchcode3_finishjumpadr:
 .word 0
+
