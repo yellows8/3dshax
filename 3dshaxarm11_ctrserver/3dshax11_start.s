@@ -188,3 +188,67 @@ svcGetDmaState:
 	str r1, [r3]
 	bx  lr
 
+.global initsrvhandle_allservices
+.type initsrvhandle_allservices, %function
+initsrvhandle_allservices: @ Init a srv handle which has access to all services.
+push {r4, r5, r6, r7, lr}
+sub sp, sp, #0x20
+
+mov r7, #0
+
+mov r0, sp
+ldr r1, =0xffff8001
+bl svc_getProcessId
+
+mov r7, r0
+cmp r7, #0
+bne initsrvhandle_allservices_end
+
+mov r4, #0
+ldr r5, [sp, #0]
+mov r6, #0
+
+adr r0, kernelmode_searchval_overwrite @ r4=address(0=cur kprocess), r5=searchval, r6=val to write
+svc 0x7b @ Overwrite kprocess PID with 0.
+
+mov r4, r3
+ldr r5, [sp, #0]
+
+bl initSrv
+mov r7, r0
+
+adr r0, kernelmode_writeval @ r4=addr, r5=u32val
+svc 0x7b @ Restore the original PID.
+
+initsrvhandle_allservices_end:
+mov r0, r7
+add sp, sp, #0x20
+pop {r4, r5, r6, r7, pc}
+.pool
+
+kernelmode_searchval_overwrite: @ r4=kprocess, r5=searchval, r6=val to write. out r3 = overwritten addr.
+cpsid i @ disable IRQs
+push {r4, r5, r6}
+
+cmp r4, #0
+bne kernelmode_searchval_overwrite_lp
+ldr r4, =0xffff9004
+ldr r4, [r4]
+
+kernelmode_searchval_overwrite_lp:
+ldr r0, [r4]
+cmp r0, r5
+addne r4, r4, #4
+bne kernelmode_searchval_overwrite_lp
+
+str r6, [r4]
+mov r3, r4
+pop {r4, r5, r6}
+bx lr
+.pool
+
+kernelmode_writeval: @ r4=addr, r5=u32val
+cpsid i @ disable IRQs
+str r5, [r4]
+bx lr
+

@@ -26,6 +26,8 @@ u32* gxCmdBuf = NULL;
 
 Handle gspEvent, gspSharedMemHandle;
 
+Result initsrvhandle_allservices();
+
 void gspGpuInit()
 {
 	gspInit();
@@ -91,7 +93,7 @@ int main(int argc, char **argv)
 
 	if(PROCESSNAME == 0x706c64)svc_sleepThread(10000000000LL);//Delay 10 seconds when running under the dlp module.
 
-	ret = initSrv();
+	ret = initsrvhandle_allservices();
 	if(ret!=0)
 	{
 		((u32*)0x94000000)[0x800>>2] = ret;
