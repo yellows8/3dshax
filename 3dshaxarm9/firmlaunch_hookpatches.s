@@ -58,12 +58,14 @@ bl fileread
 cmp r0, #0
 bne arm9_debugcode_fail
 
-ldr r0, =0x24000000 @ <v9.5 FIRM
+/*ldr r0, =0x24000000 @ <v9.5 FIRM
 ldr r1, =0x21000000
 mov r2, #0x100
 bl memcpy
 
-ldr r0, =0x01fffc00 @ >=v9.5 FIRM. FIRM-launching with v9.5 FIRM already running is still broken even with this.
+ldr r0, =0x01fffc00 @ >=v9.5 FIRM. FIRM-launching with v9.5 FIRM already running is still broken even with this.*/
+ldr r0, =firmheader_address
+ldr r0, [r0]
 ldr r1, =0x21000000
 mov r2, #0x100
 bl memcpy
@@ -185,6 +187,9 @@ mov r4, r0
 
 mov r0, #2
 strb r0, [r2]
+ldr r0, [r2, #8]
+ldr r2, =firmheader_address
+str r0, [r2]
 
 mov r5, #0
 ldr r2, =0xe5900048
@@ -340,5 +345,8 @@ twlfirmbin_filepath:
 .align 2
 
 arm9_patchcode3_finishjumpadr:
+.word 0
+
+firmheader_address:
 .word 0
 
