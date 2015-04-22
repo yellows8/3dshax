@@ -74,7 +74,7 @@ Supported NATIVE_FIRM system-versions(versions where NATIVE_FIRM wasn't updated 
 * v8.x
 * v9.0-v9.2
 * v9.3
-* v9.5 (except for firm-launch when the current FIRM is v9.5)
+* v9.5
 
 The above doesn't really apply for functionality where addresses are located on-the-fly, unless specificly mentioned otherwise.
 

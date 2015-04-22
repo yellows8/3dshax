@@ -58,12 +58,6 @@ bl fileread
 cmp r0, #0
 bne arm9_debugcode_fail
 
-/*ldr r0, =0x24000000 @ <v9.5 FIRM
-ldr r1, =0x21000000
-mov r2, #0x100
-bl memcpy
-
-ldr r0, =0x01fffc00 @ >=v9.5 FIRM. FIRM-launching with v9.5 FIRM already running is still broken even with this.*/
 ldr r0, =firmheader_address
 ldr r0, [r0]
 ldr r1, =0x21000000
@@ -181,16 +175,35 @@ b arm9_debugcode_failend
 .pool
 
 init_arm9patchcode3:
-push {r4, r5, lr}
+push {r4, r5, r6, lr}
 
 mov r4, r0
+mov r6, r1
 
 mov r0, #2
 strb r0, [r2]
 ldr r0, [r2, #8]
+mov r1, r0
+lsr r1, r1, #24
+cmp r1, #0x01
+bne init_arm9patchcode3_writefirmhdradr
+
+ldr r3, =RUNNINGFWVER @ When FIRM-header is located in ITCM(>=v9.5 running FIRM), change it to endofarm9mem-0x200. FIRM-launching with these hooks is broken when the FIRM-header is located in ITCM.
+ldr r3, [r3]
+lsr r3, r3, #30
+and r3, r3, #1
+cmp r3, #0
+ldreq r0, =0x08100000
+ldrne r0, =0x08180000
+sub r0, r0, #0x200
+
+str r0, [r2, #8]
+
+init_arm9patchcode3_writefirmhdradr:
 ldr r2, =firmheader_address
 str r0, [r2]
 
+mov r1, r6
 mov r5, #0
 ldr r2, =0xe5900048
 ldr r3, =0xe3500000
@@ -246,7 +259,7 @@ ldr r1, =0xc00
 bl svcFlushProcessDataCache
 
 mov r0, #0
-pop {r4, r5, pc}
+pop {r4, r5, r6, pc}
 .pool
 
 arm9_patchcode3:
