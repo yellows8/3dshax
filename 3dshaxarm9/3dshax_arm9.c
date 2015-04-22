@@ -508,14 +508,14 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 		return;
 	}
 
-	#ifdef SAFE_FW_UPDATE
+	#ifdef ENABLE_NIMURLS_PATCHES
 	if(procname==0x6D696E)// "nim"
 	{
 		char *ptr;
 		char *targeturl0 = "https://nus.";
 		char *targeturl1 = "https://ecs.";
-		char *replaceurl0 = "http://yls8.mtheall.com/3ds-soap/NetUpdateSOAP.php";//"http://192.168.1.33/NetUpdateSOAP";
-		char *replaceurl1 = "http://yls8.mtheall.com/3ds-soap/ECommerceSOAP.php";//"http://192.168.1.33/ECommerceSOAP";
+		char *replaceurl0 = NIMPATCHURL_UPDATE;
+		char *replaceurl1 = NIMPATCHURL_ECOMMERCE;
 		u32 pos, pos2;
 
 
