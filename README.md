@@ -44,6 +44,7 @@ The FIRM-launch code loads the plaintext FIRM from SD "/firm.bin". The FWVER val
 * "ADDEXHDR_SYSMODULE_DEPENDENCY=hexvalue" This adds sysmodules to the specified process exheader, so that ctrserver under dlp module gets loaded + is accessible over the network(only needed for getting ctrserver to load eariler than normal).
 * "ADDEXHDR_SYSMODULE_DEPENDENCY_PADCHECK=hexvalue" When used the code for ADDEXHDR_SYSMODULE_DEPENDENCY only gets executed when the specified PAD button(s) are pressed.
 * "ENABLE_GAMECARD=1" Enables 3ds gamecard reading code(including ctrcard cmd 0xc6 code).
+* "ENABLE_ARM11CODELOAD_SERVACCESSCONTROL_OVERWRITE=1" Enable overwriting the exheader service-access-control for the arm11codeload with the get-exhdr-hook, with the list from 3dshax_arm9.c. This is only needed when the loaded arm11 binary is not the latest ctrserver binary which has access to all services.
 * "DISABLE_FSACCESSINFO_OVERWRITE=1" Disable exheader FS accessinfo overwrite with all 0xFF for the arm11code-load process.
 * "DISABLE_A9THREAD=1" Disables creation of the arm9 thread.
 * "ENABLE_CONFIGMEM_DEVUNIT=1" Enables writing val0 to configmem UNITINFO. This can be used to enable dev-mode for ErrDisp.

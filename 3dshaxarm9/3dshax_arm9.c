@@ -74,6 +74,7 @@ u64 ARM11CODELOAD_PROCNAME = 0x706c64;//0x706c64 = "dlp", 0x726564697073LL = "sp
 
 extern u32 *arm11kernel_textvaddr;
 
+#ifdef ENABLE_ARM11CODELOAD_SERVACCESSCONTROL_OVERWRITE
 static char arm11codeload_servaccesscontrol[][8] = { //Service-access-control copied into the exheader for the pxipm get-exheader hook.
 "APT:U",
 "y2r:u",
@@ -101,6 +102,7 @@ static char arm11codeload_servaccesscontrol[][8] = { //Service-access-control co
 "mic:u",
 "qtm:u"
 };
+#endif
 
 #define ARM11PROCOVERRIDELIST_TOTALENTRIES 0x10
 
@@ -1212,8 +1214,10 @@ void pxipmcmd1_getexhdr(u32 *exhdr)
 	{
 		servlist = &exhdr[0x250>>2];
 
+		#ifdef ENABLE_ARM11CODELOAD_SERVACCESSCONTROL_OVERWRITE
 		memset(servlist, 0, 0x100);
 		memcpy(servlist, arm11codeload_servaccesscontrol, sizeof(arm11codeload_servaccesscontrol));
+		#endif
 
 		#ifndef DISABLE_FSACCESSINFO_OVERWRITE
 		for(pos=0x248; pos<0x248+0x7; pos++)exhdr8[pos] = 0xFF;//Set FS accessinfo to all 0xFF.
