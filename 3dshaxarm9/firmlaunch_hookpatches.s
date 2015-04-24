@@ -15,9 +15,12 @@ ldr r3, =arm9_debugcode
 blx r3
 .pool
 
-arm9_debugcode:
-push {r0, r1, r2, r3, r4, r5, lr}
+#ifndef DISABLE_FIRMLAUNCH_LOADSD
+firmlaunch_loadfirmsd: @ r0 = FIRM tidlow u16, r1 = u64* filesize out
+push {r0, r1, r2, r3, r4, lr}
 sub sp, sp, #12
+
+mov r4, #0
 
 ldr r0, =sdarchive_obj
 ldr r0, [r0]
@@ -28,36 +31,141 @@ str r1, [sp, #4]
 mov r1, #4
 
 //lower half word so it'll work on n3ds too
-ldrh r2, [sp, #12+4*7]
+ldrh r2, [sp, #12]
 mov r3, #0x100
 add r3, r3, #0x2 // TWL_FIRM tidlow
 cmp r2, r3
 ldreq r2, =twlfirmbin_filepath
-moveq r5, #1
-ldrne r2, =firmbin_filepath
-movne r5, #0
+beq firmlaunch_loadfirmsd_openfile
 
+ldr r3, =FIRMLAUNCH_CLEARPARAMS
+ldr r3, [r3]
+cmp r3, #1
+cmpeq r2, #0x3
+moveq r2, #0x2
+
+cmp r2, #0x2
+mvnne r4, #1
+bne firmlaunch_loadfirmsd_end
+
+ldr r2, =firmbin_filepath
+
+firmlaunch_loadfirmsd_openfile:
 mov r3, #0x14
 bl openfile
+mov r4, r0
+cmp r4, #0
+bne firmlaunch_loadfirmsd_end
+mvn r4, #0
 
 ldr r0, [sp, #8]
 cmp r0, #0
-beq arm9_debugcode_fail
+beq firmlaunch_loadfirmsd_end
 bl getfilesize
 ldr r1, [sp, #16]
 str r0, [r1]
 mov r2, #0
 str r2, [r1, #4]
 
-mov r4, r0
-mov r2, r4
+mov r2, r0
 ldr r0, [sp, #8]
 ldr r1, =0x21000000
 mov r3, #0
 bl fileread
+mov r4, r0
+
+ldr r0, [sp, #8]
+bl closefile
+
+firmlaunch_loadfirmsd_end:
+mov r0, r4
+add sp, sp, #12
+add sp, sp, #16
+pop {r4, pc}
+.pool
+#endif
+
+#ifdef ENABLE_FIRMLAUNCH_LOADNAND
+firmlaunch_loadfirmnand: @ r0 = _this, r1 = u64* filesize out, r2 = getfilesize funcptr
+push {r0, r1, r2, r3, r4, lr}
+sub sp, sp, #12
+
+blx r2 @ Call the getfilesize vtable funcptr, then execute infinite loop if it fails.
+cmp r0, #0
+bne firmlaunch_loadfirmnand_end
+
+ldr r0, [sp, #12] @ _this
+mov r1, sp @ u32* total actual read data
+ldr r2, =0x21000000 @ outbuf
+ldr r3, [sp, #16]
+ldr r3, [r3] @ size
+ldr r4, [r0]
+ldr r4, [r4, #0x28]
+blx r4
+cmp r0, #0
+bne firmlaunch_loadfirmnand_end
+
+ldr r2, [sp, #0] @ read size
+ldr r3, [sp, #16]
+ldr r3, [r3] @ filesize
+cmp r2, r3
+mvnne r0, #0
+
+firmlaunch_loadfirmnand_end:
+add sp, sp, #12
+add sp, sp, #16
+pop {r4, pc}
+.pool
+#endif
+
+arm9_debugcode:
+push {r0, r1, r2, r3, r4, r5, lr}
+sub sp, sp, #12
+
+ldrh r2, [sp, #12+4*7]
+mov r3, #0x100
+add r3, r3, #0x2 // TWL_FIRM tidlow
+cmp r2, r3
+moveq r5, #1
+movne r5, #0
+add r3, r3, #0x100 @ AGB_FIRM
+cmp r2, r3
+moveq r5, #1
+
+arm9_debugcode_firmload:
+#ifndef DISABLE_FIRMLAUNCH_LOADSD
+mov r0, r2
+ldr r1, [sp, #16]
+bl firmlaunch_loadfirmsd
+cmp r0, #0
+beq arm9_debugcode_copyheader
+#endif
+
+#ifdef ENABLE_FIRMLAUNCH_LOADNAND
+#ifdef ENABLENANDREDIR//Refuse to load from NAND for the second firmlaunch when nandredir is enabled, since that would mean loading FIRM from physnand with a potentially newer sd-nandimage which could fail to boot with older FIRM.
+ldr r3, =FIRMLAUNCH_CLEARPARAMS
+ldr r3, [r3]
+cmp r3, #1
+mvneq r0, #5
+beq arm9_debugcode_fail
+#endif
+
+ldr r0, [sp, #12]
+ldr r1, [sp, #16]
+ldr r2, [sp, #20]
+bl firmlaunch_loadfirmnand
+#endif
+
 cmp r0, #0
 bne arm9_debugcode_fail
 
+#ifdef DISABLE_FIRMLAUNCH_LOADSD
+#ifndef ENABLE_FIRMLAUNCH_LOADNAND
+#error "No FIRMLAUNCH load-type(SD/NAND) is enabled at all."
+#endif
+#endif
+
+arm9_debugcode_copyheader:
 ldr r0, =firmheader_address
 ldr r0, [r0]
 ldr r1, =0x21000000
@@ -65,7 +173,7 @@ mov r2, #0x100
 bl memcpy
 
 cmp r5, #1
-beq arm9_debugcode_skip_paramsclear @ skip patches and clear param if twl_firm
+beq arm9_debugcode_skip_paramsclear @ skip patches and clear param if twl_firm/agb_firm.
 
 ldr r0, =0x21000000
 bl init_firmlaunch_fwver

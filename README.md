@@ -15,7 +15,7 @@ Running the arm9 binary requires 3ds arm9haxx which can handle loading it. The f
 
 By default NAND-redir is enabled, see below for disabling it. When NAND-redir is enabled, the base sector-num must be specified via Makefile parameter NANDREDIR_SECTORNUM.
 
-The FIRM-launch code loads the plaintext FIRM from SD "/firm.bin". The FWVER values used by the arm9code is automatically determined by checking the first u32 in the FIRM RSA signature.
+By default the FIRM-launch code loads the plaintext FIRM from SD "/firm.bin", see the below *_FIRMLAUNCH_LOAD* options. The FWVER values used by the arm9code is automatically determined by checking the first u32 in the FIRM RSA signature.
 
 # Makefile parameters  
 * "DISABLEAES=1" Disables all arm9 AES code.
@@ -48,15 +48,23 @@ The FIRM-launch code loads the plaintext FIRM from SD "/firm.bin". The FWVER val
 * "DISABLE_FSACCESSINFO_OVERWRITE=1" Disable exheader FS accessinfo overwrite with all 0xFF for the arm11code-load process.
 * "DISABLE_A9THREAD=1" Disables creation of the arm9 thread.
 * "ENABLE_CONFIGMEM_DEVUNIT=1" Enables writing val0 to configmem UNITINFO. This can be used to enable dev-mode for ErrDisp.
+
 * "ENABLE_FIRMLAUNCH_HOOK=1" Enables hooking Process9 FIRM-launch once the system finishes fully booting after previous FIRM-launch(es). FIRM-launch parameters won't be cleared with this, so that launching titles with this works.
+* "DISABLE_FIRMLAUNCH_LOADSD=1" Disable loading FIRM from SD from the firmlaunch hook. If this is used, then the ENABLE_FIRMLAUNCH_LOADNAND=1 option must be used.
+* "ENABLE_FIRMLAUNCH_LOADNAND=1" Enable loading FIRM from NAND(from the default ExeFS filepath used by official firmlaunch) from the firmlaunch hook. This is only used when loading the FIRM from SD fails, the FIRM being launched isn't available on SD / isn't supported with SD loading, or when DISABLE_FIRMLAUNCH_LOADSD=1 is used. With the second NATIVE_FIRM firmlaunch, this will *only* load the FIRM from physnand, not the nandredir image. If this code gets executed in that case with nandredir enabled, it will abort(allowing the FIRM boot to continue would only result in boot failure due to nandimage incompatibility with the physnand FIRM, depending on the FIRM/nandimage versions). Therefore, with nandredir enabled this should only be used for non-nativefirm.
+
 * "ENABLE_REGIONFREE={val}" Enables the homemenu SMDH icon region check patch. This does not affect the region-lock via gamecard sysupdates, see DISABLE_GAMECARDUPDATE. "ENABLE_REGIONFREE=2" is the same as "ENABLE_REGIONFREE=1", except this also uses the "DISABLE_GAMECARDUPDATE=1" option at the same time. Note that this(SMDH region patch) may cause SD titles which normally aren't displayed, to be shown as presents or black icons.
 * "DISABLE_GAMECARDUPDATE=1" Disables gamecard sysupdates, this is required for launching gamecards from other regions.
+
 * "ENABLE_OLDFS=1" Enables old arm9 FS cmd-handling code(used via ctrserver), for the FS code only supported on old FIRM.
 * "ENABLE_OLDFS_AUTOLOCATE=1" Enable auto-locating FS code with very old FIRM, not related to "ENABLE_OLDFS=1".
+
 * "ENABLE_DMA=1" Enables the cmd for use via ctrserver for the DMA SVCs.
+
 * "ENABLE_NIMURLS_PATCHES=1" Enables patching NIM so that it uses custom URLs for the ECommerceSOAP and NetUpdateSOAP URLs, see NIMPATCHURL_UPDATE and NIMPATCHURL_ECOMMERCE. Both of those options are required when using this ENABLE_NIMURLS_PATCHES option.
 * NIMPATCHURL_UPDATE=URL Sets the NetUpdateSOAP URL to write to NIM with ENABLE_NIMURLS_PATCHES=1.
 * NIMPATCHURL_ECOMMERCE=URL Sets the ECommerceSOAP URL to write to NIM with ENABLE_NIMURLS_PATCHES=1.
+
 * "ENABLE_THEMECACHENAME=1" Enables patching home menu's theme cache filenames so that home menu uses its own theme cache under 3dshax. This is particularly useful when used with menuhax to a) avoid infinite boot loops and b) avoid ROP crashes in mismatching home menu versions.
 
 * "ENABLE_LOADSD_AESKEYS=1" During firmlaunch, enable loading AES keyslots keydata from SD, see 3dshax_arm9.c.

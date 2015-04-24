@@ -217,6 +217,28 @@ void patch_proc9_launchfirm()
 	ptr = (u32*)parse_branch((u32)proc9_locate_main_endaddr(), 0);//ptr = address of launch_firm function called @ the end of main().
 
 	pos = 0;
+
+	#ifdef ENABLE_FIRMLAUNCH_LOADNAND//When loading FIRM from NAND is enabled and when doing the second firmlaunch where safemodefirm is "launched", patch the proc9 code so that it uses the nativefirm tidlow instead of safemodefirm.
+	if(FIRMLAUNCH_CLEARPARAMS == 1)
+	{
+		pos2 = 0;
+		while(1)
+		{
+			if((ptr[pos] >> 24) == 0x1a)//"bne"
+			{
+				pos2++;
+				if(pos2==2)break;
+			}
+			pos++;
+
+			if(((u32)&ptr[pos]) >= 0x080ff000)while(1);
+		}
+
+		pos+=3;
+		ptr[pos] = 0xe3a00002;
+	}
+	#endif
+
 	while(1)
 	{
 		if(ptr[pos]==0xe12fff32)break;//"blx r2"
