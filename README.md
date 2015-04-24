@@ -3,7 +3,7 @@ Codebase for 3ds arm9 stuff + arm11 kernel/userland patches etc. This also inclu
 # Building
 To build just the non-ctrserver codebase: make -f Makefile.arm9 OUTPATH={path to sdcard root} {other optional makefile parameters}  
 To build just ctrserver: make -f Makefile_ctrserver.arm11 OUTPATH={path to sdcard root} {other optional makefile parameters}  
-To build arm9code+ctrserver:make -f Makefile_ctrserver OUTPATH={path to sdcard root} {other optional makefile parameters}  
+To build arm9code+ctrserver: make OUTPATH={path to sdcard root} {other optional makefile parameters}  
 
 Building ctrserver requires "3dshaxarm11_ctrserver_data/auth.bin", this is the "auth.txt" which would be used on the client-side.
 
@@ -62,8 +62,8 @@ By default the FIRM-launch code loads the plaintext FIRM from SD "/firm.bin", se
 * "ENABLE_DMA=1" Enables the cmd for use via ctrserver for the DMA SVCs.
 
 * "ENABLE_NIMURLS_PATCHES=1" Enables patching NIM so that it uses custom URLs for the ECommerceSOAP and NetUpdateSOAP URLs, see NIMPATCHURL_UPDATE and NIMPATCHURL_ECOMMERCE. Both of those options are required when using this ENABLE_NIMURLS_PATCHES option.
-* NIMPATCHURL_UPDATE=URL Sets the NetUpdateSOAP URL to write to NIM with ENABLE_NIMURLS_PATCHES=1.
-* NIMPATCHURL_ECOMMERCE=URL Sets the ECommerceSOAP URL to write to NIM with ENABLE_NIMURLS_PATCHES=1.
+* NIMPATCHURL_UPDATE=URL Sets the NetUpdateSOAP URL to write to NIM with ENABLE_NIMURLS_PATCHES=1. The max length is 62 characters, not including the final null-terminator left in memory.
+* NIMPATCHURL_ECOMMERCE=URL Sets the ECommerceSOAP URL to write to NIM with ENABLE_NIMURLS_PATCHES=1. See NIMPATCHURL_UPDATE for max len.
 
 * "ENABLE_THEMECACHENAME=1" Enables patching home menu's theme cache filenames so that home menu uses its own theme cache under 3dshax. This is particularly useful when used with menuhax to a) avoid infinite boot loops and b) avoid ROP crashes in mismatching home menu versions.
 

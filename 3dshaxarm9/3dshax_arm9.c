@@ -542,7 +542,6 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 		char *replaceurl1 = NIMPATCHURL_ECOMMERCE;
 		u32 pos, pos2;
 
-
 		for(pos=0; pos<total_codebin_size; pos+=0x1000)
 		{
 			ptr = (char*)mmutable_convert_vaddr2physaddr(mmutable, 0x10000000 + pos);
@@ -550,9 +549,9 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 
 			for(pos2=0; pos2<0x1000; pos2++)
 			{
-				if(!memcmp(&ptr[pos2], targeturl0, 11)) memcpy(&ptr[pos2], replaceurl0, 51);
+				if(!memcmp(&ptr[pos2], targeturl0, 11))strncpy(&ptr[pos2], replaceurl0, 62);
 
-				if(!memcmp(&ptr[pos2], targeturl1, 11)) memcpy(&ptr[pos2], replaceurl1, 51);
+				if(!memcmp(&ptr[pos2], targeturl1, 11))strncpy(&ptr[pos2], replaceurl1, 62);
 			}
 		}
 
