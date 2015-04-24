@@ -23,6 +23,7 @@
 .global generate_branch
 .global parse_branch
 .global parse_branch_thumb
+.global parse_armblx
 
 .global new3ds_hookloader_entrypoint
 
@@ -60,6 +61,7 @@
 .type proc9_autolocate_mainsigcheck_patchaddr STT_FUNC
 .type generate_branch STT_FUNC
 .type parse_branch STT_FUNC
+.type parse_armblx STT_FUNC
 .type parse_branch_thumb STT_FUNC
 
 .type new3ds_hookloader_entrypoint STT_FUNC
@@ -1237,6 +1239,17 @@ orr r2, r2, r1
 lsl r2, r2, #2
 add r0, r0, #8
 add r0, r0, r2
+bx lr
+
+parse_armblx: @ r0 = addr of branch instruction, r1 = branch instruction u32 value (ARM-mode)
+push {r0, r1, lr}
+bl parse_branch
+pop {r1, r2, lr}
+cmp r2, #0
+ldreq r2, [r1]
+tst r2, #0x01000000
+orrne r0, r0, #0x2
+orr r0, r0, #1
 bx lr
 
 parse_branch_thumb: @ r0 = addr of branch instruction, r1 = branch instruction u32 value

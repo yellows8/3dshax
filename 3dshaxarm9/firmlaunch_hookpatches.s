@@ -6,9 +6,11 @@
 .global arm9_stub
 .global arm9_stub2
 .global init_arm9patchcode3
+.global firmlaunch_swprintfhook
 .type arm9_stub STT_FUNC
 .type arm9_stub2 STT_FUNC
 .type init_arm9patchcode3 STT_FUNC
+.type firmlaunch_swprintfhook STT_FUNC
 
 arm9_stub:
 ldr r3, =arm9_debugcode
@@ -116,6 +118,18 @@ add sp, sp, #12
 add sp, sp, #16
 pop {r4, pc}
 .pool
+
+/*firmlaunch_swprintfhook://This code was intended to have proc9 open "firm0:" instead of the exefs .firm, but that somehow breaks firmlaunch even when firmlaunch_loadfirmnand() wasn't even executed.
+mov r3, #0xe
+ldr r2, =firm0device
+
+firmlaunch_swprintfhook_cpylp:
+ldrh r1, [r2], #2
+strh r1, [r0], #2
+subs r3, r3, #2
+bgt firmlaunch_swprintfhook_cpylp
+bx lr
+.pool*/
 #endif
 
 arm9_debugcode:
@@ -470,4 +484,13 @@ arm9_patchcode3_finishjumpadr:
 
 firmheader_address:
 .word 0
+
+#ifdef ENABLE_FIRMLAUNCH_LOADNAND
+.global proc9_swprintf_addr
+proc9_swprintf_addr:
+.word 0
+
+firm0device:
+.string16 "firm0:"
+#endif
 

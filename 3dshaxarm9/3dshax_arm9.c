@@ -23,6 +23,7 @@ u32 getcpsr();
 
 u32 generate_branch(u32 branchaddr, u32 targetaddr, u32 flag);//branchaddr = addr of branch instruction, targetaddr = addr to branch to, flag = 0 for regular branch, non-zero for bl. (ARM-mode)
 u32 parse_branch(u32 branchaddr, u32 branchval);
+u32 parse_armblx(u32 branchaddr, u32 branchval);
 u32 parse_branch_thumb(u32 branchaddr, u32 branchval);
 
 void call_arbitaryfuncptr(void* funcptr, u32 *regdata);
@@ -49,6 +50,9 @@ extern u32 FIRMLAUNCH_CLEARPARAMS;
 extern u32 arm9_rsaengine_txtwrite_hooksz;
 
 extern u32 proc9_textstartaddr;
+
+void firmlaunch_swprintfhook(u16*);
+extern u32 proc9_swprintf_addr;
 
 void pxidev_cmdhandler_cmd0();
 void mountcontent_nandsd_writehookstub();
@@ -218,7 +222,7 @@ void patch_proc9_launchfirm()
 
 	pos = 0;
 
-	#ifdef ENABLE_FIRMLAUNCH_LOADNAND//When loading FIRM from NAND is enabled and when doing the second firmlaunch where safemodefirm is "launched", patch the proc9 code so that it uses the nativefirm tidlow instead of safemodefirm.
+	#ifdef ENABLE_FIRMLAUNCH_LOADNAND//This is executed when loading FIRM from NAND is enabled and when doing the second firmlaunch.
 	if(FIRMLAUNCH_CLEARPARAMS == 1)
 	{
 		pos2 = 0;
@@ -235,7 +239,22 @@ void patch_proc9_launchfirm()
 		}
 
 		pos+=3;
-		ptr[pos] = 0xe3a00002;
+		ptr[pos] = 0xe3a00002;//Patch the proc9 code so that it uses the nativefirm tidlow instead of safemodefirm.
+		/*pos++;//hook the swprintf func.
+
+		while(1)
+		{
+			if((ptr[pos] >> 25) == 0x7d)break;//blx immediate
+			pos++;
+
+			if(((u32)&ptr[pos]) >= 0x080ff000)while(1);
+		}
+
+		proc9_swprintf_addr = parse_armblx((u32)&ptr[pos], 0);
+		ptr[pos] = generate_branch(&ptr[pos], proc9_textstartaddr, 1);
+
+		((u32*)proc9_textstartaddr)[0] = 0xe51ff004;//"ldr pc, [pc, #-4]"
+		((u32*)proc9_textstartaddr)[1] = firmlaunch_swprintfhook;*/
 	}
 	#endif
 
