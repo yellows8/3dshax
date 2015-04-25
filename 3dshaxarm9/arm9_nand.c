@@ -6,8 +6,6 @@
 
 #include "arm9fs.h"
 
-extern u32 RUNNINGFWVER;
-
 /*void dump_nandfile(char *path)
 {
 	u32 ret=0;

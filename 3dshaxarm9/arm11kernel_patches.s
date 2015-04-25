@@ -68,14 +68,6 @@ pop {r4, r5, pc}
 writepatch_arm11kernel_svcaccess:
 push {r4, r5, lr}
 mov r1, #0
-/*ldr r0, =RUNNINGFWVER
-ldr r0, [r0]
-cmp r0, #0x1F
-ldreq r1, =0x1FF827CC
-cmp r0, #0x2E
-ldreq r1, =0x1FF822A8
-cmp r1, #0
-beq writepatch_arm11kernel_svcaccess_end*/
 
 ldr r4, =arm11kernel_textvaddr
 ldr r4, [r4]
@@ -324,16 +316,6 @@ pop {r4, r5, r6, r7, pc}
 
 get_arm11debuginfo_physaddr:
 push {r4, lr}
-/*ldr r4, =RUNNINGFWVER
-ldr r4, [r4]
-
-ldr r0, =0x1FFDF000
-
-ldr r3, =0x1000
-cmp r4, #0x25
-subge r0, r0, r3
-cmp r4, #0x37
-ldrge r0, =0x1FFDD000*/
 ldr r0, =0x1FF80C00
 pop {r4, pc}
 .pool
@@ -391,18 +373,8 @@ sub r1, r1, #4
 cmp r1, #0
 bgt write_arm11debug_patch_lp
 
-//ldr r4, =0xffff0b10
-//ldr r4, =0xffff0080
 ldr r5, =0x1FF80000
 
-/*mov r1, #0x1F
-mov r2, #0x2E
-cmp r8, r1
-ldreq r7, =0xfff60000*/
-//ldreq r6, =0x324
-//cmp r8, r2
-//ldreq r7, =0xfff50000
-//ldreq r6, =0x614
 ldr r7, =arm11kernel_textvaddr
 ldr r7, [r7]
 
@@ -428,13 +400,6 @@ adr r3, arm11_prefetchhandler
 sub r3, r3, r1
 add r4, r4, r3
 
-/*mov r1, #0x1F
-mov r2, #0x2E
-cmp r8, r1
-ldreq r6, =0x33c
-cmp r8, r2
-ldreq r6, =0x62c*/
-
 ldr r0, =0xffff0000 @ Patch the prefetch abort vector code.
 add r0, r0, #0xc
 ldr r1, =0x1FFF4000
@@ -454,13 +419,6 @@ adr r3, arm11_daborthandler
 sub r3, r3, r1
 add r4, r4, r3
 
-/*mov r1, #0x1F
-mov r2, #0x2E
-cmp r8, r1
-ldreq r6, =0x348
-cmp r8, r2
-ldreq r6, =0x638*/
-
 ldr r0, =0xffff0000 @ Patch the data abort vector code.
 add r0, r0, #0x10
 ldr r1, =0x1FFF4000
@@ -479,7 +437,6 @@ str r0, [r5, r6]
 ldr r1, =arm11kernel_patch
 ldr r3, =arm11kernel_processcmd_patch
 sub r3, r3, r1
-//ldr r4, =0xffff0b10
 ldr r4, =0x1800
 add r4, r4, r7
 add r4, r4, r3
@@ -515,19 +472,6 @@ add r4, r4, r3
 
 mov r0, r4
 bl writepatch_arm11kernel_svc73
-
-/*mov r1, #0x1F
-mov r2, #0x2E
-cmp r8, r1
-ldreq r6, =0x8344
-cmp r8, r2
-ldreq r6, =0x7fc0
-
-add r0, r7, r6
-mov r1, r4
-mov r2, #1
-bl generate_branch @ Patch the svc73() code.
-str r0, [r5, r6]*/
 
 /*ldr r1, =arm11kernel_patch
 ldr r3, =arm11kernel_svc75_hook
@@ -738,10 +682,9 @@ bne arm11_exceptionhandler
 stmdb sp, {r0, r1, r2, r3, fp, ip, sp, lr}^
 sub sp, sp, #32
 //push {r0, r1, r2, r3, fp, ip}
-ldr r1, arm11kernel_patch_fwver
-mov r2, #0x25
+ldrb r1, arm11kernel_patch_fwver
 ldr r0, =0xffff05c8
-cmp r1, r2
+cmp r1, #35 @ v5.0
 subge r0, r0, #8
 blx r0
 //pop {r0, r1, r2, r3, fp, ip}
@@ -798,13 +741,14 @@ rfeia sp!
 arm11kernel_getpxiregbase_adr:
 ldr r1, arm11kernel_patch_fwver
 lsr r2, r1, #30
+and r1, r1, #0xff
 ands r2, r2, #1
 bne arm11kernel_getpxiregbase_adr_new3ds
 
 ldr r0, =0xFFFD2000
-cmp r1, #0x37
+cmp r1, #44 @ v8.0
 ldreq r0, =0xFFFC0000
-cmp r1, #0x38
+cmp r1, #46 @ v9.0
 ldrge r0, =0xFFFC4000
 b arm11kernel_getpxiregbase_adr_end
 
@@ -889,8 +833,8 @@ b arm11kernel_getdebugstateptr_end
 
 arm11kernel_getdebugstateptr_begin:
 ldr r0, =0xEFF80000
-ldr r1, arm11kernel_patch_fwver
-cmp r1, #0x37
+ldrb r1, arm11kernel_patch_fwver
+cmp r1, #44 @ v8.0
 ldrge r0, =0xDFF80000
 
 ldr r1, =0xC00
@@ -962,8 +906,8 @@ ldr r1, [r1] @ r1 = current KProcess*
 cmp r1, #0
 beq arm11kernel_exceptionregdump_writeprocname
 
-ldr r3, arm11kernel_patch_fwver
-cmp r3, #0x37
+ldrb r3, arm11kernel_patch_fwver
+cmp r3, #44 @ v8.0
 addge r1, r1, #8
 mov r3, #0
 
@@ -1201,8 +1145,8 @@ sub sp, sp, #0x420
 
 //cpsid i @ disable IRQs
 
-ldr r5, arm11kernel_patch_fwver
-cmp r5, #0x26
+ldrb r5, arm11kernel_patch_fwver
+cmp r5, #36 @ v5.1
 lsrle r1, r1, #6
 strle r1, [r8, #4]
 //lsrgt r2, r2, #6
@@ -1232,8 +1176,9 @@ ldrne r6, [r8, #0x94]
 //ldreq r1, [r8, #0x9c]
 ldrne r7, [r8, #0x98]*/
 
-ldr ip, arm11kernel_patch_fwver
-cmp ip, #0x26
+ldr r3, arm11kernel_patch_fwver
+and ip, r3, #0xff
+cmp ip, #36 @ v5.1
 ldrle r6, [r8, #0xbc] @ r6/r7 = src/dst KThread
 ldrle r7, [r8, #0xb8]
 ldrgt r6, [r8, #0x20]
@@ -1242,8 +1187,7 @@ ldrgt r7, [r8, #0x10]
 ldr r0, [r6, #0x80] @ r0/r1 = src/dst KThread's KProcess
 ldr r1, [r7, #0x80]
 
-ldr r3, arm11kernel_patch_fwver
-cmp r3, #0x37
+cmp ip, #44 @ v8.0
 addge r0, r0, #8
 addge r1, r1, #8
 
@@ -1274,10 +1218,11 @@ str r2, [r4, #24]
 str r3, [r4, #28]
 
 #ifdef CMDLOGGING_PADCHECK
-cmp ip, #0x37
+cmp ip, #44 @ v8.0
 ldrlt r3, =0xFFFD4000
 ldrge r3, =0xFFFC2000
-lsr r1, ip, #30
+ldr r1, arm11kernel_patch_fwver
+lsr r1, r1, #30
 ands r1, r1, #1
 bne arm11kernel_processcmd_padcheck_start
 cmp ip, #0x38

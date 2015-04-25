@@ -254,14 +254,14 @@ sub sp, sp, #24
 
 #ifdef ENABLE_OLDFS_AUTOLOCATE
 ldr r5, =RUNNINGFWVER
-ldr r5, [r5]
-cmp r5, #0x09
+ldrb r5, [r5]
+cmp r5, #29 @ v2.0
 bge fileread_l0
 mov r5, #0x30
 b fileread_begin
 
 fileread_l0:
-cmp r5, #0x18
+cmp r5, #32 @ v3.0
 bge fileread_l1
 
 mov r5, #0x34
@@ -307,14 +307,14 @@ sub sp, sp, #24
 
 #ifdef ENABLE_OLDFS_AUTOLOCATE
 ldr r5, =RUNNINGFWVER
-ldr r5, [r5]
-cmp r5, #0x09
+ldrb r5, [r5]
+cmp r5, #29 @ v2.0
 bge filewrite_l0
 mov r5, #0x34
 b filewrite_begin
 
 filewrite_l0:
-cmp r5, #0x18
+cmp r5, #32 @ v3.0
 bge filewrite_l1
 
 mov r5, #0x38
@@ -361,8 +361,8 @@ add r1, sp, #0
 
 #ifdef ENABLE_OLDFS_AUTOLOCATE
 ldr r4, =RUNNINGFWVER
-ldr r4, [r4]
-cmp r4, #0x18
+ldrb r4, [r4]
+cmp r4, #32 @ v3.0
 bge getfilesize_l0
 mov r4, #20
 b getfilesize_l1
@@ -387,8 +387,8 @@ mov r2, r1
 
 #ifdef ENABLE_OLDFS_AUTOLOCATE
 ldr r5, =RUNNINGFWVER
-ldr r5, [r5]
-cmp r5, #0x18
+ldrb r5, [r5]
+cmp r5, #32 @ v3.0
 bge setfilesize_l0
 mov r5, #24
 b setfilesize_l1
@@ -425,8 +425,8 @@ ldr r3, [sp, #36]
 
 #ifdef ENABLE_OLDFS_AUTOLOCATE
 ldr r5, =RUNNINGFWVER
-ldr r5, [r5]
-cmp r5, #0x18
+ldrb r5, [r5]
+cmp r5, #32 @ v3.0
 bge archive_readsectors_l0
 mov r5, #0x0
 b archive_readsectors_l1

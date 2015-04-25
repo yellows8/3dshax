@@ -40,7 +40,7 @@ u32 *get_kprocessptr(u64 procname, u32 num, u32 get_mmutableptr)
 	u32 kernelfcram_phys2vaddr_value = 0xd0000000;
 	u32 kprocess_adjustoffset = 0;
 
-	if(RUNNINGFWVER>=0x37)
+	if(((u8)RUNNINGFWVER)>=44)//v8.0
 	{
 		kernelfcram_phys2vaddr_value = 0xc0000000;
 		kprocess_adjustoffset = 8;

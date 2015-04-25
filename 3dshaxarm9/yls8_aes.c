@@ -29,7 +29,6 @@
 
 #define AES_CHUNKSIZE 0xffff0
 
-extern u32 RUNNINGFWVER;
 extern u32 proc9_textstartaddr;
 
 u32 aesiv[4];

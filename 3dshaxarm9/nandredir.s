@@ -47,20 +47,20 @@ ldr r0, =0x14f0
 ldr r1, =FIRMLAUNCH_FWVER
 ldr r1, [r1]
 lsr r2, r1, #30
+and r1, r1, #0xff
 ands r2, r2, #1
 bne nandredir_getsdstate_offset_new3ds
 
 @ Old3DS:
-cmp r1, #0x38
+cmp r1, #46 @ v9.0
 ldrge r0, =0x11f0
 bge nandredir_getsdstate_offset_end
-cmp r1, #0x18
+cmp r1, #32 @ v3.0
 ldrls r0, =0x14d8
 b nandredir_getsdstate_offset_end
 
 nandredir_getsdstate_offset_new3ds:
-and r1, r1, #0xff
-cmp r1, #46
+cmp r1, #46 @ v9.0
 ldrge r0, =0x11f0
 
 nandredir_getsdstate_offset_end:

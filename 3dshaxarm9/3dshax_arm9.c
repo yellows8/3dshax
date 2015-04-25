@@ -1523,7 +1523,7 @@ void thread_entry()
 
 	if(FIRMLAUNCH_RUNNINGTYPE==0)svcSleepThread(2000000000LL);
 
-	if(RUNNINGFWVER==0x2E)
+	if(((u8)RUNNINGFWVER)==39)//v7.0
 	{
 		*((u16*)0x0805ed34) |= 1;
 		svcFlushProcessDataCache((u32*)0x0805ed34, 0x4);//Patch the code which reads the arm9 access-control mount flags, so that all of these archives are accessible.
@@ -1537,12 +1537,12 @@ void thread_entry()
 		ptr[0x8>>2] = 0xe1a03001;//"mov r3, r1"
 		ptr[0x2C>>2] = 0xe1a01002;//"mov r1, r2"*/
 	}
-	else if(RUNNINGFWVER==0x30)
+	else if(((u8)RUNNINGFWVER)==40)//v7.2
 	{
 		*((u16*)0x0805ed38) |= 1;
 		svcFlushProcessDataCache((u32*)0x0805ed38, 0x4);//Patch the code which reads the arm9 access-control mount flags, so that all of these archives are accessible.
 	}
-	else if(RUNNINGFWVER==0x37)
+	else if(((u8)RUNNINGFWVER)==44)//v8.0
 	{
 		*((u16*)0x0805ef38) |= 1;
 		svcFlushProcessDataCache((u32*)0x0805ef38, 0x4);//Patch the code which reads the arm9 access-control mount flags, so that all of these archives are accessible.
@@ -1588,7 +1588,7 @@ void thread_entry()
 			#endif
 			debuginitialized = 1;
 			//launchcode_kernelmode(twlstuff);
-			//if(RUNNINGFWVER==0x2E)axiwram[0x14ab0>>2] = 0xE1200070;//Patch the start of the svc7c handler(at the push instruction) with: "bkpt #0".
+			//if(((u8)RUNNINGFWVER)==39)axiwram[0x14ab0>>2] = 0xE1200070;//Patch the start of the svc7c handler(at the push instruction) with: "bkpt #0".
 
 			//dumpmem((u32*)0x01ffb700, arm9_rsaengine_txtwrite_hooksz);
 
@@ -1615,7 +1615,7 @@ void thread_entry()
 			//cecd_physaddr[0x18e8>>2] = ~0;
 			//*((u16*)&cecd_physaddr[0x1854>>2]) = 0x2000;
 
-			/*if(RUNNINGFWVER==0x1F)
+			/*if(((u8)RUNNINGFWVER)==34)
 			{
 				nim_physaddr = patch_mmutables(0x6d696e, 0, 0);//"nim"
 				patch_nim(nim_physaddr);

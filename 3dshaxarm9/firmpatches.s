@@ -79,33 +79,6 @@ blx r4
 b patchfirm_arm9section_finish
 
 patchfirm_arm9section_begin:
-/*#ifdef ENABLENANDREDIR
-#ifdef ENABLE_LOADA9_x01FFB800
-ldr r1, =FIRMLAUNCH_RUNNINGTYPE
-ldr r1, [r1]
-cmp r1, #3
-beq patchfirm_arm9section_locateprocess9_start
-
-ldr r5, =FIRMLAUNCH_FWVER
-ldr r5, [r5]
-cmp r5, #0x2E
-cmpne r5, #0x30
-cmpne r5, #0x37
-bne patchfirm_arm9section_locateprocess9_start
-ldr r1, =0x0801b43c
-ldr r2, =0x08006800
-sub r2, r1, r2
-add r2, r2, r0
-mov r3, #0
-str r3, [r2, #0] @ Patch the arm9 kernel crt0 code so that it always does the TWL console-unique keyslot keydata-init.
-ldr r3, =0xe3a01000 @ "mov r1, #0"
-cmp r5, #0x37
-ldrge r3, =0xe3a02000 @ "mov r2, #0"
-str r3, [r2, #16]
-#endif
-#endif*/
-
-patchfirm_arm9section_locateprocess9_start:
 ldr r1, =0x636f7250 @ "Process9"
 ldr r2, =0x39737365
 
@@ -142,25 +115,6 @@ str r2, [r3, #0]
 ldr r2, [r1, #4]
 str r2, [r3, #4]*/
 
-/*ldr r1, =FIRMLAUNCH_FWVER
-ldr r1, [r1]
-mov r0, #0
-cmp r1, #0x1F
-ldreq r0, =0x08087250
-cmp r1, #0x2E
-ldreq r0, =0x08085cc8
-cmp r1, #0x30
-ldreq r0, =0x08085ccc
-cmp r1, #0x37
-ldreq r0, =0x08085fac
-ldr r2, =0x29
-add r3, r2, #1
-cmp r1, r2
-cmpne r1, r3
-ldreq r0, =0x08085c80
-cmp r0, #0
-beq patchfirm_arm9section_L0*/
-
 mov r0, r4
 mov r1, r5
 bl proc9_autolocate_hookpatchaddr
@@ -188,18 +142,6 @@ str r2, [r0, #0]
 ldr r2, [r1, #4]
 str r2, [r0, #4]*/
 
-/*ldr r1, =FIRMLAUNCH_FWVER
-ldr r1, [r1]
-mov r0, #0
-cmp r1, #0x1F
-ldreq r0, =0x0804d5c0
-cmp r1, #0x2E
-ldreq r0, =0x080630bc
-cmp r1, #0x30
-ldreq r0, =0x080630c0
-cmp r1, #0x37
-ldreq r0, =0x080632bc*/
-
 mov r0, r4
 mov r1, r5
 mov r2, r7
@@ -213,19 +155,7 @@ add r0, r0, r5
 strh r1, [r0] @ "mov r0, #0"
 
 patchfirm_arm9section_L1:
-/*ldr r1, =FIRMLAUNCH_FWVER
-ldr r1, [r1]
-mov r0, #0
-cmp r1, #0x1F
-ldreq r0, =0x0805fac0 @ Patch rsa_verifysignature, so that the very beginning of it is just "return 0". This is used for all RSA sig verification except for the above cert stuff.
-cmp r1, #0x2E
-ldreq r0, =0x0805d2c0
-cmp r1, #0x30
-ldreq r0, =0x0805d2c4
-cmp r1, #0x37
-ldreq r0, =0x0805d4c0*/
-
-mov r0, r4
+mov r0, r4 @ Patch rsa_verifysignature, so that the very beginning of it is just "return 0". This is used for all RSA sig verification except for the above cert stuff.
 mov r1, r5
 mov r2, r7
 bl proc9_autolocate_mainsigcheck_patchaddr
@@ -276,27 +206,6 @@ ldr r2, =0x4800
 bl loadfile_charpath
 #endif
 #endif
-
-/*ldr r0, =FIRMLAUNCH_FWVER
-ldr r0, [r0]
-mov r1, #0x1F
-mov r2, #0
-mov r3, #0
-cmp r0, r1
-ldreq r2, =0x8078c6e//FW1F
-ldreq r3, =0x8078c2e
-mov r1, #0x2E
-cmp r0, r1
-ldreq r2, =0x8078446//FW2E
-ldreq r3, =0x8078406
-cmp r2, #0
-beq patchfirm_arm9section_L3
-
-sub r0, r2, r4
-add r0, r0, r5
-sub r1, r3, r4
-add r1, r1, r5
-bl patch_nandredir*/
 
 mov r0, r5
 mov r1, r7

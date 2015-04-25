@@ -83,7 +83,7 @@ FIRMLAUNCH_RUNNINGTYPE: @ 0 = native(no FIRM-launch), 1 = FIRM-launch was done v
 .word 0
 
 RUNNINGFWVER: @ FWVER of the currently running system.
-.word 0x1F
+.word 34
 
 FIRMLAUNCH_FWVER:
 .word 0x0 @ The default value here doesn't really matter, since the firmlaunch code automatically determines what the FIRMLAUNCH_FWVER value is via the loaded FIRM.
@@ -250,7 +250,7 @@ cmp r1, #2 @ Return error when FIRM_VERSIONMAJOR!=2.
 popne {r4, r5, pc}
 cmp r2, #2 @ Return error when FIRM_SYSCOREVER!=2.
 popne {r4, r5, pc}
-cmp r3, #27 @ Return error when FIRM_VERSIONMINOR<27, should never happen on retail.
+cmp r3, #27 @ Return error when FIRM_VERSIONMINOR<27.
 poplt {r4, r5, pc}
 
 lsr r4, r4, #30
@@ -263,27 +263,8 @@ moveq r3, r5
 popeq {r4, r5, lr}
 beq parse_configmem_firmversion_new3ds
 
-ldr r1, =FIRM_contentid_totalversions
-ldr r1, [r1]
-sub r3, r3, #27
-
-cmp r3, #17
-subge r3, r3, #3
-
-cmp r3, #16
-subge r3, r3, #1
-
-cmp r3, #17
-subge r3, r3, #1
-
-cmp r3, r1
-popge {r4, r5, pc}
-
-ldr r0, =FIRM_contentid_versions
-ldrb r0, [r0, r3]
-
 ldr r1, =RUNNINGFWVER
-str r0, [r1]
+str r3, [r1]
 
 mov r0, #0
 pop {r4, r5, pc}
@@ -655,12 +636,12 @@ pxidev_cmdhandler_cmd0: @ This is code which the pxidev cmdhandler will jump to 
 mov r0, r4
 bl pxidev_cmdhandler_cmd0handler
 ldr r0, =RUNNINGFWVER
-ldr r0, [r0]
-cmp r0, #0x1F
+ldrb r0, [r0]
+cmp r0, #34 @ v4.1
 addeq sp, sp, #0x9c
-popeq {r4, r5, r6, r7, r8, r9, sl, fp, pc} @ FW1F
+popeq {r4, r5, r6, r7, r8, r9, sl, fp, pc} @ v4.1, this check needs updated so that other <=v4.1 versions are supported.
 add sp, sp, #0x84
-pop {r4, r5, r6, r7, r8, r9, sl, fp, pc} @ FW2E
+pop {r4, r5, r6, r7, r8, r9, sl, fp, pc}
 .pool
 
 /*mountcontent_nandsd_writehookstub:
@@ -811,48 +792,6 @@ ldr pc, =0x8032a39
 
 proc9_waitfirmevent_hook:
 push {r0, r1, r2, r3, r4, r5, r6, lr}
-/*sub sp, sp, #32
-#if FIRMLAUNCH_FWVER == 0x1F
-
-#define PXIFS_STATEPTR 0x0809797c
-#define ARM9_ARCHIVE_MNTSD 0x8061451
-#define ARM9_GETARCHIVECLASS 0x8063f91
-
-#elif FIRMLAUNCH_FWVER == 0x2E
-
-#define PXIFS_STATEPTR 0x080945c4
-#define ARM9_ARCHIVE_MNTSD 0x805eb79
-#define ARM9_GETARCHIVECLASS 0x8062715
-#endif
-
-mov r0, #0
-str r0, [sp, #8]
-str r0, [sp, #12]
-
-ldr r5, =PXIFS_STATEPTR
-ldr r5, [r5]
-add r5, r5, #8 @ r5 = state
-ldr r1, =0x2EA0
-add r0, r5, r1
-add r1, sp, #8
-ldr r4, =ARM9_ARCHIVE_MNTSD
-blx r4
-
-mov r3, #0
-str r3, [sp, #28]
-str r3, [sp, #0]
-str r3, [sp, #4]
-add r0, sp, #16
-mov r1, r5
-ldr r2, [sp, #8]
-ldr r3, [sp, #12]
-ldr r4, =ARM9_GETARCHIVECLASS
-blx r4
-
-ldr r6, [sp, #28]
-
-cmp r6, #0
-beq proc9_waitfirmevent_hook_fail*/
 
 ldr r0, =FIRMLAUNCH_RUNNINGTYPE
 ldr r1, =FIRMLAUNCH_FWVER
@@ -869,7 +808,6 @@ ldr r0, =_start
 add r0, r0, #4
 blx r0
 
-//add sp, sp, #32
 pop {r0, r1, r2, r3, r4, r5, r6, lr}
 ldr r2, =proc9_waitfirmevent_hook_patchaddr
 ldr r2, [r2]
@@ -1326,7 +1264,7 @@ mountcontenthook_archivevtable_openfilefuncptr:
 .word 0*/
 
 FIRM_contentid_versions:
-.byte 0x00, 0x02, 0x09, 0x0B, 0x0F, 0x18, 0x1D, 0x1F, 0x25, 0x26, 0x29, 0x2A, 0x2E, 0x30, 0x37, 0x38, 0x3F, 0x40, 0x49
+.byte 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 44, 46, 48, 49, 50
 .align 2
 
 FIRM_sigword0_array: @ First u32 from the FIRM RSA signature, for each version.

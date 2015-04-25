@@ -8,8 +8,6 @@
 
 #include "arm9fs.h"
 
-extern u32 RUNNINGFWVER;
-
 extern u32 proc9_textstartaddr;
 
 u32 *gamecard_archiveobj = NULL;
