@@ -1263,7 +1263,7 @@ yls8proc_cxi_filepath:
 mountcontenthook_archivevtable_openfilefuncptr:
 .word 0*/
 
-FIRM_contentid_versions:
+/*FIRM_contentid_versions:
 .byte 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 44, 46, 48, 49, 50
 .align 2
 
@@ -1281,7 +1281,7 @@ NEW3DS_sigword0_array:
 .word 0x79d0fb89, 0x87b79d15, 0x20f05310, 0xda1e3879, 0x5f96d06f
 
 NEW3DS_totalversions:
-.word 5
+.word 5*/
 
 FIRMLAUNCH_CLEARPARAMS:
 .word 1
