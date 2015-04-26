@@ -189,13 +189,29 @@ bl memcpy
 cmp r5, #1
 beq arm9_debugcode_skip_paramsclear @ skip patches and clear param if twl_firm/agb_firm.
 
+#ifndef DISABLE_MATCHINGFIRM_HWCHECK
+ldr r0, =0x21000000
+bl firm_gethwtype
+mvn r1, #0
+cmp r0, r1
+beq arm9_debugcode_patchabort @ Check for error from firm_gethwtype().
+
+ldr r1, =RUNNINGFWVER
+ldr r1, [r1]
+lsr r1, r1, #30
+and r1, r1, #1
+
+cmp r0, r1
+bne arm9_debugcode_patchabort @ Return error when the hw type returned by firm_gethwtype() doesn't match the current one from RUNNINGFWVER.
+#endif
+
 ldr r0, =0x21000000
 bl init_firmlaunch_fwver
 cmp r0, #0
 beq arm9_debugcode_beginpatch
 
 arm9_debugcode_patchabort:
-b arm9_debugcode_patchabort @ Halt firmlaunch when the FIRM isn't recognized by the current system. This is to prevent booting FIRM for the wrong system.
+b arm9_debugcode_patchabort @ Halt firmlaunch when fwver init failed, or for fail with the above firm_gethwtype() code.
 
 arm9_debugcode_beginpatch:
 ldr r0, =0x21000000 @ Only execute this when init_firmlaunch_fwver() successfully determined the FWVER.

@@ -7,10 +7,12 @@
 .global patchfirm_arm9section
 .global patchfirm_arm11section_kernel
 .global firm_arm11kernel_getminorversion_firmimage
+.global firm_gethwtype
 .type patch_firm STT_FUNC
 .type patchfirm_arm9section STT_FUNC
 .type patchfirm_arm11section_kernel STT_FUNC
 .type firm_arm11kernel_getminorversion_firmimage STT_FUNC
+.type firm_gethwtype STT_FUNC
 
 patch_firm: @ r0 = addr of entire FIRM
 push {r4, r5, r6, lr}
@@ -516,6 +518,39 @@ ldr r2, [r3, #8]
 add r0, r0, r1 @ section addr in firm image
 mov r1, r2 @ size
 b firm_arm11kernel_getminorversion
+
+#ifndef DISABLE_MATCHINGFIRM_HWCHECK
+firm_gethwtype: @ r0 = addr of entire FIRM. Returns 0 for Old3DS FIRM, 1 for New3DS. Returns ~0 for error.
+mov r1, #0
+add r2, r0, #0x40
+
+firm_gethwtype_hdrlp:
+ldr r3, [r2, #0xc]
+cmp r3, #0
+bne firm_gethwtype_hdrlpnext @ Look for the arm9 section.
+
+ldr r3, [r2, #0]
+add r0, r0, r3 @ r0 = addr of arm9 section start
+
+ldr r0, [r0, #0x40] @ Compare the new3ds control block data, on old3ds actual code is located here instead.
+ldr r1, =0x12a82efe
+cmp r0, r1
+moveq r0, #1
+movne r0, #0
+b firm_gethwtype_end
+
+firm_gethwtype_hdrlpnext:
+add r2, r2, #0x30
+add r1, r1, #1
+cmp r1, #4
+blt firm_gethwtype_hdrlp
+
+mvn r0, #0
+
+firm_gethwtype_end:
+bx lr
+.pool
+#endif
 
 //patchfirm_arm11section_additionalmodulesize:
 //.word 0
