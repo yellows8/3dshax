@@ -93,6 +93,8 @@ The above doesn't really apply for functionality where addresses are located on-
 
 Most of the codebase automatically determines what addresses to patch on-the-fly. Some minor/commented-out patch(es) still uses hard-coded addresses for each FIRM version.
 
+The codebase also determines the version of the FIRM being loaded on-the-fly, hence the only time this codebase needs updated for newer FIRM is when auto-patching breaks / arm11kernel structure(s) change. The former is basically rather rare anymore, unlike the latter.
+
 ## Code and patches which use hard-coded addresses
 * ...
 
