@@ -420,11 +420,12 @@ bx r0
 arm9_patchcode3_end:
 .word 0
 
-init_firmlaunch_fwver: @ Use the u32 from the first word of the FIRM RSA signature to determine the FIRMLAUNCH_FWVER, via the array @ FIRM_sigword0_array.
+init_firmlaunch_fwver:
 push {r4, r5, r6, r7, r8, lr}
-mov r4, #0
+
+/*mov r4, #0 @ Use the u32 from the first word of the FIRM RSA signature to determine the FIRMLAUNCH_FWVER, via the array @ FIRM_sigword0_array.
 add r0, r0, #0x100
-ldr r0, [r0]
+ldr r0, [r0]*/
 
 ldr r3, =RUNNINGFWVER
 ldr r3, [r3]
@@ -432,7 +433,7 @@ lsr r3, r3, #30
 and r3, r3, #1
 mov r8, r3
 lsl r8, r8, #30
-cmp r3, #0
+/*cmp r3, #0
 bne init_firmlaunch_fwver_new3ds
 
 ldr r5, =FIRM_sigword0_array
@@ -460,8 +461,20 @@ mov r0, #1
 b init_firmlaunch_fwver_end
 
 init_firmlaunch_fwver_lpend:
-ldrb r3, [r7, r4]
-orr r3, r3, r8
+ldrb r3, [r7, r4]*/
+
+bl firm_arm11kernel_getminorversion_firmimage
+/*str r0, [sp]
+mov r0, sp
+mov r1, #4
+bl dumpmem
+init_firmlaunch_fwver_lp:
+b init_firmlaunch_fwver_lp*/
+mvn r1, #0
+cmp r0, r1
+beq init_firmlaunch_fwver_end
+
+orr r3, r0, r8
 ldr r2, =FIRMLAUNCH_FWVER
 str r3, [r2]
 

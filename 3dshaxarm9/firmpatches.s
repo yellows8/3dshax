@@ -6,9 +6,11 @@
 .global patch_firm
 .global patchfirm_arm9section
 .global patchfirm_arm11section_kernel
+.global firm_arm11kernel_getminorversion_firmimage
 .type patch_firm STT_FUNC
 .type patchfirm_arm9section STT_FUNC
 .type patchfirm_arm11section_kernel STT_FUNC
+.type firm_arm11kernel_getminorversion_firmimage STT_FUNC
 
 patch_firm: @ r0 = addr of entire FIRM
 push {r4, r5, r6, lr}
@@ -411,79 +413,112 @@ ldr r3, [r3]
 cmp r3, #3
 bne patchfirm_arm11section_kernel_end
 
-ldr r4, =0x000ff000
+bl firm_arm11kernel_locate_configmeminit
+cmp r0, #0
+beq patchfirm_arm11section_kernel_end
 
-patchfirm_arm11section_kernel_lp: @ Locate the padcheck code in the kernel configmem init func.
-ldr r3, [r0]
-bic r3, r3, r4
-ldr r2, =0xe2400b03 @ sub <reg>, <reg>, #0xc00
-cmp r3, r2
-bne patchfirm_arm11section_kernel_lpnext
-ldr r3, [r0, #4]
-bic r3, r3, r4
-ldr r2, =0xe25000be @ subs <reg>, <reg>, #0xbe
-cmp r3, r2
-bne patchfirm_arm11section_kernel_lpnext
-
-sub r0, r0, #0x18 @ Patch the "mov ip, #0" instruction before the above code, to "mov ip, #1", so that the UPDATEFLAG always is set. Hence, this then triggers firmlaunch by NS later.
+sub r0, r0, #0x18 @ Patch the "mov <reg>, #0" instruction before the above code, to "mov <reg>, #1", so that the UPDATEFLAG always is set. Hence, this then triggers firmlaunch by NS later.
 ldr r1, [r0]
 orr r1, r1, #1
 str r1, [r0]
-
-patchfirm_arm11section_kernel_lpnext:
-add r0, r0, #4
-subs r1, r1, #4
-bgt patchfirm_arm11section_kernel_lp
 
 patchfirm_arm11section_kernel_end:
 pop {r4, r5, r6, pc}
 .pool
 
-patchfirm_arm11section_additionalmodulesize:
-.word 0
+firm_arm11kernel_locate_configmeminit: @ r0 = address of FIRM section in memory, in the FIRM binary. r1 = FIRM section size.
+push {r4, lr}
 
-/*arm9_launchfirm:
-ldr r4, =0x8056a05//waitrecv_pxiword
-ldr r5, =0x805ac41//sendword_pxi
+ldr r4, =0x000ff000
 
-arm9launchfirm_waitpxibegin:
-blx r4
-ldr r1, =0x00044836
-cmp r0, r1
-bne arm9launchfirm_waitpxibegin
+firm_arm11kernel_locate_configmeminit_lp: @ Locate the padcheck code in the kernel configmem init func.
+ldr r3, [r0]
+bic r3, r3, r4
+ldr r2, =0xe2400b03 @ sub <reg>, <reg>, #0xc00
+cmp r3, r2
+bne firm_arm11kernel_locate_configmeminit_lpnext
+ldr r3, [r0, #4]
+bic r3, r3, r4
+ldr r2, =0xe25000be @ subs <reg>, <reg>, #0xbe
+cmp r3, r2
+bne firm_arm11kernel_locate_configmeminit_lpnext
 
-ldr r0, =0x00964536
-blx r5
+b firm_arm11kernel_locate_configmeminit_end
 
-arm9launchfirm_wait_titleidpxi:
-blx r4
-ldr r1, =0x00044837
-cmp r0, r1
-bne arm9launchfirm_wait_titleidpxi
-
-blx r4//read the titleID from PXI, however this is unused by this code since the FIRM is loaded from a hard-coded SD card path.
-blx r4
-
-bl arm9_debugcode
-
-arm9launchfirm_waitpxibootbegin:
-blx r4
-ldr r1, =0x00044846
-cmp r0, r1
-bne arm9launchfirm_waitpxibootbegin
+firm_arm11kernel_locate_configmeminit_lpnext:
+add r0, r0, #4
+subs r1, r1, #4
+bgt firm_arm11kernel_locate_configmeminit_lp
 
 mov r0, #0
-mov r1, r0
-mov r2, r0
-mov r3, r0
-svc 0x7c
 
-ldr r0, =0x080ff4fc
-svc 0x7b
+firm_arm11kernel_locate_configmeminit_end:
+pop {r4, pc}
+.pool
 
-arm9launchfirm_end:
-b arm9launchfirm_end
-.pool*/
+firm_arm11kernel_getminorversion: @ r0 = address of FIRM section in memory, in the FIRM binary. r1 = FIRM section size.
+push {r4, r5, lr}
+
+mvn r4, #0
+
+bl firm_arm11kernel_locate_configmeminit
+cmp r0, #0
+beq firm_arm11kernel_getminorversion_end
+
+ldr r5, =0xf000
+ldr r3, =0xe5c00002
+
+firm_arm11kernel_getminorversion_lp0: @ Locate the "strb <reg>, [r0, #2]" instruction.
+ldr r2, [r0]
+bic r1, r2, r5
+cmp r1, r3
+addne r0, r0, #4
+bne firm_arm11kernel_getminorversion_lp0
+
+sub r0, r0, #4
+and r2, r2, r5
+
+ldr r5, =0xe3a00000
+orr r5, r5, r2
+
+firm_arm11kernel_getminorversion_lp1: @ Locate the "mov <reg>, #<val>" instruction, where <reg> matches the one located above, and <val> is the minorversion.
+ldr r1, [r0]
+lsr r3, r1, #16
+lsl r3, r3, #16
+orr r3, r3, r2
+cmp r3, r5
+subne r0, r0, #4
+bne firm_arm11kernel_getminorversion_lp1
+
+and r4, r1, #0xff
+
+firm_arm11kernel_getminorversion_end:
+mov r0, r4
+pop {r4, r5, pc}
+.pool
+
+firm_arm11kernel_getminorversion_firmimage: @ r0 = addr of entire FIRM
+mov r3, #0x70
+add r3, r3, r0 @ section header for arm11kernel
+
+ldr r2, [r3, #8] @ section size
+cmp r2, #0
+mvneq r0, #0
+bxeq lr
+
+ldr r2, [r3, #0xc] @ core
+cmp r2, #0
+mvneq r0, #0
+bxeq lr @ type must be arm11.
+
+ldr r1, [r3, #0]
+ldr r2, [r3, #8] 
+add r0, r0, r1 @ section addr in firm image
+mov r1, r2 @ size
+b firm_arm11kernel_getminorversion
+
+//patchfirm_arm11section_additionalmodulesize:
+//.word 0
 
 filepath_x01ffb800:
 .string "/x01ffb800.bin"
