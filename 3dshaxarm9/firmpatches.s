@@ -410,10 +410,20 @@ str r2, [r0, r1]
 #endif
 #endif*/
 
+#ifndef ENABLE_BOOTSAFEFIRM_STARTUP
 ldr r3, =FIRMLAUNCH_RUNNINGTYPE
 ldr r3, [r3]
 cmp r3, #3
 bne patchfirm_arm11section_kernel_end
+#else
+ldr r3, =RUNNINGFWVER @ Skip the below code if SAFE_MODE_FIRM is already running.
+ldr r3, [r3]
+lsr r3, r3, #8
+ldr r4, =0xffff
+and r3, r3, r4
+cmp r3, #0x3
+beq patchfirm_arm11section_kernel_end
+#endif
 
 bl firm_arm11kernel_locate_configmeminit
 cmp r0, #0

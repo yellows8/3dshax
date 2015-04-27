@@ -82,11 +82,11 @@ b _start_codebegin
 FIRMLAUNCH_RUNNINGTYPE: @ 0 = native(no FIRM-launch), 1 = FIRM-launch was done via the below code, 2 = _start was called via other means with a Process9 hook.
 .word 0
 
-RUNNINGFWVER: @ FWVER of the currently running system.
+RUNNINGFWVER: @ FWVER of the currently running system. Format: byte0 = FIRM_MINORVERSION(from arm11kernel configmem), byte1-2 = FIRM tidlow u16, byte3 = flags. Bit31 in this u32 indicates a different FWVER format, used by FIRMLAUNCH_RUNNINGTYPE val3. Bit30 = hardware type: 0 = Old3DS, 1 = New3DS.
 .word 34
 
 FIRMLAUNCH_FWVER:
-.word 0x0 @ The default value here doesn't really matter, since the firmlaunch code automatically determines what the FIRMLAUNCH_FWVER value is via the loaded FIRM.
+.word 0x0 @ The default value here doesn't really matter, since the firmlaunch code automatically determines what the FIRMLAUNCH_FWVER value is via the loaded FIRM. This is the FWVER of the FIRM being launched, same format as RUNNINGFWVER.
 
 NANDREDIR_SECTORNUM:
 #ifndef NANDREDIR_SECTORNUM_
@@ -248,10 +248,6 @@ mov r0, #1
 
 cmp r1, #2 @ Return error when FIRM_VERSIONMAJOR!=2.
 popne {r4, r5, pc}
-cmp r2, #2 @ Return error when FIRM_SYSCOREVER!=2.
-popne {r4, r5, pc}
-cmp r3, #27 @ Return error when FIRM_VERSIONMINOR<27.
-poplt {r4, r5, pc}
 
 lsr r4, r4, #30
 and r4, r4, #1
@@ -264,6 +260,8 @@ popeq {r4, r5, lr}
 beq parse_configmem_firmversion_new3ds
 
 ldr r1, =RUNNINGFWVER
+lsl r2, r2, #8
+orr r3, r3, r2
 str r3, [r1]
 
 mov r0, #0
@@ -276,6 +274,8 @@ ldr r4, =RUNNINGFWVER
 mov r5, #1
 lsl r5, r5, #30
 orr r5, r5, r2
+lsl r1, r1, #8
+orr r5, r5, r1
 str r5, [r4] @ RUNNINGFWVER = 0x40000000 | FIRM_VERSIONMINOR
 
 ldr r0, =0x08006000

@@ -206,6 +206,7 @@ bne arm9_debugcode_patchabort @ Return error when the hw type returned by firm_g
 #endif
 
 ldr r0, =0x21000000
+ldrh r1, [sp, #12+4*7] @ FIRM tidlow
 bl init_firmlaunch_fwver
 cmp r0, #0
 beq arm9_debugcode_beginpatch
@@ -437,7 +438,7 @@ arm9_patchcode3_end:
 .word 0
 
 init_firmlaunch_fwver:
-push {r4, r5, r6, r7, r8, lr}
+push {r1, r4, r5, r6, r7, r8, lr}
 
 /*mov r4, #0 @ Use the u32 from the first word of the FIRM RSA signature to determine the FIRMLAUNCH_FWVER, via the array @ FIRM_sigword0_array.
 add r0, r0, #0x100
@@ -491,12 +492,16 @@ cmp r0, r1
 beq init_firmlaunch_fwver_end
 
 orr r3, r0, r8
+ldrh r0, [sp]
+lsl r0, r0, #8 @ FIRM tidlow
+orr r3, r3, r0
 ldr r2, =FIRMLAUNCH_FWVER
 str r3, [r2]
 
 mov r0, #0
 
 init_firmlaunch_fwver_end:
+add sp, sp, #4
 pop {r4, r5, r6, r7, r8, pc}
 .pool
 
