@@ -495,9 +495,8 @@ orr r5, r5, r2
 
 firm_arm11kernel_getminorversion_lp1: @ Locate the "mov <reg>, #<val>" instruction, where <reg> matches the one located above, and <val> is the minorversion.
 ldr r1, [r0]
-lsr r3, r1, #16
-lsl r3, r3, #16
-orr r3, r3, r2
+lsr r3, r1, #12
+lsl r3, r3, #12
 cmp r3, r5
 subne r0, r0, #4
 bne firm_arm11kernel_getminorversion_lp1
@@ -510,24 +509,43 @@ pop {r4, r5, pc}
 .pool
 
 firm_arm11kernel_getminorversion_firmimage: @ r0 = addr of entire FIRM
-mov r3, #0x70
-add r3, r3, r0 @ section header for arm11kernel
+push {r4, lr}
+mov r1, #0
+mov r3, #0x40
+add r3, r3, r0 @ start of section headers
 
+ldr r4, =0x1FF80000
+
+firm_arm11kernel_getminorversion_firmimage_lp: @ Locate the section with address=0x1FF80000.
+ldr r2, [r3, #4]
+cmp r2, r4
+beq firm_arm11kernel_getminorversion_firmimage_lp_end
+add r3, r3, #0x30
+add r1, r1, #1
+cmp r1, #4
+blt firm_arm11kernel_getminorversion_firmimage_lp
+
+mvneq r0, #0
+popeq {r4, pc}
+
+firm_arm11kernel_getminorversion_firmimage_lp_end:
 ldr r2, [r3, #8] @ section size
 cmp r2, #0
 mvneq r0, #0
-bxeq lr
+popeq {r4, pc}
 
 ldr r2, [r3, #0xc] @ core
 cmp r2, #0
 mvneq r0, #0
-bxeq lr @ type must be arm11.
+popeq {r4, pc} @ type must be arm11.
 
 ldr r1, [r3, #0]
 ldr r2, [r3, #8] 
 add r0, r0, r1 @ section addr in firm image
 mov r1, r2 @ size
+pop {r4, lr}
 b firm_arm11kernel_getminorversion
+.pool
 
 #ifndef DISABLE_MATCHINGFIRM_HWCHECK
 firm_gethwtype: @ r0 = addr of entire FIRM. Returns 0 for Old3DS FIRM, 1 for New3DS. Returns ~0 for error.

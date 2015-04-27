@@ -40,12 +40,6 @@ cmp r2, r3
 ldreq r2, =twlfirmbin_filepath
 beq firmlaunch_loadfirmsd_openfile
 
-ldr r3, =FIRMLAUNCH_CLEARPARAMS
-ldr r3, [r3]
-cmp r3, #1
-cmpeq r2, #0x3
-moveq r2, #0x2
-
 cmp r2, #0x2
 mvnne r4, #1
 bne firmlaunch_loadfirmsd_end
@@ -145,6 +139,13 @@ movne r5, #0
 add r3, r3, #0x100 @ AGB_FIRM
 cmp r2, r3
 moveq r5, #1
+
+ldr r3, =FIRMLAUNCH_CLEARPARAMS
+ldr r3, [r3]
+cmp r3, #1
+cmpeq r2, #0x3
+moveq r2, #0x2
+strh r2, [sp, #12+4*7]
 
 arm9_debugcode_firmload:
 #ifndef DISABLE_FIRMLAUNCH_LOADSD
@@ -481,12 +482,6 @@ init_firmlaunch_fwver_lpend:
 ldrb r3, [r7, r4]*/
 
 bl firm_arm11kernel_getminorversion_firmimage
-/*str r0, [sp]
-mov r0, sp
-mov r1, #4
-bl dumpmem
-init_firmlaunch_fwver_lp:
-b init_firmlaunch_fwver_lp*/
 mvn r1, #0
 cmp r0, r1
 beq init_firmlaunch_fwver_end
