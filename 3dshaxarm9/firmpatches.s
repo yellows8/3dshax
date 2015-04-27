@@ -423,6 +423,14 @@ ldr r4, =0xffff
 and r3, r3, r4
 cmp r3, #0x3
 beq patchfirm_arm11section_kernel_end
+
+ldr r3, =FIRMLAUNCH_FWVER @ Skip the below code if SAFE_MODE_FIRM is being launched.
+ldr r3, [r3]
+lsr r3, r3, #8
+ldr r4, =0xffff
+and r3, r3, r4
+cmp r3, #0x3
+beq patchfirm_arm11section_kernel_end
 #endif
 
 bl firm_arm11kernel_locate_configmeminit
