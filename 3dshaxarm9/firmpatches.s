@@ -38,6 +38,7 @@ cmp r3, #0
 bne patchfirm_sectionlp_checkarm11 @ branch when the section type is not arm9.
 
 ldr r1, [r1, #0x8]
+mov r2, r4
 mov r3, #1
 bl patchfirm_arm9section
 b patchfirm_sectionlp_end
@@ -55,7 +56,7 @@ cmp r5, #4
 blt patchfirm_sectionlp
 pop {r4, r5, r6, pc}
 
-patchfirm_arm9section: @ r0 = address of FIRM section in memory, in the FIRM binary. r1 = FIRM section size. r2 = FIRM header address, r3 = flag.
+patchfirm_arm9section: @ r0 = address of FIRM section in memory, in the FIRM binary. r1 = FIRM section size. r2 = FIRM header address(only used on New3DS when inr3 flag=1), r3 = flag.
 push {r4, r5, r6, r7, lr}
 sub sp, sp, #4
 
@@ -72,8 +73,7 @@ cmp r3, #0
 beq patchfirm_arm9section_begin @ Branch when not running on new3ds.
 
 add r1, r1, r0
-ldr r3, =0x24000000
-ldr r3, [r3, #12]
+ldr r3, [r2, #12]
 ldr r2, =0x08006000
 sub r3, r3, r2
 add r3, r3, r0
