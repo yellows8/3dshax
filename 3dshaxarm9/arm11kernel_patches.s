@@ -1005,6 +1005,9 @@ bl arm11kernel_gxcmd3debug
 b arm11kernel_exceptionregdump_L2_end*/
 
 arm11kernel_exceptionregdump_datadumpstart:
+ldr r2, arm11kernel_patch_fwver
+str r2, [r0], #4
+
 cmp r1, #0
 beq arm11kernel_exceptionregdump_L2_end
 bic r1, r1, #3
@@ -1025,7 +1028,7 @@ arm11kernel_exceptionregdump_L2_cpydata:
 ldr r2, [r1], #4
 str r2, [r0], #4
 add r3, r3, #4
-cmp r3, #0x168
+cmp r3, #0x164
 blt arm11kernel_exceptionregdump_L2
 
 arm11kernel_exceptionregdump_L2_end:

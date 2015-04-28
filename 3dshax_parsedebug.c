@@ -50,6 +50,7 @@ void parse_debuginfo_exception(unsigned int *debuginfo)
 	unsigned int cpsr;
 	unsigned int exceptiontype;
 	unsigned char *ptr8;
+	unsigned int RUNNINGFWVER;
 	char processname[16];
 	char str[256];
 
@@ -128,8 +129,11 @@ void parse_debuginfo_exception(unsigned int *debuginfo)
 			}
 		}
 
+		RUNNINGFWVER = debuginfo[(0x8c)>>2];
+		printf("RUNNINGFWVER = 0x%08x. Hardware type = %s. FIRM tidlow u16 = 0x%x. Actual FWVER = %u/0x%x.\n", RUNNINGFWVER, RUNNINGFWVER & 0x40000000 ? "New3DS":"Old3DS", (RUNNINGFWVER>>8) & 0xffff, RUNNINGFWVER & 0xff, RUNNINGFWVER & 0xff);
+
 		printf("Stack dump:\n");
-		hexdump(&debuginfo[(0x8c)>>2], 0x168);
+		hexdump(&debuginfo[(0x90)>>2], 0x164);
 		printf("\n");
 	}
 }
