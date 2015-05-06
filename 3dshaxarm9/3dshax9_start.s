@@ -82,7 +82,7 @@ b _start_codebegin
 FIRMLAUNCH_RUNNINGTYPE: @ 0 = native(no FIRM-launch), 1 = FIRM-launch was done via the below code, 2 = _start was called via other means with a Process9 hook.
 .word 0
 
-RUNNINGFWVER: @ FWVER of the currently running system. Format: byte0 = FIRM_MINORVERSION(from arm11kernel configmem), byte1-2 = FIRM tidlow u16, byte3 = flags. Bit31 in this u32 indicates a different FWVER format, used by FIRMLAUNCH_RUNNINGTYPE val3. Bit30 = hardware type: 0 = Old3DS, 1 = New3DS.
+RUNNINGFWVER: @ FWVER of the currently running system. Format: byte0 = KERNEL_MINORVERSION(from arm11kernel configmem), byte1-2 = FIRM tidlow u16, byte3 = flags. Bit31 in this u32 indicates a different FWVER format, used by FIRMLAUNCH_RUNNINGTYPE val3. Bit30 = hardware type: 0 = Old3DS, 1 = New3DS.
 .word 34
 
 FIRMLAUNCH_FWVER:
@@ -238,23 +238,23 @@ pop {r4, r5, pc}
 parse_configmem_firmversion:
 push {r4, r5, lr}
 mov r5, r1
-and r3, r0, #0xff @ FIRM_VERSIONMINOR
-lsr r1, r0, #8 @ FIRM_VERSIONMAJOR
-lsr r2, r0, #16 @ FIRM_SYSCOREVER
+and r3, r0, #0xff @ KERNEL_VERSIONMINOR
+lsr r1, r0, #8 @ KERNEL_VERSIONMAJOR
+lsr r2, r0, #16 @ KERNEL_SYSCOREVER
 and r1, r1, #0xff
 and r2, r2, #0xff
 mov r4, r0
 mov r0, #1
 
-cmp r1, #2 @ Return error when FIRM_VERSIONMAJOR!=2.
+cmp r1, #2 @ Return error when KERNEL_VERSIONMAJOR!=2.
 popne {r4, r5, pc}
 
 lsr r4, r4, #30
 and r4, r4, #1
 cmp r4, #1
-moveq r0, r1 @ FIRM_VERSIONMAJOR
-moveq r1, r2 @ FIRM_SYSCOREVER
-moveq r2, r3 @ FIRM_VERSIONMINOR
+moveq r0, r1 @ KERNEL_VERSIONMAJOR
+moveq r1, r2 @ KERNEL_SYSCOREVER
+moveq r2, r3 @ KERNEL_VERSIONMINOR
 moveq r3, r5
 popeq {r4, r5, lr}
 beq parse_configmem_firmversion_new3ds
@@ -268,7 +268,7 @@ mov r0, #0
 pop {r4, r5, pc}
 .pool
 
-parse_configmem_firmversion_new3ds: @ r0=FIRM_VERSIONMAJOR, r1=FIRM_SYSCOREVER, r2=FIRM_VERSIONMINOR, r3=original FIRM arm9 entrypoint
+parse_configmem_firmversion_new3ds: @ r0=KERNEL_VERSIONMAJOR, r1=KERNEL_SYSCOREVER, r2=KERNEL_VERSIONMINOR, r3=original FIRM arm9 entrypoint
 push {r4, r5, lr}
 ldr r4, =RUNNINGFWVER
 mov r5, #1
@@ -276,7 +276,7 @@ lsl r5, r5, #30
 orr r5, r5, r2
 lsl r1, r1, #8
 orr r5, r5, r1
-str r5, [r4] @ RUNNINGFWVER = 0x40000000 | FIRM_VERSIONMINOR
+str r5, [r4] @ RUNNINGFWVER = 0x40000000 | KERNEL_VERSIONMINOR
 
 ldr r0, =0x08006000
 ldr r1, =0x080ff000
