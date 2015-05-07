@@ -915,10 +915,12 @@ ldr pc, =arm9general_debughook
 
 .thumb
 
+#ifdef ENABLE_GETEXHDRHOOK
 arm9_pxipmcmd1_getexhdr_stub:
 ldr r1, =arm9_pxipmcmd1_getexhdr_hook
 blx r1
 .pool
+#endif
 
 /*proc9_fsdeviceinit_hookstub:
 ldr r0, =proc9_fsdeviceinit_hook
@@ -1022,6 +1024,7 @@ pop {r3, r4, r5, r6, r7, pc}*/
 ldr pc, =0x08085ee8//=0x08057301
 .pool
 
+#ifdef ENABLE_GETEXHDRHOOK
 arm9_pxipmcmd1_getexhdr_hook:
 cmp r0, #0
 bge arm9_pxipmcmd1_getexhdr_hook_begin
@@ -1085,6 +1088,7 @@ mov r1, #8
 pop {r4, lr}
 b svcFlushProcessDataCache
 .pool
+#endif
 
 arm9general_debughook_writepatch:
 ldr r1, =arm9general_debugstub

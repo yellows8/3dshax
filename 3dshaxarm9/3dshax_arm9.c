@@ -1238,6 +1238,7 @@ void pxidev_cmdhandler_cmd0handler(u32 *cmdbuf)
 	}
 }
 
+#ifdef ENABLE_GETEXHDRHOOK
 void pxipmcmd1_getexhdr(u32 *exhdr)
 {
 	u32 *servlist;
@@ -1317,6 +1318,7 @@ void pxipmcmd1_getexhdr(u32 *exhdr)
 	}
 	#endif
 }
+#endif
 
 u32 *locate_cmdhandler_code(u32 *ptr, u32 size, u32 *pool_cmpdata, u32 pool_cmpdata_wordcount, u32 locate_ldrcc)
 {
@@ -1377,6 +1379,7 @@ void patch_pxidev_cmdhandler_cmd0(u32 *startptr, u32 size)
 	svcFlushProcessDataCache(ptr, 0x4);
 }
 
+#ifdef ENABLE_GETEXHDRHOOK
 void arm9_pxipmcmd1_getexhdr_writepatch_autolocate(u32 *startptr, u32 size)
 {
 	u32 *ptr = NULL;
@@ -1406,6 +1409,7 @@ void arm9_pxipmcmd1_getexhdr_writepatch_autolocate(u32 *startptr, u32 size)
 
 	arm9_pxipmcmd1_getexhdr_writepatch((u32)&ptr[0x24>>2]);
 }
+#endif
 
 /*void patch_nim(u32 *physaddr)
 {
