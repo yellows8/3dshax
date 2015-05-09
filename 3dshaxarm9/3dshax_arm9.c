@@ -222,7 +222,8 @@ void patch_proc9_launchfirm()
 
 	pos = 0;
 
-	/*#ifdef ENABLE_FIRMLAUNCH_LOADNAND//This is executed when loading FIRM from NAND is enabled and when doing the second firmlaunch.
+	#ifdef ENABLE_FIRMLAUNCH_LOADNAND//This is executed when loading FIRM from NAND is enabled and when doing the second firmlaunch, with nand-redir disabled.
+	#ifndef ENABLENANDREDIR
 	if(FIRMLAUNCH_CLEARPARAMS == 1)
 	{
 		pos2 = 0;
@@ -255,8 +256,9 @@ void patch_proc9_launchfirm()
 
 		((u32*)proc9_textstartaddr)[0] = 0xe51ff004;//"ldr pc, [pc, #-4]"
 		((u32*)proc9_textstartaddr)[1] = firmlaunch_swprintfhook;*/
-	//}
-	//#endif
+	}
+	#endif
+	#endif
 
 	while(1)
 	{
