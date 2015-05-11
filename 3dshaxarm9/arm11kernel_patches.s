@@ -1228,7 +1228,7 @@ ldr r1, arm11kernel_patch_fwver
 lsr r1, r1, #30
 ands r1, r1, #1
 bne arm11kernel_processcmd_padcheck_start
-cmp ip, #0x38
+cmp ip, #46 @ v9.0
 ldrge r3, =0xFFFC6000
 
 arm11kernel_processcmd_padcheck_start:

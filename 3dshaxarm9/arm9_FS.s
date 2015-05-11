@@ -1,3 +1,4 @@
+#ifdef ENABLE_OLDFS
 .arm
 .global arm9_fopen
 .type arm9_fopen STT_FUNC
@@ -72,4 +73,5 @@ arm9_GetFSize:
 	blx r4
 	pop {r4, r5, r6, pc}
 .pool
+#endif
 
