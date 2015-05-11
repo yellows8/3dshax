@@ -610,7 +610,7 @@ void arm11debuginfo_convertcmd_vaddr2phys(u64 procname, u32 *cmdbuf, u32 *outdat
 		
 		shiftval = 4;
 		if(type==2)shiftval = 14;
-		if(type==4)shiftval = 8;
+		if(type==4 || type==6)shiftval = 8;
 
 		size = cmdbuf[pos] >> shiftval;
 		addr = cmdbuf[pos+1];
