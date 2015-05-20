@@ -1432,6 +1432,141 @@ int parsecmd_directfilerw(ctrclient *client, char *customcmd)
 	return ret;
 }
 
+int parsecmd_fsreaddir(ctrclient *client, char *customcmd)
+{
+	int ret=0;
+	unsigned int header[8];
+	unsigned int *archive_lowpath, *dir_lowpath, *databuf = NULL;
+	unsigned char *dataptr8;
+	unsigned int archive_lowpathsz, dir_lowpathsz, databufsz;
+	unsigned int payloadsize = 6*4, pos;
+
+	ret = parsecmd_hexvalue(&customcmd[9], " ,", &header[2]);//archiveid
+	if(ret!=0)return ret;
+
+	ret = parsecmd_hexvalue(NULL, " ,", &header[3]);//archive_lowpathtype
+	if(ret!=0)return ret;
+
+	ret = parsecmd_hexvalue(NULL, " ,", &header[4]);//archive_lowpathsize
+	if(ret!=0)return ret;
+
+	ret = parsecmd_hexvalue(NULL, " ,", &header[5]);//dir_lowpathtype
+	if(ret!=0)return ret;
+
+	ret = parsecmd_hexvalue(NULL, " ,", &header[6]);//dir_lowpathsize
+	if(ret!=0)return ret;
+
+	ret = parsecmd_hexvalue(NULL, " ,", &header[7]);//total entries to read
+	if(ret!=0)return ret;
+
+	archive_lowpathsz = (header[4]+3) & ~3;//archive_lowpathsize aligned to 4-bytes
+	dir_lowpathsz = (header[6]+3) & ~3;//dir_lowpathsize aligned to 4-bytes
+	payloadsize+= archive_lowpathsz;
+
+	payloadsize+= dir_lowpathsz;
+
+	archive_lowpath = (unsigned int*)malloc(archive_lowpathsz);
+	if(archive_lowpath==NULL)
+	{
+		printf("Failed to allocate memory for archive lowpath.\n");
+		return 5;
+	}
+	memset(archive_lowpath, 0, archive_lowpathsz);
+
+	dir_lowpath = (unsigned int*)malloc(dir_lowpathsz);
+	if(dir_lowpath==NULL)
+	{
+		printf("Failed to allocate memory for dir lowpath.\n");
+		free(archive_lowpath);
+		return 5;
+	}
+	memset(dir_lowpath, 0, dir_lowpathsz);
+
+	ret = parsecmd_inputhexdata(archive_lowpath, header[4]);
+	if(ret!=0)
+	{
+		free(archive_lowpath);
+		free(dir_lowpath);
+		return ret;
+	}
+
+	ret = parsecmd_inputhexdata(dir_lowpath, header[6]);
+
+	if(ret!=0)
+	{
+		free(archive_lowpath);
+		free(dir_lowpath);
+		return ret;
+	}
+
+	header[0] = 0x881;
+	header[1] = payloadsize;
+
+	if(ctrclient_sendbuffer(client, header, 8*4)!=1)
+	{
+		free(archive_lowpath);
+		free(dir_lowpath);
+		return 1;
+	}
+
+	if(ctrclient_sendbuffer(client, archive_lowpath, archive_lowpathsz)!=1)
+	{
+		free(archive_lowpath);
+		free(dir_lowpath);
+		return 1;
+	}
+
+	if(ctrclient_sendbuffer(client, dir_lowpath, dir_lowpathsz)!=1)
+	{
+		free(archive_lowpath);
+		free(dir_lowpath);
+		return 1;
+	}
+
+	free(archive_lowpath);
+	free(dir_lowpath);
+
+	if(ctrclient_recvbuffer(client, header, 8)!=1)return 1;
+
+	databufsz = header[1];
+
+	if(databufsz)
+	{
+		databuf = (unsigned int*)malloc(databufsz);
+		if(databuf==NULL)
+		{
+			printf("Failed to allocate memory for the output databuf.\n");
+			return 5;
+		}
+
+		if(ctrclient_recvbuffer(client, databuf, databufsz)!=1)
+		{
+			free(databuf);
+			return 1;
+		}
+
+		printf("Result-code: 0x%08x.\n", databuf[0]);
+		if(databufsz>=8)printf("Total read entries: 0x%x.\n", databuf[1]);
+
+		if(databufsz>8)
+		{
+			dataptr8 = (unsigned char*)&databuf[2];
+
+			for(pos=0; pos<databuf[1]; pos++)
+			{
+				printf("Entry 0x%x:\n", pos);
+				printf("Flags: directory=%s, hidden=%s, archive=%s, read-only=%s.\n", dataptr8[0x21C+0]?"YES":"NO", dataptr8[0x21C+1]?"YES":"NO", dataptr8[0x21C+2]?"YES":"NO", dataptr8[0x21C+3]?"YES":"NO");
+				hexdump(dataptr8, 0x228);
+
+				dataptr8+= 0x228;
+			}
+		}
+		free(databuf);
+	}
+
+	return ret;
+}
+
 int parsecmd_getprocinfo(ctrclient *client, char *customcmd)
 {
 	char *str;
@@ -2144,6 +2279,10 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 	else if(strncmp(customcmd, "directfilerw", 12)==0)
 	{
 		ret = parsecmd_directfilerw(client, customcmd);
+	}
+	else if(strncmp(customcmd, "fsreaddir", 9)==0)
+	{
+		ret = parsecmd_fsreaddir(client, customcmd);
 	}
 	else if(strncmp(customcmd, "getprocinfo", 11)==0)
 	{

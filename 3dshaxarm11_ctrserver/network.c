@@ -596,7 +596,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 {
 	u8 *buf8 = (u8*)buf;
 	u32 size;
-	int ret=0;
+	int ret=0, ret2, ret3;
 	u32 filehandle=0;
 	Handle handle;
 	u32 val=0;
@@ -1064,6 +1064,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		fileLowPath.data = (u8*)&buf[6 + pos];
 
 		ret = FSUSER_OpenArchive(fsuser_servhandle, &archive);
+		ret2 = ret;
 
 		if(ret==0)ret = FSUSER_OpenFile(fsuser_servhandle, &filehandle, archive, fileLowPath, buf[5], FS_ATTRIBUTE_NONE);
 
@@ -1092,19 +1093,62 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 				*bufsize = 4;
 			}
 			FSFILE_Close(filehandle);
+			svc_closeHandle(filehandle);
 
 			if(buf[5] & 2)
 			{
 				if(archive.id==4 || archive.id==8 || archive.id==0x1234567C || archive.id==0x567890B1 || archive.id==0x567890B2)FSUSER_ControlArchive(fsuser_servhandle, archive);
 			}
-
-			FSUSER_CloseArchive(fsuser_servhandle, &archive);
 		}
+
+		if(ret2==0)FSUSER_CloseArchive(fsuser_servhandle, &archive);
 
 		if(ret!=0)
 		{
 			buf[0] = (u32)ret;
 			*bufsize = 4;
+		}
+
+		return 0;
+	}
+
+	if(cmdid==0x81)
+	{
+		pos = (((buf[2] + 3) & ~3)>>2);
+
+		archive.id = buf[0];
+		archive.lowPath.type = buf[1];
+		archive.lowPath.size = buf[2];
+		archive.lowPath.data = (u8*)&buf[6];
+
+		fileLowPath.type = buf[3];
+		fileLowPath.size = buf[4];
+		fileLowPath.data = (u8*)&buf[6 + pos];
+
+		ret = FSUSER_OpenArchive(fsuser_servhandle, &archive);
+		ret2 = ret;
+
+		if(ret==0)
+		{
+			ret = FSUSER_OpenDirectory(fsuser_servhandle, &filehandle, archive, fileLowPath);
+		}
+
+		ret3 = 1;
+		if(ret==0)
+		{
+			ret = FSDIR_Read(filehandle, &buf[1], buf[5], (u16*)&buf[2]);
+			ret3 = ret;
+			FSDIR_Close(filehandle);
+			svc_closeHandle(filehandle);
+		}
+
+		if(ret2==0)FSUSER_CloseArchive(fsuser_servhandle, &archive);
+
+		buf[0] = (u32)ret;
+		*bufsize = 4;
+		if(ret3==0)
+		{
+			*bufsize = 8 + buf[1]*0x228;
 		}
 
 		return 0;
