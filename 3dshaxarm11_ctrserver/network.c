@@ -393,8 +393,7 @@ int net_kernelmode_handlecmd(u32 param)
 		{
 			ptr = funcptr();
 
-			if(buf[0]==0)*ptr = 1;
-			if(buf[0])*ptr = 0x4d524554;//"TERM"
+			*ptr = buf[0];//Write to the exception-handler signal word.
 
 			*bufsize = 0;
 		}
