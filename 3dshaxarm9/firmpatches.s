@@ -215,6 +215,50 @@ mov r0, r5
 mov r1, r7
 mov r2, r4
 bl patch_nandredir_autolocate
+#if NANDREDIR_SECTORNUM_PADCHECK0 || NANDREDIR_SECTORNUM_PADCHECK1
+cmp r0, #0
+bne patchfirm_arm9section_L3
+
+#ifdef NANDREDIR_SECTORNUM_PADCHECK0
+#ifndef NANDREDIR_SECTORNUM_PADCHECK0VAL
+#error NANDREDIR_SECTORNUM_PADCHECK0VAL must be defined when NANDREDIR_SECTORNUM_PADCHECK0 is used.
+#endif
+#endif
+
+#ifdef NANDREDIR_SECTORNUM_PADCHECK1
+#ifndef NANDREDIR_SECTORNUM_PADCHECK1VAL
+#error NANDREDIR_SECTORNUM_PADCHECK1VAL must be defined when NANDREDIR_SECTORNUM_PADCHECK1 is used.
+#endif
+#endif
+
+ldr r0, =0x10146000
+ldrh r0, [r0]
+
+#ifdef NANDREDIR_SECTORNUM_PADCHECK0
+ldr r1, =NANDREDIR_SECTORNUM_PADCHECK0
+ldr r2, =NANDREDIR_SECTORNUM_PADCHECK0VAL
+mov r3, r0
+ands r3, r1
+bne patchfirm_arm9section_nandredir_padcheck1
+
+ldr r3, =NANDREDIR_SECTORNUM
+str r2, [r3]
+b patchfirm_arm9section_L3
+#endif
+
+patchfirm_arm9section_nandredir_padcheck1:
+#ifdef NANDREDIR_SECTORNUM_PADCHECK1
+ldr r1, =NANDREDIR_SECTORNUM_PADCHECK1
+ldr r2, =NANDREDIR_SECTORNUM_PADCHECK1VAL
+mov r3, r0
+ands r3, r1
+bne patchfirm_arm9section_L3
+
+ldr r3, =NANDREDIR_SECTORNUM
+str r2, [r3]
+#endif
+
+#endif
 #endif
 
 patchfirm_arm9section_L3:

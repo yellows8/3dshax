@@ -21,6 +21,9 @@ By default the FIRM-launch code loads the plaintext FIRM from SD "/firm.bin", se
 * "DISABLEAES=1" Disables all arm9 AES code.
 * "DISABLENANDREDIR=1" Disables NAND->SD redirection.
 * "NANDREDIR_SECTORNUM={sectornum}" Sector-num base for the SD nandimage, for NAND-redir when enabled.
+* "NANDREDIR_SECTORNUM_PADCHECK0={padbitmask}" When used with NANDREDIR_SECTORNUM_PADCHECK0VAL, the current NANDREDIR_SECTORNUM(during firmpatching @ firmlaunch) will be set to NANDREDIR_SECTORNUM_PADCHECK0VAL when all of the buttons specified by the NANDREDIR_SECTORNUM_PADCHECK0 bitmask are set.
+* "NANDREDIR_SECTORNUM_PADCHECK0VAL={sectornum}" Required when using NANDREDIR_SECTORNUM_PADCHECK0, see above.
+* "NANDREDIR_SECTORNUM_PADCHECK1={padbitmask}" "NANDREDIR_SECTORNUM_PADCHECK1VAL={sectornum}" Same as NANDREDIR_SECTORNUM_PADCHECK0* except for a different set of options, these are checked/used after NANDREDIR_SECTORNUM_PADCHECK0*.
 * "ENABLE_DUMP_NANDIMAGE=1" Enables nandimage dumping to SD "/3dshax_dump.bin", when button Y is pressed once from the arm9 thread. To dump the physical NAND, "DISABLENANDREDIR=1" should be used.
 * "LOADA9_NEW3DSMEM=1" Use the new3ds arm9 .ld for using new3ds arm9mem, for much more space.
 
