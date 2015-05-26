@@ -1,14 +1,11 @@
-.section .init
-
-.arm
-
-.global _start
 .global _init
+.global _fini
 .global launchcode_kernelmode
 .global call_arbitaryfuncptr
 .global svcControlProcessMemory
 
 .type _init STT_FUNC
+.type _fini STT_FUNC
 .type launchcode_kernelmode STT_FUNC
 .type call_arbitaryfuncptr STT_FUNC
 .type svcControlProcessMemory STT_FUNC
@@ -16,8 +13,35 @@
 .global PROCESSNAME
 .global arm11kernel_textvaddr
 
+@---------------------------------------------------------------------------------
+@ 3DS processor selection
+@---------------------------------------------------------------------------------
+	.cpu mpcore
+@---------------------------------------------------------------------------------
+
+@---------------------------------------------------------------------------------
+	.section ".init"
+	.global _start, __service_ptr, __apt_appid, __heap_size, __linear_heap_size, __system_arglist, __system_runflags
+@---------------------------------------------------------------------------------
+	.align 2
+	.arm
+@---------------------------------------------------------------------------------
 _start:
-b codestart
+@---------------------------------------------------------------------------------
+b startup
+	.ascii "_prm"
+__service_ptr:
+	.word 0 @ Pointer to service handle override list -- if non-NULL it is assumed that we have been launched from a homebrew launcher
+__apt_appid:
+	.word 0x300 @ Program APPID
+__heap_size:
+	.word 24*1024*1024 @ Default heap size (24 MiB)
+__linear_heap_size:
+	.word 32*1024*1024 @ Default linear heap size (32 MiB)
+__system_arglist:
+	.word 0 @ Pointer to argument list (argc (u32) followed by that many NULL terminated strings)
+__system_runflags:
+	.word 0 @ Flags to signal runtime restrictions to ctrulib
 
 .word 0x58584148 @ "HAXX", indicating that the following parameters can be set by the code loader.
 
@@ -28,7 +52,7 @@ PROCESSNAME:
 arm11kernel_textvaddr:
 .word 0x5458544b
 
-codestart:
+startup:
 push {r4, r5, r6, r7, r8, lr}
 
 adr r0, PROCESSNAME
@@ -46,7 +70,7 @@ mov r6, r1
 cmp r0, #0
 bne fail
 
-ldr r3, =_end
+ldr r3, =__end__
 ldr r4, =0xfff
 add r3, r3, r4
 lsr r3, r3, #12
@@ -71,8 +95,8 @@ cmp r7, r8
 blt change_permissions_lp
 
 clearbss:
-ldr r1, =__bss_start @ Clear .bss
-ldr r2, =__bss_end
+ldr r1, =__bss_start__ @ Clear .bss
+ldr r2, =__bss_end__
 mov r3, #0
 
 bss_clr:
@@ -83,31 +107,33 @@ add r1, r1, #4
 b bss_clr
 
 _start_done:
-bl setup_fpscr
+@ System initialization
+mov r0, r4
+bl initSystem
 
-ldr r0, =__libc_init_array @ global constructors
-blx r0
-
-mov r0, #0
-mov r1, #0
-ldr r2, =main
-blx r2
-
-_start_end:
 pop {r4, r5, r6, r7, r8, lr}
-bx lr
+
+@ Set up argc/argv arguments for main()
+ldr r0, =__system_argc
+ldr r1, =__system_argv
+ldr r0, [r0]
+ldr r1, [r1]
+
+@ Jump to user code
+ldr r3, =main
+ldr lr, =__ctru_exit
+bx  r3
+
 .pool
 
 _init:
 bx lr
 
+_fini:
+bx lr
+
 fail:
 .word 0xffffffff
-
-setup_fpscr:
-mov r0, #0x3000000
-vmsr fpscr, r0
-bx lr
 
 kernelmodestub:
 cpsid i @ Disable IRQs
@@ -136,34 +162,6 @@ ldm r8, {r0, r1, r2, r3, r4, r5, r6}
 blx r7
 stm r8, {r0, r1, r2, r3, r4, r5, r6}
 pop {r4, r5, r6, r7, r8, pc}
-
-svcControlProcessMemory:
-push {r0, r1, r2, r3, r4, r5, lr}
-cmp r0, #0
-bne svcControlProcessMemory_start
-
-ldr r1, =0xFFFF8001
-svc 0x27
-mov r0, r1
-ldr r1, [sp, #4]
-ldr r2, [sp, #8]
-ldr r3, [sp, #12]
-
-svcControlProcessMemory_start:
-ldr r4, [sp, #28]
-ldr r5, [sp, #32]
-svc 0x70
-add sp, sp, #16
-pop {r4, r5, pc}
-
-.global svc_duplicateHandle
-.type svc_duplicateHandle, %function
-svc_duplicateHandle:
-stmfd sp!, {r0}
-svc 0x27
-ldr r2, [sp], #4
-str r1, [r2]
-bx lr
 
 .global svcStartInterProcessDma
 .type svcStartInterProcessDma, %function
@@ -198,7 +196,7 @@ mov r7, #0
 
 mov r0, sp
 ldr r1, =0xffff8001
-bl svc_getProcessId
+bl svcGetProcessId
 
 mov r7, r0
 cmp r7, #0
@@ -214,7 +212,7 @@ svc 0x7b @ Overwrite kprocess PID with 0.
 mov r4, r3
 ldr r5, [sp, #0]
 
-bl initSrv
+bl srvInit
 mov r7, r0
 
 adr r0, kernelmode_writeval @ r4=addr, r5=u32val

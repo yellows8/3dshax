@@ -2,17 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include <ctr/types.h>
-#include <ctr/svc.h>
-#include <ctr/srv.h>
-#include <ctr/GSP.h>
-#include <ctr/GX.h>
-#include <ctr/SOC.h>
-#include <ctr/APT.h>
-#include <ctr/CSND.h>
-#include <ctr/FS.h>
-#include <ctr/IR.h>
-#include <ctr/CFGNOR.h>
+#include <3ds.h>
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -20,12 +10,9 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#include "srv.h"
 #include "am.h"
 
 #include "ctrclient.h"
-
-#include "necir.h"
 
 #include "auth_bin.h"
 
@@ -35,7 +22,6 @@ typedef struct
 } ctrserver;
 
 static Handle pxidev_handle=0;
-static Handle fsuser_servhandle = 0;
 
 static int listen_sock;
 
@@ -45,9 +31,8 @@ static u32 net_kernelmode_paramblock[4];
 
 static u32 arm9access_available = 0;
 
-static Handle am_handle=0;
 static u32 amserv_available = 0;
-static Handle lockhandle;
+static Handle amlockhandle;
 
 extern Handle srvHandle;
 extern Handle aptLockHandle;
@@ -67,13 +52,11 @@ int ctrserver_senddata(ctrserver *server, u8 *buf, int size);
 
 u32 launchcode_kernelmode(void*, u32 param);
 void call_arbitaryfuncptr(void* funcptr, u32 *regdata);
-Result svcControlProcessMemory(Handle kprocess, u32 addr0, u32 addr1, u32 size, u32 type, u32 permissions);
-Result svc_duplicateHandle(Handle* out, Handle original);
 
 s32 svcStartInterProcessDma(u32* dmahandle, u32 dstProcess, u32* dst, u32 srcProcess, u32* src, u32 size, u32 *config);
 s32 svcGetDmaState(u32 *state, u32 dmahandle);
 
-Result FSUSER_ControlArchive(Handle handle, FS_archive archive)//This is from code by smea.
+Result FSUSER_ControlArchive(Handle *handle, FS_archive archive)//This is based on code from smea.
 {
 	u32* cmdbuf=getThreadCommandBuffer();
 
@@ -91,7 +74,7 @@ Result FSUSER_ControlArchive(Handle handle, FS_archive archive)//This is from co
 	cmdbuf[9]=(u32)&b2;
 
 	Result ret=0;
-	if((ret=svc_sendSyncRequest(handle)))return ret;
+	if((ret=svcSendSyncRequest(*handle)))return ret;
 
 	return cmdbuf[1];
 }
@@ -99,15 +82,19 @@ Result FSUSER_ControlArchive(Handle handle, FS_archive archive)//This is from co
 Result am_init()//This is based on code by smea.
 {
 	Result ret;
+	Handle *tmphandle=0;
 
-	if(am_handle!=0)return 0;
+	if(amserv_available)return 0;
 
-	if((ret = srv_getServiceHandle(NULL, &am_handle, "am:net"))!=0)return ret;
-
-	ret = AM_Initialize(am_handle, &lockhandle);
+	ret = amInit();
 	if(ret!=0)return ret;
 
-	ret = svc_waitSynchronization1(lockhandle, 0xffffffffffffffff);
+	tmphandle = amGetSessionHandle();
+
+	ret = AM_Initialize(*tmphandle, &amlockhandle);
+	if(ret!=0)return ret;
+
+	ret = svcWaitSynchronization(amlockhandle, 0xffffffffffffffff);
 	if(ret==0)amserv_available = 1;
 
 	return ret;
@@ -144,7 +131,7 @@ Result pxidev_cmd0(u32 cmdid, u32 *buf, u32 *bufsize)
 		cmdbuf[5] = bufaddr;
 	}
 
-	if((ret = svc_sendSyncRequest(pxidev_handle))!=0)return ret;
+	if((ret = svcSendSyncRequest(pxidev_handle))!=0)return ret;
 
 	if(cmdid)*bufsize = cmdbuf[2];
 
@@ -179,7 +166,7 @@ static Result init_arm9access()
 {
 	Result ret=0;
 
-	if((ret = srv_getServiceHandle(NULL, &pxidev_handle, "pxi:dev"))!=0)return ret;
+	if((ret = srvGetServiceHandle(&pxidev_handle, "pxi:dev"))!=0)return ret;
 
 	if((ret = pxidev_cmd0(0, NULL, 0)) != 0)return ret;
 
@@ -477,9 +464,10 @@ int net_kernelmode_handlecmd(u32 param)
 static int ctrserver_handlecmd_installcia(u32 *buf, u32 *bufsize)
 {
 	Handle ciahandle=0;
-	u8 mediatype, unku8;
-	u64 titleid;
-	u32 ciasize, chunksize, maxchunksize;
+	u8 mediatype;
+	//u8 unku8;
+	//u64 titleid;
+	u32 ciasize, chunksize, maxchunksize, tmpsize;
 	u32 *tmpbuf;
 	u32 size=0;
 	u32 pos=0;
@@ -496,22 +484,31 @@ static int ctrserver_handlecmd_installcia(u32 *buf, u32 *bufsize)
 	}
 
 	mediatype = buf[0] & 0xff;
-	unku8 = (buf[0]>>8) & 0xff;
-	titleid = ((u64)buf[1]) | (((u64)buf[2])<<32);
+	//unku8 = (buf[0]>>8) & 0xff;
+	//titleid = ((u64)buf[1]) | (((u64)buf[2])<<32);
 	ciasize = buf[3];
-	tmpbuf = (u32*)0x08048000;
 
 	maxchunksize = buf[4];
+	tmpsize = maxchunksize;
+	if(tmpsize>0x10000)tmpsize = 0x10000;
 
 	*bufsize = 0xc;
 	buf[0] = 0;
 	buf[1] = 0;
 	buf[2] = 0;
 
-	ret = AM_StartInstallCIADB0(am_handle, &ciahandle, mediatype);
+	tmpbuf = malloc(tmpsize);
+	if(tmpbuf==NULL)
+	{
+		buf[1] = 0x414d454d;
+		return 0;
+	}
+
+	ret = AM_StartCiaInstall(mediatype, &ciahandle);
 	if(ret!=0)
 	{
 		buf[1] = ret;
+		free(tmpbuf);
 		return 0;
 	}
 	buf[0]++;
@@ -524,31 +521,40 @@ static int ctrserver_handlecmd_installcia(u32 *buf, u32 *bufsize)
 
 		buf[2] = pos;
 
-		if((ret2 = ctrserver_recvdata(&net_server, (u8*)tmpbuf, chunksize))!=chunksize)
+		while(chunksize)
 		{
-			//((u32*)0x14000000)[0x888>>2] = ret;
+			tmpsize = chunksize;
+			if(tmpsize>0x10000)tmpsize = 0x10000;
 
-			if(!fail)
+			if((ret2 = ctrserver_recvdata(&net_server, (u8*)tmpbuf, tmpsize))!=tmpsize)
 			{
-				AM_AbortCIAInstall(am_handle, ciahandle);
+				//((u32*)0x14000000)[0x888>>2] = ret;
 
-				fail = 1;
-				buf[1] = 0xf0f0f0f0;
+				if(!fail)
+				{
+					AM_CancelCIAInstall(&ciahandle);
+
+					fail = 1;
+					buf[1] = 0xf0f0f0f0;
+				}
+				break;
 			}
-			break;
-		}
 
-		ret2 = 0;
-		if(!fail)ret2 = FSFILE_Write(ciahandle, &size, (u64)pos, tmpbuf, chunksize, 0x10001);
-		if(ret2!=0)
-		{
-			if(!fail)
+			ret2 = 0;
+			if(!fail)ret2 = FSFILE_Write(ciahandle, &size, (u64)pos, tmpbuf, tmpsize, 0x10001);
+			if(ret2!=0)
 			{
-				AM_AbortCIAInstall(am_handle, ciahandle);
+				if(!fail)
+				{
+					AM_CancelCIAInstall(&ciahandle);
 
-				buf[1] = ret2;
-				fail = 1;
+					buf[1] = ret2;
+					fail = 1;
+				}
 			}
+
+			pos+= tmpsize;
+			chunksize-= tmpsize;
 		}
 
 		if((ret2 = ctrserver_senddata(&net_server, (u8*)&ackword, 4))!=4)
@@ -557,30 +563,22 @@ static int ctrserver_handlecmd_installcia(u32 *buf, u32 *bufsize)
 
 			if(!fail)
 			{
-				AM_AbortCIAInstall(am_handle, ciahandle);
+				AM_CancelCIAInstall(&ciahandle);
 
 				buf[1] = 0xf4f4f4f4;
 				fail = 1;
 			}
 			break;
 		}
-
-		pos+= chunksize;
 	}
+
+	free(tmpbuf);
 
 	if(fail)return 0;
 
 	buf[0]++;
 
-	ret = AM_CloseFileCIA(am_handle, ciahandle);
-	if(ret!=0)
-	{
-		buf[1] = ret;
-		return 0;
-	}
-	buf[0]++;
-
-	ret = AM_FinalizeTitlesInstall(am_handle, mediatype, 1, &titleid, unku8);
+	ret = AM_FinishCiaInstall(mediatype, &ciahandle);
 	if(ret!=0)
 	{
 		buf[1] = ret;
@@ -597,7 +595,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 	u32 size;
 	int ret=0, ret2, ret3;
 	u32 filehandle=0;
-	Handle handle;
+	Handle handle, *handleptr;
 	u32 val=0;
 	u32 pos;
 	u64 filesize;
@@ -636,9 +634,9 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 	if(cmdid==0x31)
 	{
 		val64ptr = (u64*)buf;
-		val64 = svc_getSystemTick();
-		svc_sleepThread(1000000000LL);
-		*val64ptr = svc_getSystemTick() - val64;
+		val64 = svcGetSystemTick();
+		svcSleepThread(1000000000LL);
+		*val64ptr = svcGetSystemTick() - val64;
 		*bufsize = 8;
 		return 0;
 	}
@@ -668,7 +666,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 				if(val>=2)break;
 			}
 
-			svc_closeHandle(buf[1]);
+			svcCloseHandle(buf[1]);
 		}
 
 		return 0;
@@ -691,7 +689,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		return 0;
 	}
 
-	if(cmdid==0x4f)
+	/*if(cmdid==0x4f)
 	{
 		size = *bufsize;
 		*bufsize = 4;
@@ -711,7 +709,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		buf[0] = (u32)ret;
 
 		return 0;
-	}
+	}*/
 
 	if(cmdid==0x50)
 	{
@@ -725,12 +723,14 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 
 			if(handletype==1)
 			{
-				buf[0] = srvHandle;
+				handleptr = srvGetSessionHandle();
+				buf[0] = *handleptr;
 			}
 			else if(handletype==2)
 			{
 				if(amserv_available==0)am_init();
-				if(amserv_available)buf[0] = am_handle;
+				handleptr = amGetSessionHandle();
+				if(amserv_available)buf[0] = *handleptr;
 			}
 			else if(handletype==3)
 			{
@@ -743,7 +743,8 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 			}
 			else if(handletype==5)
 			{
-				buf[0] = fsuser_servhandle;
+				handleptr = fsGetSessionHandle();
+				buf[0] = *handleptr;
 			}
 			else if(handletype==6)
 			{
@@ -759,7 +760,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 			}
 			else if(handletype==9)
 			{
-				buf[0] = CSND_handle;
+				//buf[0] = CSND_handle;
 			}
 			else if(handletype==10)
 			{
@@ -780,7 +781,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 
 		memcpy(cmdbuf, &buf[2], *bufsize - 8);
 
-		ret = svc_sendSyncRequest(buf[0]);
+		ret = svcSendSyncRequest(buf[0]);
 
 		if(handletype==4)aptCloseSession();
 
@@ -819,7 +820,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		return 0;
 	}
 
-	if(cmdid==0x53)
+	/*if(cmdid==0x53)
 	{
 		size = (*bufsize) - 4;
 
@@ -829,11 +830,13 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		*bufsize = 0;
 
 		CSND_playsound(0x8, (buf[0]>>24) & 0xff, buf[0] & 0xff, 44100, &buf[1], NULL, size, (buf[0]>>8) & 0xff, (buf[0]>>16) & 0xff);//(u32*)((u32)buf+size)
+		Result CSND_playsound(u32 channel, CSND_LOOPING looping, CSND_ENCODING encoding, u32 samplerate, u32 *vaddr0, u32 *vaddr1, u32 totalbytesize, u32 unk0, u32 unk1);
+		Result csndPlaySound(0x8, u32 flags, 44100, float vol, float pan, void* data0, void* data1, u32 size);
 
 		return 0;
-	}
+	}*/
 
-	if(cmdid==0x54)
+	/*if(cmdid==0x54)
 	{
 		CSND_writesharedmem_cmdtype0((u16)buf[0], (u8*)&buf[1]);
 		//CSND_setchannel_playbackstate(0x8, buf[0]);
@@ -842,7 +845,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		*bufsize = 0;
 
 		return 0;
-	}
+	}*/
 
 	if(cmdid==0x55)
 	{
@@ -869,7 +872,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 
 		size = *bufsize - 0x18;
 
-		if((ret = srv_getServiceHandle(NULL, &handle, "ps:ps"))!=0)
+		if((ret = srvGetServiceHandle(&handle, "ps:ps"))!=0)
 		{
 			*bufsize = 4;
 			buf[0] = (u32)ret;
@@ -887,7 +890,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		cmdbuf[11] = (size<<4) | 12;
 		cmdbuf[12] = (u32)&buf[0x18>>2];
 
-		ret = svc_sendSyncRequest(handle);
+		ret = svcSendSyncRequest(handle);
 
 		if(ret!=0)
 		{
@@ -902,7 +905,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		buf[0x14>>2] = 0;
 		//memcpy(&buf[0x14>>2], &buf[(0x18 + size)>>2], size);
 
-		svc_closeHandle(handle);
+		svcCloseHandle(handle);
 
 		return 0;
 	}
@@ -911,7 +914,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 	{
 		if(*bufsize != 8)return 0;
 		memcpy(namebuf, buf, 8);
-		buf[0] = svc_connectToPort(&buf[1], namebuf);
+		buf[0] = svcConnectToPort(&buf[1], namebuf);
 		return 0;
 	}
 
@@ -941,7 +944,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 
 	if(cmdid==0x5d)
 	{
-		buf[0] = CSND_initialize(NULL);
+		buf[0] = csndInit();
 		*bufsize = 4;
 		return 0;
 	}
@@ -958,13 +961,13 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		val = 0;
 		if(buf[0]==0xffff8001)
 		{
-			svc_duplicateHandle(&val, 0xffff8001);
+			svcDuplicateHandle(&val, 0xffff8001);
 			buf[0] = val;
 		}
 
 		buf[0] = svcControlProcessMemory(buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]);
 
-		if(val)svc_closeHandle(val);
+		if(val)svcCloseHandle(val);
 
 		return 0;
 	}
@@ -978,7 +981,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		}
 
 		*bufsize = 8;
-		buf[0] = svc_controlMemory(&buf[1], buf[0], buf[1], buf[2], buf[3], buf[4]);
+		buf[0] = svcControlMemory(&buf[1], buf[0], buf[1], buf[2], buf[3], buf[4]);
 		return 0;
 	}
 
@@ -990,7 +993,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 			return 0;
 		}
 
-		buf[0] = svc_closeHandle(buf[0]);
+		buf[0] = svcCloseHandle(buf[0]);
 		return 0;
 	}
 
@@ -1003,7 +1006,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		}
 
 		*bufsize = 8;
-		buf[0] = svc_createMemoryBlock(&buf[1], buf[0], buf[1], buf[2], buf[3]);
+		buf[0] = svcCreateMemoryBlock(&buf[1], buf[0], buf[1], buf[2], buf[3]);
 		return 0;
 	}
 
@@ -1016,7 +1019,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		}
 
 		*bufsize = 4;
-		buf[0] = svc_mapMemoryBlock(buf[0], buf[1], buf[2], buf[3]);
+		buf[0] = svcMapMemoryBlock(buf[0], buf[1], buf[2], buf[3]);
 		return 0;
 	}
 
@@ -1029,7 +1032,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		}
 
 		*bufsize = 4;
-		buf[0] = svc_unmapMemoryBlock(buf[0], buf[1]);
+		buf[0] = svcUnmapMemoryBlock(buf[0], buf[1]);
 		return 0;
 	}
 
@@ -1043,7 +1046,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 
 		*bufsize = 0xc;
 
-		buf[0] = svc_getSystemInfo((s64*)&buf[1], buf[0], buf[1]);
+		buf[0] = svcGetSystemInfo((s64*)&buf[1], buf[0], buf[1]);
 		return 0;
 	}
 
@@ -1062,12 +1065,12 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		fileLowPath.size = buf[4];
 		fileLowPath.data = (u8*)&buf[6 + pos];
 
-		ret = FSUSER_OpenArchive(fsuser_servhandle, &archive);
+		ret = FSUSER_OpenArchive(NULL, &archive);
 		ret2 = ret;
 
-		if(ret==0)ret = FSUSER_OpenFile(fsuser_servhandle, &filehandle, archive, fileLowPath, buf[5], FS_ATTRIBUTE_NONE);
+		if(ret==0)ret = FSUSER_OpenFile(NULL, &filehandle, archive, fileLowPath, buf[5], FS_ATTRIBUTE_NONE);
 
-		//ret = FSUSER_OpenFileDirectly(fsuser_servhandle, &filehandle, archive, fileLowPath, buf[5], FS_ATTRIBUTE_NONE);
+		//ret = FSUSER_OpenFileDirectly(NULL, &filehandle, archive, fileLowPath, buf[5], FS_ATTRIBUTE_NONE);
 		pos+= 6 + (((buf[4] + 3) & ~3)>>2);
 
 		filesize = 0;
@@ -1092,15 +1095,15 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 				*bufsize = 4;
 			}
 			FSFILE_Close(filehandle);
-			svc_closeHandle(filehandle);
+			svcCloseHandle(filehandle);
 
 			if(buf[5] & 2)
 			{
-				if(archive.id==4 || archive.id==8 || archive.id==0x1234567C || archive.id==0x567890B1 || archive.id==0x567890B2)FSUSER_ControlArchive(fsuser_servhandle, archive);
+				if(archive.id==4 || archive.id==8 || archive.id==0x1234567C || archive.id==0x567890B1 || archive.id==0x567890B2)FSUSER_ControlArchive(fsGetSessionHandle(), archive);
 			}
 		}
 
-		if(ret2==0)FSUSER_CloseArchive(fsuser_servhandle, &archive);
+		if(ret2==0)FSUSER_CloseArchive(NULL, &archive);
 
 		if(ret!=0)
 		{
@@ -1124,24 +1127,24 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		fileLowPath.size = buf[4];
 		fileLowPath.data = (u8*)&buf[6 + pos];
 
-		ret = FSUSER_OpenArchive(fsuser_servhandle, &archive);
+		ret = FSUSER_OpenArchive(NULL, &archive);
 		ret2 = ret;
 
 		if(ret==0)
 		{
-			ret = FSUSER_OpenDirectory(fsuser_servhandle, &filehandle, archive, fileLowPath);
+			ret = FSUSER_OpenDirectory(NULL, &filehandle, archive, fileLowPath);
 		}
 
 		ret3 = 1;
 		if(ret==0)
 		{
-			ret = FSDIR_Read(filehandle, &buf[1], buf[5], (u16*)&buf[2]);
+			ret = FSDIR_Read(filehandle, &buf[1], buf[5], (FS_dirent*)&buf[2]);
 			ret3 = ret;
 			FSDIR_Close(filehandle);
-			svc_closeHandle(filehandle);
+			svcCloseHandle(filehandle);
 		}
 
-		if(ret2==0)FSUSER_CloseArchive(fsuser_servhandle, &archive);
+		if(ret2==0)FSUSER_CloseArchive(NULL, &archive);
 
 		buf[0] = (u32)ret;
 		*bufsize = 4;
@@ -1153,7 +1156,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		return 0;
 	}
 
-	if(cmdid==0xb0)
+	/*if(cmdid==0xb0)
 	{
 		if(*bufsize < 4)
 		{
@@ -1222,24 +1225,24 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 				if(buf[0]!=0)break;
 				buf8[4 + (pos>>3)] |= val << (pos & 7);
 
-				//if(val==0)svc_sleepThread(560);
-				//if(val)svc_sleepThread(1690);
-				if(val)svc_sleepThread(val);
+				//if(val==0)svcSleepThread(560);
+				//if(val)svcSleepThread(1690);
+				if(val)svcSleepThread(val);
 			}
 			*bufsize = 4 + size;
 			return 0;
-		}
-		else if(buf[0]==9)
+		}*/
+		/*else if(buf[0]==9)
 		{
 			*bufsize = 0;
 			transmit_nec_ir_command(buf[1], buf[2]);
 			return 0;
-		}
-
+		}*/
+		/*
 		*bufsize = 4;
 		buf[0] = ~0;
 		return 0;
-	}
+	}*/
 
 	if(cmdid==0xc0)
 	{
@@ -1258,11 +1261,11 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 
 		if(((buf[0] >> 8) & 0xff) == 0)
 		{
-			buf[0] = AM_DeleteApplicationTitle(am_handle, buf[0] & 0xff, ((u64)buf[1]) | (((u64)buf[2])<<32));
+			buf[0] = AM_DeleteAppTitle(buf[0] & 0xff, ((u64)buf[1]) | (((u64)buf[2])<<32));
 		}
 		else
 		{
-			buf[0] = AM_DeleteTitle(am_handle, buf[0] & 0xff, ((u64)buf[1]) | (((u64)buf[2])<<32));
+			buf[0] = AM_DeleteTitle(buf[0] & 0xff, ((u64)buf[1]) | (((u64)buf[2])<<32));
 		}
 
 		return 0;
@@ -1280,7 +1283,7 @@ int ctrserver_recvdata(ctrserver *server, u8 *buf, int size)
 	{
 		if((ret = recv(server->sockfd, &buf[pos], tmpsize, 0))<=0)
 		{
-			if(ret<0)ret = SOC_GetErrno();
+			if(ret<0)ret = errno;
 			if(ret == -EWOULDBLOCK)continue;
 			return ret;
 		}
@@ -1301,7 +1304,7 @@ int ctrserver_senddata(ctrserver *server, u8 *buf, int size)
 	{
 		if((ret = send(server->sockfd, &buf[pos], tmpsize, 0))<0)
 		{
-			ret = SOC_GetErrno();
+			ret = errno;
 			if(ret == -EWOULDBLOCK)continue;
 			return ret;
 		}
@@ -1514,13 +1517,13 @@ void network_initialize()
 	ret = bind(listen_sock, (struct sockaddr *)&addr, sizeof(addr));
 	if(ret<0)
 	{
-		((u32*)0x84000000)[5] = (u32)SOC_GetErrno();
+		((u32*)0x84000000)[5] = (u32)errno;
 		SOC_Shutdown();
 		return;
 	}
 
 	ret = listen(listen_sock, 1);
-	if(ret==-1)ret = SOC_GetErrno();
+	if(ret==-1)ret = errno;
 	if(ret<0)
 	{
 		((u32*)0x84000000)[8] = (u32)ret;
@@ -1531,31 +1534,15 @@ void network_initialize()
 	init_arm9access();
 }
 
-Result fs_init()
-{
-	Result ret=0;
-
-	if((ret = srv_getServiceHandle(NULL, &fsuser_servhandle, "fs:USER"))!=0)return ret;
-
-	return FSUSER_Initialize(fsuser_servhandle);
-}
-
 void network_stuff(u32 *payloadptr, u32 payload_maxsize)
 {
-	Result ret=0;
 	struct sockaddr addr;
-	int addrlen;
+	socklen_t addrlen;
 
 	net_payloadptr = payloadptr;
 	net_payload_maxsize = payload_maxsize;
 
 	net_server.sockfd = 0;
-
-	ret = fs_init();
-	if(ret!=0)
-	{
-		((u32*)0x84000000)[0x700] = ret;
-	}
 
 	network_initialize();
 
@@ -1568,7 +1555,7 @@ void network_stuff(u32 *payloadptr, u32 payload_maxsize)
 		addrlen = sizeof(struct sockaddr);
 
 		net_server.sockfd = accept(listen_sock, &addr, &addrlen);
-		if(net_server.sockfd==-1)net_server.sockfd = SOC_GetErrno();
+		if(net_server.sockfd==-1)net_server.sockfd = errno;
 		if(net_server.sockfd<0)
 		{
 			if(net_server.sockfd == -EWOULDBLOCK)continue;
@@ -1576,9 +1563,6 @@ void network_stuff(u32 *payloadptr, u32 payload_maxsize)
 			//break;
 			continue;
 		}
-
-		*((u32*)0x08050000) = addrlen;
-		memcpy((u32*)0x08050004, &addr, addrlen);
 
 		ctrserver_processclient_connection(&net_server, net_payloadptr);
 		

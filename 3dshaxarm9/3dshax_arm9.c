@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include <nds/ndstypes.h>
+#include <3ds.h>
 
 #include "arm9_svc.h"
 #include "arm9fs.h"
@@ -448,7 +448,7 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 	}
 	#endif
 
-	#ifdef ENABLE_THEMECACHENAME || ENABLE_REGIONFREE
+	#if ENABLE_THEMECACHENAME || ENABLE_REGIONFREE
 	if(procname==0x756e656d)//"menu", Home Menu.
 	{
 		bool done=false;
@@ -1265,6 +1265,12 @@ void pxipmcmd1_getexhdr(u32 *exhdr)
 		#ifndef DISABLE_FSACCESSINFO_OVERWRITE
 		for(pos=0x248; pos<0x248+0x7; pos++)exhdr8[pos] = 0xFF;//Set FS accessinfo to all 0xFF.
 		#endif
+
+		if(exhdr[0] == 0x706c64)//When loading code under dlp-module, increase the .data section size by 0x20000-bytes so that there's enough space for ctrserver(and some unused space as well).
+		{
+			exhdr[(0x30+4)>>2] += 0x20;
+			exhdr[(0x30+8)>>2] += (0x20<<12);
+		}
 	}
 
 	if(exhdr[0]==0x45454154)//"TAEE" for NES VC for TLoZ

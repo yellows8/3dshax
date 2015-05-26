@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include <nds/ndstypes.h>
+#include <3ds.h>
 
 #include "arm9_svc.h"
 
