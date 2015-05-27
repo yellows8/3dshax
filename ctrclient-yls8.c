@@ -679,6 +679,48 @@ int cmd_readctrcard(ctrclient *client, unsigned int sector, unsigned int sectorc
 	return 0;
 }
 
+int cmd_armdebugaccessregs(ctrclient *client, int rw, uint32_t regs_bitmask, uint32_t *regdata)
+{
+	uint32_t tmpbuf[0x58>>2];
+	uint32_t tmpval;
+
+	if(rw)rw = 1;//0 = read, 1 = write
+
+	if(regdata==NULL)return 2;
+
+	tmpbuf[0] = 0x4a0 + rw;
+	tmpbuf[1] = 0x4;
+	tmpbuf[2] = regs_bitmask;
+
+	if(rw)tmpbuf[1] = 0x50;
+
+	if(rw)memcpy(&tmpbuf[3], regdata, 0x4c);
+
+	if(ctrclient_sendbuffer(client, tmpbuf, 0x8 + tmpbuf[1])!=1)return 1;
+	if(ctrclient_recvbuffer(client, tmpbuf, 0x8)!=1)return 1;
+
+	if((rw && tmpbuf[1]!=0) || (!rw && tmpbuf[1]!=0x50))
+	{
+		printf("Invalid response payload size: 0x%x.\n", tmpbuf[1]);
+		return 1;
+	}
+
+	if(rw)return 0;
+
+	if(ctrclient_recvbuffer(client, &tmpval, 4)!=1)return 1;
+
+	if(tmpval != tmpbuf[2])
+	{
+		printf("Received register bitmask doesn't match the sent one.\n");
+		return 1;
+	}
+
+	if(ctrclient_recvbuffer(client, regdata, 0x4c)!=1)return 1;
+
+	return 0;
+
+}
+
 int parsecmd_inputhexdata(unsigned int *databuf, unsigned int size)
 {
 	unsigned int pos, pos2, sz, tmpsz;
@@ -2301,6 +2343,63 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 	{
 		ret = cmd_sendexceptionhandler_signal(client, 1);
 		if(ret==0)printf("Successfully sent exception-handler signal.\n");
+	}
+	else if(strncmp(customcmd, "armdebug:accessregs", 9)==0)
+	{
+		pos = 9;
+		if(strncmp(&customcmd[pos], "accessregs", 10)==0)
+		{
+			pos += 10;
+
+			str = strtok(&customcmd[pos], " ");
+			if(str==NULL)
+			{
+				ret = 4;
+				printf("Invalid input parameters.\n");
+			}
+			else
+			{
+				if(strncmp(str, "read", 4)==0)
+				{
+					paramblock[0] = 0;
+				}
+				else if(strncmp(str, "write", 5)==0)
+				{
+					paramblock[0] = 1;
+				}
+				else
+				{
+					printf("Invalid access type.\n");
+					ret = 4;
+				}
+			}
+
+			if(ret==0)
+			{
+				ret = parsecmd_hexvalue(NULL, " ", &paramblock[1]);
+				if(ret!=0)
+				{
+					printf("Invalid registers bitmask.\n");
+				}
+			}
+
+			if(ret==0 && paramblock[0]==1)
+			{
+				ret = parsecmd_inputhexdata(&paramblock[2], 0x4c);
+				if(ret!=0)
+				{
+					printf("Invalid registers data.\n");
+				}
+			}
+
+			if(ret==0)ret = cmd_armdebugaccessregs(client, paramblock[0], paramblock[1], &paramblock[2]);
+
+			if(ret==0)
+			{
+				printf("Successfully sent cmd.\n");
+				if(paramblock[0] == 0)hexdump(&paramblock[2], 0x4c);
+			}
+		}
 	}
 	else
 	{
