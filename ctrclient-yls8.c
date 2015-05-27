@@ -718,7 +718,34 @@ int cmd_armdebugaccessregs(ctrclient *client, int rw, uint32_t regs_bitmask, uin
 	if(ctrclient_recvbuffer(client, regdata, 0x4c)!=1)return 1;
 
 	return 0;
+}
 
+int cmd_armdebugaccessregs_enabledebug(ctrclient *client)
+{
+	int ret;
+	uint32_t tmpbuf[0x4c];
+
+	ret = cmd_armdebugaccessregs(client, 0, 0x2, tmpbuf);
+	if(ret!=0)return ret;
+
+	tmpbuf[1] |= 0x8000;
+
+	ret = cmd_armdebugaccessregs(client, 1, 0x2, tmpbuf);
+	return ret;
+}
+
+int cmd_armdebugaccessregs_disabledebug(ctrclient *client)
+{
+	int ret;
+	uint32_t tmpbuf[0x4c];
+
+	ret = cmd_armdebugaccessregs(client, 0, 0x2, tmpbuf);
+	if(ret!=0)return ret;
+
+	tmpbuf[1] &= ~0x8000;
+
+	ret = cmd_armdebugaccessregs(client, 1, 0x2, tmpbuf);
+	return ret;
 }
 
 int parsecmd_inputhexdata(unsigned int *databuf, unsigned int size)
@@ -2399,6 +2426,42 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 				printf("Successfully sent cmd.\n");
 				if(paramblock[0] == 0)hexdump(&paramblock[2], 0x4c);
 			}
+		}
+		else if(strncmp(&customcmd[pos], "status", 6)==0)
+		{
+			ret = cmd_armdebugaccessregs(client, 0, 0x2, &paramblock[2]);
+			if(ret==0)
+			{
+				printf("DIDR = 0x%08x. Mode select: %s. Monitor debug-mode: %s.\n", paramblock[2+1], paramblock[2+1] & 0x4000 ? "Halting debug-mode selected and enabled":"Monitor debug-mode selected", paramblock[2+1] & 0x8000 ? "enabled":"disabled");
+				if(paramblock[2+1] & 0x8000)
+				{
+					printf("Hardware debugging is enabled.\n");
+				}
+				else
+				{
+					printf("Hardware debugging is disabled.\n");
+				}
+				
+				printf("Able to take debug exceptions: ");
+				if((paramblock[2+1] & 0xc000) == 0x8000)
+				{
+					printf("yes.\n");
+				}
+				else
+				{
+					printf("no.\n");
+				}
+			}
+		}
+		else if(strncmp(&customcmd[pos], "enable", 6)==0)
+		{
+			ret = cmd_armdebugaccessregs_enabledebug(client);
+			if(ret==0)printf("Successfully enabled hardware debugging.\n");
+		}
+		else if(strncmp(&customcmd[pos], "disable", 7)==0)
+		{
+			ret = cmd_armdebugaccessregs_disabledebug(client);
+			if(ret==0)printf("Successfully disabled hardware debugging.\n");
 		}
 	}
 	else
