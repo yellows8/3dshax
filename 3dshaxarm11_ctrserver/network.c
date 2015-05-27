@@ -14,6 +14,8 @@
 
 #include "ctrclient.h"
 
+#include "armdebug.h"
+
 #include "auth_bin.h"
 
 typedef struct
@@ -455,6 +457,96 @@ int net_kernelmode_handlecmd(u32 param)
 
 		regaddr[1] |= tmpval<<10;
 
+		return 0;
+	}
+
+	if(cmdid==0xa0 || cmdid==0xa1)
+	{
+		if(*bufsize < 4)
+		{
+			*bufsize = 0;
+			return 0;
+		}
+
+		val = buf[0];
+		count = 1;
+
+		tmpval = 0;//read
+		if(cmdid==0xa1)tmpval = 1;//write
+
+		if(tmpval && *bufsize != (4 + ((3 + 12 + 4) * 4)))
+		{
+			buf[0] = ~0;
+			*bufsize = 4;
+			return 0;
+		}
+
+		if(tmpval==0)memset(&buf[count], 0, (3 + 12 + 4) * 4);
+
+		pos = 0;
+		if(val & (1<<pos))
+		{
+			if(!tmpval)buf[count] = getdebug_didr();
+		}
+		pos++;
+		count++;
+
+		if(val & (1<<pos))
+		{
+			if(!tmpval)buf[count] = getdebug_dscr();
+			if(tmpval)setdebug_dscr(buf[count]);
+		}
+		pos++;
+		count++;
+
+		if(val & (1<<pos))
+		{
+			if(!tmpval)buf[count] = getdebug_vcr();
+			if(tmpval)setdebug_vcr(buf[count]);
+		}
+		pos++;
+		count++;
+
+		for(i=0; i<6; i++)
+		{
+			if(val & (1<<pos))
+			{
+				if(!tmpval)buf[count] = getdebug_bvr(i);
+				if(tmpval)setdebug_bvr(i, buf[count]);
+			}
+			pos++;
+			count++;
+
+			if(val & (1<<pos))
+			{
+				if(!tmpval)buf[count] = getdebug_bcr(i);
+				if(tmpval)setdebug_bcr(i, buf[count]);
+			}
+			pos++;
+			count++;
+		}
+
+		for(i=0; i<2; i++)
+		{
+			if(val & (1<<pos))
+			{
+				if(!tmpval)buf[count] = getdebug_wvr(i);
+				if(tmpval)setdebug_wvr(i, buf[count]);
+			}
+			pos++;
+			count++;
+
+			if(val & (1<<pos))
+			{
+				if(!tmpval)buf[count] = getdebug_wcr(i);
+				if(tmpval)setdebug_wcr(i, buf[count]);
+			}
+			pos++;
+			count++;
+		}
+
+		if(!tmpval)*bufsize = count*4;
+		if(tmpval)*bufsize = 0;
 		return 0;
 	}
 
