@@ -1212,6 +1212,23 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 		return 0;
 	}
 
+	if(cmdid==0xf1)
+	{
+		if(*bufsize != 4)
+		{
+			*bufsize = 0;
+			return 0;
+		}
+
+		ptr8 = get_kprocess_contextid((u32*)buf[0]);
+		buf[0] = 0;
+		if(ptr8)buf[0] = *ptr8;
+
+		*bufsize = 4;
+		
+		return 0;
+	}
+
 	return -2;
 }
 

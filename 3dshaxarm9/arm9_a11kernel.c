@@ -87,6 +87,17 @@ u32 *get_kprocessptr(u64 procname, u32 num, u32 get_mmutableptr)
 	return kprocess;
 }
 
+u8 *get_kprocess_contextid(u32 *kprocess)
+{
+	u32 kprocess_adjustoffset = 0;
+
+	if(kprocess==NULL)return NULL;
+
+	if(RUNNINGFWVER & 0x40000000)kprocess_adjustoffset+= 8;
+
+	return (u8*)&kprocess[(0x44 + kprocess_adjustoffset) >> 2];
+}
+
 u8 *mmutable_convert_vaddr2physaddr(u32 *mmutable, u32 vaddr)
 {
 	u32 *ptr;
