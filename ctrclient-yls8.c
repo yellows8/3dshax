@@ -573,6 +573,25 @@ int cmd_getprocinfo_vaddrconv(ctrclient *client, char *procname, unsigned int ad
 	return 0;
 }
 
+int cmd_getprocinfo_contextid(ctrclient *client, uint32_t kprocessptr, unsigned char *contextid)
+{
+	uint32_t header[3];
+
+	memset(header, 0, 3*4);
+	
+	header[0] = 0xf1;
+	header[1] = 0x4;
+
+	header[2] = kprocessptr;
+
+	if(ctrclient_sendbuffer(client, header, 3*4)!=1)return 1;
+	if(ctrclient_recvbuffer(client, header, 3*4)!=1)return 1;
+
+	*contextid = (unsigned char)header[2];
+
+	return 0;
+}
+
 int cmd_getdebuginfoblk(ctrclient *client, unsigned int **buf, unsigned int *size)
 {
 	unsigned int header[2];
@@ -745,6 +764,59 @@ int cmd_armdebugaccessregs_disabledebug(ctrclient *client)
 	tmpbuf[1] &= ~0x8000;
 
 	ret = cmd_armdebugaccessregs(client, 1, 0x2, tmpbuf);
+	return ret;
+}
+
+int cmd_armdebugaccessregs_getdebugenabled(ctrclient *client, uint32_t *out)
+{
+	int ret;
+	uint32_t tmpbuf[0x4c];
+
+	if(out==NULL)return 3;
+
+	ret = cmd_armdebugaccessregs(client, 0, 0x2, tmpbuf);
+	if(ret!=0)return ret;
+
+	*out = (tmpbuf[1] & 0x8000) >> 15;
+
+	return 0;
+}
+
+int cmd_armdebugaccessregs_allocslot(ctrclient *client, uint32_t *out, uint32_t skip_bitmask, int type)
+{
+	int ret, i;
+	int base=0, count;
+	uint32_t debugregs[0x4c];
+
+	if(out==NULL)return 3;
+
+	ret = cmd_armdebugaccessregs(client, 0, ~0, debugregs);
+	if(ret!=0)return ret;
+
+	count = 6;
+	base = 0;
+
+	if(type)
+	{
+		count = 2;
+		base = 12;
+	}
+
+	*out = ~0;
+	for(i=0; i<count; i++)
+	{
+		if(skip_bitmask & (1<<i))continue;
+		if(debugregs[3 + base + i*2 + 1] & 1)continue;
+		*out = i;
+		break;
+	}
+
+	if(*out == ~0)
+	{
+		printf("No more %s register slots are available.\n", type==0?"breakpoint":"watchpoint");
+		ret = 6;
+	}
+
 	return ret;
 }
 
@@ -1887,10 +1959,14 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 	unsigned int *outbuf32;
 	unsigned int inbuffersize=0, outbufsize=0;
 	unsigned int paramblock[16];
+	uint32_t debugregs[0x4c>>2];
 	struct stat filestat;
 	unsigned int val=0;
 	uint64_t val64 = 0;
 	unsigned int chunksize;
+	unsigned char contextid;
+	uint32_t kprocessptr=0;
+	uint32_t bkptid0, bkptid1;
 
 	memset(paramblock, 0, 16*4);
 
@@ -2412,28 +2488,28 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 
 			if(ret==0 && paramblock[0]==1)
 			{
-				ret = parsecmd_inputhexdata(&paramblock[2], 0x4c);
+				ret = parsecmd_inputhexdata(debugregs, 0x4c);
 				if(ret!=0)
 				{
 					printf("Invalid registers data.\n");
 				}
 			}
 
-			if(ret==0)ret = cmd_armdebugaccessregs(client, paramblock[0], paramblock[1], &paramblock[2]);
+			if(ret==0)ret = cmd_armdebugaccessregs(client, paramblock[0], paramblock[1], debugregs);
 
 			if(ret==0)
 			{
 				printf("Successfully sent cmd.\n");
-				if(paramblock[0] == 0)hexdump(&paramblock[2], 0x4c);
+				if(paramblock[0] == 0)hexdump(debugregs, 0x4c);
 			}
 		}
 		else if(strncmp(&customcmd[pos], "status", 6)==0)
 		{
-			ret = cmd_armdebugaccessregs(client, 0, 0x2, &paramblock[2]);
+			ret = cmd_armdebugaccessregs(client, 0, 0x2, debugregs);
 			if(ret==0)
 			{
-				printf("DIDR = 0x%08x. Mode select: %s. Monitor debug-mode: %s.\n", paramblock[2+1], paramblock[2+1] & 0x4000 ? "Halting debug-mode selected and enabled":"Monitor debug-mode selected", paramblock[2+1] & 0x8000 ? "enabled":"disabled");
-				if(paramblock[2+1] & 0x8000)
+				printf("DIDR = 0x%08x. Mode select: %s. Monitor debug-mode: %s.\n", debugregs[1], debugregs[1] & 0x4000 ? "Halting debug-mode selected and enabled":"Monitor debug-mode selected", debugregs[1] & 0x8000 ? "enabled":"disabled");
+				if(debugregs[1] & 0x8000)
 				{
 					printf("Hardware debugging is enabled.\n");
 				}
@@ -2443,7 +2519,7 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 				}
 				
 				printf("Able to take debug exceptions: ");
-				if((paramblock[2+1] & 0xc000) == 0x8000)
+				if((debugregs[1] & 0xc000) == 0x8000)
 				{
 					printf("yes.\n");
 				}
@@ -2462,6 +2538,153 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 		{
 			ret = cmd_armdebugaccessregs_disabledebug(client);
 			if(ret==0)printf("Successfully disabled hardware debugging.\n");
+		}
+		else if(strncmp(&customcmd[pos], "addbkpt", 7)==0)//This is currently broken, no exceptions trigger with bkpts from this.
+		{
+			pos+= 7;
+
+			paramblock[1] = 1;
+
+			str = strtok(&customcmd[pos], " ");
+			if(str==NULL)
+			{
+				ret = 4;
+				printf("Invalid input parameters.\n");
+			}
+			else
+			{
+				if(strncmp(str, "cpumode=", 8)==0)
+				{
+					if(strncmp(&str[8], "11kern", 6)==0)
+					{
+						paramblock[1] |= 0x1<<1;
+					}
+					else if(strncmp(&str[8], "11usr", 5)==0)
+					{
+						paramblock[1] |= 0x2<<1;
+					}
+					else if(strncmp(&str[8], "all", 3)==0)
+					{
+						paramblock[1] |= 0x3<<1;
+					}
+					else
+					{
+						printf("Invalid cpumode param value.\n");
+						ret = 4;
+					}
+				}
+				else
+				{
+					printf("Invalid cpumode param.\n");
+					ret = 4;
+				}
+			}
+
+			if(ret==0)
+			{
+				contextid = 0xff;
+
+				str = strtok(NULL, " ");
+				if(str==NULL)
+				{
+					ret = 4;
+					printf("Invalid input params.\n");
+				}
+				else
+				{
+					if(strncmp(str, "context=", 8)==0)
+					{
+						if(strncmp(&str[8], "all", 3)==0)
+						{
+							contextid = 0xfe;
+						}
+						else if(strncmp(&str[8], "procname:", 9)==0)
+						{
+							ret = cmd_getprocinfo_vaddrconv(client, &str[8+9], 0, 1, &kprocessptr);
+							if(ret==0 && kprocessptr==~0)
+							{
+								ret = 5;
+								printf("Failed to find the specified process.\n");
+							}
+						}
+						else if(strncmp(&str[8], "kprocess:0x", 9)==0)
+						{
+							sscanf(&str[8+11], "%x", &kprocessptr);
+						}
+						else if(strncmp(&str[8], "val:0x", 6)==0)
+						{
+							sscanf(&str[8+6], "%x", &paramblock[2]);
+							contextid = paramblock[2];
+						}
+						else
+						{
+							ret = 4;
+							printf("Invalid context type.\n");
+						}
+					}
+					else
+					{
+						ret = 4;
+						printf("Invalid input context param.\n");
+					}
+				}
+			}
+
+			if(ret==0 && contextid==0xff)ret = cmd_getprocinfo_contextid(client, kprocessptr, &contextid);
+
+			if(ret==0 && contextid==0xff)
+			{
+				ret = 4;
+				printf("ContextID is invalid.\n");
+			}
+
+			if(ret==0 && contextid==0xfe)contextid = 0xff;
+
+			if(ret==0 && contextid!=0xff)
+			{
+				ret = 4;
+				printf("Context must be set to 'all' for now.\n");
+			}
+
+			if(ret==0)
+			{
+				ret = parsecmd_hexvalue(NULL, " ", &paramblock[2]);
+				if(ret!=0)
+				{
+					printf("Invalid address param.\n");
+				}
+			}
+
+			if(ret==0)ret = cmd_armdebugaccessregs_getdebugenabled(client, &paramblock[0]);
+			if(ret==0 && paramblock[0]==0)
+			{
+				printf("Hardware debugging isn't enabled, enabling it now...\n");
+				ret = cmd_armdebugaccessregs_enabledebug(client);
+				if(ret==0)printf("Successfully enabled hardware debugging.\n");
+			}
+
+			if(ret==0)ret = cmd_armdebugaccessregs(client, 0, ~0, debugregs);
+
+			if(ret==0)ret = cmd_armdebugaccessregs_allocslot(client, &bkptid0, 0x0, 0);//contextID bkpt
+			if(ret==0)ret = cmd_armdebugaccessregs_allocslot(client, &bkptid1, 1<<bkptid0, 0);//address bkpt
+
+			if(ret==0)
+			{
+				printf("Using contextID 0x%x and address 0x%x. bkptid0=0x%x and bkptid1=0x%x.\n", contextid, paramblock[2], bkptid0, bkptid1);
+
+				paramblock[1] |= (0x1<<5);//Trigger on address + 0 accesses.
+
+				debugregs[3 + bkptid1*2 + 0] = paramblock[2] & ~3;//BVR
+				debugregs[3 + bkptid1*2 + 1] = paramblock[1];//BCR
+
+				ret = cmd_armdebugaccessregs(client, 1, 1<<(3 + bkptid1*2 + 0), debugregs);//Write BVR.
+				if(ret==0)ret = cmd_armdebugaccessregs(client, 1, 1<<(3 + bkptid1*2 + 1), debugregs);//Write BCR.
+			}
+
+			if(ret==0)
+			{
+				printf("Successfully setup bkpt, id=0x%x. BCR = 0x%x.\n", bkptid1, paramblock[1]);
+			}
 		}
 	}
 	else
