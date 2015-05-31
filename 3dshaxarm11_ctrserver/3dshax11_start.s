@@ -250,3 +250,15 @@ cpsid i @ disable IRQs
 str r5, [r4]
 bx lr
 
+.global kernelmode_cachestuff
+.type kernelmode_cachestuff, %function
+kernelmode_cachestuff:
+mov r0, #0
+mcr p15, 0, r0, c7, c14, 0 @ "Clean and Invalidate Entire Data Cache"
+mcr p15, 0, r0, c7, c10, 5 @ "Data Memory Barrier"
+mcr p15, 0, r0, c7, c5, 0 @ "Invalidate Entire Instruction Cache. Also flushes the branch target cache"
+mcr p15, 0, r0, c7, c5, 4 @ "Flush Prefetch Buffer"
+mcr p15, 0, r0, c7, c5, 6 @ "Flush Entire Branch Target Cache"
+mcr p15, 0, r0, c7, c10, 4 @ "Data Synchronization Barrier"
+bx lr
+

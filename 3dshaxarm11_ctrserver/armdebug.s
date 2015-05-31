@@ -30,7 +30,7 @@ bx lr
 .type setdebug_vcr, %function
 setdebug_vcr:
 mcr p14, 0, r0, c0, c7, 0
-bx lr
+b kernelmode_cachestuff
 
 .global getdebug_bvr
 .type getdebug_bvr, %function
@@ -52,7 +52,7 @@ bx lr
 
 getdebug_bvr_l0:
 mrc p14, 0, r0, c0, c0, 4
-bx lr
+
 
 getdebug_bvr_l1:
 mrc p14, 0, r0, c0, c1, 4
@@ -183,22 +183,22 @@ bx lr
 setdebug_bcr_l0:
 mcr p14, 0, r1, c0, c0, 5
 mov r0, #0
-bx lr
+b kernelmode_cachestuff
 
 setdebug_bcr_l1:
 mcr p14, 0, r1, c0, c1, 5
 mov r0, #0
-bx lr
+b kernelmode_cachestuff
 
 setdebug_bcr_l2:
 mcr p14, 0, r1, c0, c2, 5
 mov r0, #0
-bx lr
+b kernelmode_cachestuff
 
 setdebug_bcr_l3:
 mcr p14, 0, r1, c0, c3, 5
 mov r0, #0
-bx lr
+b kernelmode_cachestuff
 
 setdebug_bcr_l4:
 mcr p14, 0, r1, c0, c4, 5
@@ -208,7 +208,7 @@ bx lr
 setdebug_bcr_l5:
 mcr p14, 0, r1, c0, c5, 5
 mov r0, #0
-bx lr
+b kernelmode_cachestuff
 
 .global getdebug_wvr
 .type getdebug_wvr, %function
@@ -279,10 +279,10 @@ bx lr
 setdebug_wcr_l0:
 mcr p14, 0, r1, c0, c0, 7
 mov r0, #0
-bx lr
+b kernelmode_cachestuff
 
 setdebug_wcr_l1:
 mcr p14, 0, r1, c0, c1, 7
 mov r0, #0
-bx lr
+b kernelmode_cachestuff
 

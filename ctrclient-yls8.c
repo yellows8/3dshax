@@ -2539,7 +2539,7 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 			ret = cmd_armdebugaccessregs_disabledebug(client);
 			if(ret==0)printf("Successfully disabled hardware debugging.\n");
 		}
-		else if(strncmp(&customcmd[pos], "addbkpt", 7)==0)//This is currently broken, no exceptions trigger with bkpts from this.
+		else if(strncmp(&customcmd[pos], "addbkpt", 7)==0)
 		{
 			pos+= 7;
 

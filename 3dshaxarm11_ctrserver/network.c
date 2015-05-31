@@ -58,6 +58,8 @@ void call_arbitaryfuncptr(void* funcptr, u32 *regdata);
 s32 svcStartInterProcessDma(u32* dmahandle, u32 dstProcess, u32* dst, u32 srcProcess, u32* src, u32 size, u32 *config);
 s32 svcGetDmaState(u32 *state, u32 dmahandle);
 
+void kernelmode_cachestuff();
+
 Result FSUSER_ControlArchive(Handle *handle, FS_archive archive)//This is based on code from smea.
 {
 	u32* cmdbuf=getThreadCommandBuffer();
@@ -460,7 +462,7 @@ int net_kernelmode_handlecmd(u32 param)
 		return 0;
 	}
 
-	if(cmdid==0xa0 || cmdid==0xa1)
+	if(cmdid==0xa0 || cmdid==0xa1)//Due to ctrserver running on MP11 core1, this code can currently only access the debug registers for core1.
 	{
 		if(*bufsize < 4)
 		{
@@ -546,7 +548,9 @@ int net_kernelmode_handlecmd(u32 param)
 		}
 
 		if(!tmpval)*bufsize = count*4;
+		
 		if(tmpval)*bufsize = 0;
+
 		return 0;
 	}
 
