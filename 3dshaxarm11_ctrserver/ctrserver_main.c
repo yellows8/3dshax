@@ -13,37 +13,38 @@ Result initsrvhandle_allservices();
 
 extern char* fake_heap_start;
 extern char* fake_heap_end;
-u32 __linear_heap;
 u32 __heapBase;
 extern u32 __heap_size, __linear_heap_size;
-
+u32 __linear_heap;
+static u32 linearheapsize;
 
 void __system_allocateHeaps() {
 	u32 tmp=0;
 	Result ret;
+	u32 heapsize;
 
 	if(PROCESSNAME != 0x454d414e434f5250LL)//This is only executed when the PROCESSNAME is not set to the default "PROCNAME" string.
 	{
 		if(PROCESSNAME == 0x706c64)//"dlp"
 		{
-			__linear_heap_size = 0x2000;
-			if(*((u8*)0x1FF80030) >= 6)__linear_heap_size = 0x500000;//New3DS
+			linearheapsize = 0x2000;
+			if(*((u8*)0x1FF80030) >= 6)linearheapsize = 0x500000;//New3DS
 		}
 		else
 		{
-			__linear_heap_size = 0x500000;
+			linearheapsize = 0x500000;
 		}
 	}
 	else
 	{
-		__linear_heap_size = 0x500000;
+		linearheapsize = 0x500000;
 	}
 
-	__heap_size = 0x00088000;
+	heapsize = 0x00088000;
 
 	// Allocate the application heap
 	__heapBase = 0x08000000;
-	ret = svcControlMemory(&tmp, __heapBase, 0x0, __heap_size, MEMOP_ALLOC, 0x3);
+	ret = svcControlMemory(&tmp, __heapBase, 0x0, heapsize, MEMOP_ALLOC, 0x3);
 
 	if(ret!=0)
 	{
@@ -51,7 +52,7 @@ void __system_allocateHeaps() {
 	}
 
 	// Allocate the linear heap
-	ret = svcControlMemory(&__linear_heap, 0x0, 0x0, __linear_heap_size, MEMOP_ALLOC_LINEAR, 0x3);
+	ret = svcControlMemory(&__linear_heap, 0x0, 0x0, linearheapsize, MEMOP_ALLOC_LINEAR, 0x3);
 
 	if(ret!=0)
 	{
@@ -60,7 +61,7 @@ void __system_allocateHeaps() {
 
 	// Set up newlib heap
 	fake_heap_start = (char*)__heapBase;
-	fake_heap_end = fake_heap_start + __heap_size;
+	fake_heap_end = fake_heap_start + heapsize;
 }
 
 void __appInit() {
@@ -120,7 +121,7 @@ int main(int argc, char **argv)
 		((u32*)0x84000000)[1] = ret;
 	}
 
-	network_stuff((u32*)__linear_heap, __linear_heap_size);
+	network_stuff((u32*)__linear_heap, linearheapsize);
 
 	while(1);
 
