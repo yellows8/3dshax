@@ -876,13 +876,25 @@ bl arm11kernel_sendpxisync_val
 mov r0, #0xf
 bl arm11kernel_waitpxisync_val
 
+mov r0, r4
+mov r1, #0
+ldr r2, =0x21c
+
+arm11kernel_exceptionregdump_clrbuf:
+str r1, [r0], #4
+subs r2, r2, #4
+bgt arm11kernel_exceptionregdump_clrbuf
+
 add r0, r4, #4
 mov r2, #0
 
-ldr r1, =0x47424445 @ Debuginfo type = "EDBG".
+ldr r1, =0x4e474445 @ Debuginfo type = "EDGN".
 str r1, [r0], #4
-mov r1, #0x200
+ldr r1, =0x21c
 str r1, [r0], #4 @ Total size of the debuginfo.
+
+mov r1, #1
+str r1, [r0], #4 @ Exception debuginfo structure version
 
 arm11kernel_exceptionregdump_L1:
 ldr r1, [r6, r2]
@@ -945,20 +957,20 @@ str r1, [r0], #4
 str r2, [r0], #4
 str r3, [r0], #4
 
-ldr r1, [r4, #0x4c]
+ldr r1, [r4, #0x50]
 cmp r1, #1 @ Check whether this exception is a Prefetch Abort.
 cmpeq r2, #2
 movne r5, #0
 moveq r5, #1 @ r5=1 when this exception was triggered via a breakpoint.
 
-ldr r1, [r4, #0x4c]
+ldr r1, [r4, #0x50]
 cmp r1, #1
 addeq r0, r0, #0x20
 beq arm11kernel_exceptionregdump_datadump_init
 
 arm11kernel_exceptionregdump_datadump_pc:
 mov r3, #0
-add r1, r4, #0x50//sp = #0x44, lr = #0x48, pc = #0x50
+add r1, r4, #0x54//sp = #0x48, lr = #0x4c, pc = #0x54
 ldr r1, [r1]
 sub r1, r1, #0x10
 
@@ -970,18 +982,22 @@ lsl r2, r2, #10
 mcr p15, 0, r2, c7, c8, 0
 mrc p15, 0, r2, c7, c4, 0
 tst r2, #1
-bne arm11kernel_exceptionregdump_L2_end
+addne r0, r0, #4
+addne r1, r1, #4
+bne arm11kernel_exceptionregdump_datadump_pclp_next
 
 arm11kernel_exceptionregdump_datadump_pclp_cpydata:
 ldr r2, [r1], #4
 str r2, [r0], #4
+
+arm11kernel_exceptionregdump_datadump_pclp_next:
 add r3, r3, #4
 cmp r3, #0x20
 blt arm11kernel_exceptionregdump_datadump_pclp
 
 arm11kernel_exceptionregdump_datadump_init:
 mov r3, #0
-add r1, r4, #0x44//sp = #0x44, lr = #0x48, pc = #0x50
+add r1, r4, #0x48//sp = #0x48, lr = #0x4c, pc = #0x54
 ldr r1, [r1]
 
 //cmp r5, #1
@@ -990,7 +1006,7 @@ ldreq r1, [r6, #24] @ r1 = saved r6
 ldr r2, =0xfff
 biceq r1, r1, r2*/
 /*ldr r2, =0x108618
-ldr r3, [r4, #0x48] @ r3 = saved lr
+ldr r3, [r4, #0x4c] @ r3 = saved lr
 cmpeq r3, r2
 ldrne r2, =0xfff8b00a
 strne r2, [r6] @ saved r0 = 0xfff8b00a*/
@@ -1022,16 +1038,42 @@ lsl r2, r2, #10
 mcr p15, 0, r2, c7, c8, 0
 mrc p15, 0, r2, c7, c4, 0
 tst r2, #1
-bne arm11kernel_exceptionregdump_L2_end
+addne r0, r0, #4
+addne r1, r1, #4
+bne arm11kernel_exceptionregdump_L2_lpnext
 
 arm11kernel_exceptionregdump_L2_cpydata:
 ldr r2, [r1], #4
 str r2, [r0], #4
+
+arm11kernel_exceptionregdump_L2_lpnext:
 add r3, r3, #4
 cmp r3, #0x164
 blt arm11kernel_exceptionregdump_L2
 
 arm11kernel_exceptionregdump_L2_end:
+cmp r7, #0
+beq arm11kernel_exceptionregdump_L2_end_finish
+
+mrc p15, 0, r1, c6, c0, 1 @ Read WFAR "Watchpoint Fault Address Register".
+str r1, [r0], #4
+
+mrc p15, 0, r1, c13, c0, 1 @ Read contextID "Read Context ID Register".
+str r1, [r0], #4
+
+mrc p15, 0, r1, c13, c0, 3 @ Read the threadID register.
+str r1, [r0], #4
+
+mrc p15, 0, r1, c0, c0, 5 @ Read the CPUID register.
+str r1, [r0], #4
+
+ldr r1, =0xffff9000
+ldr r2, [r1, #0]
+ldr r3, [r1, #4]
+str r2, [r0], #4 @ Write the current KThread ptr.
+str r3, [r0], #4 @ Write the current KProcess ptr.
+
+arm11kernel_exceptionregdump_L2_end_finish:
 ldr r1, =0x58584148
 str r1, [r4]
 
@@ -1039,12 +1081,13 @@ bl arm11kernel_getdebugstateptr
 add r5, r0, #0x200
 add r6, r5, #0x500
 mov r2, #0
+ldr r3, =0x21c
 arm11kernel_exceptionregdump_blkcpy:
 ldr r0, [r4, r2]
 str r0, [r5, r2]
 str r0, [r6, r2]
 add r2, r2, #4
-cmp r2, #0x200
+cmp r2, r3
 blt arm11kernel_exceptionregdump_blkcpy
 
 cmp r7, #0

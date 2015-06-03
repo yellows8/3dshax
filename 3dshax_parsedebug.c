@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <sys/stat.h>
 
 FILE *fdebuginfo;
@@ -42,7 +43,7 @@ void hexdump(void *ptr, int buflen)//This is based on code from ctrtool.
 	}
 }
 
-void parse_debuginfo_exception(unsigned int *debuginfo)
+void parse_debuginfo_exception(unsigned int *debuginfo, uint32_t new, uint32_t formatversion)
 {
 	FILE *ftmp;
 	int i;
@@ -98,6 +99,16 @@ void parse_debuginfo_exception(unsigned int *debuginfo)
 		printf("DFSR: 0x%08x\n", debuginfo[(0x5c+4)>>2]);
 		printf("IFSR: 0x%08x\n", debuginfo[(0x60+4)>>2]);
 		printf("FAR: 0x%08x\n", debuginfo[(0x64+4)>>2]);
+
+		if(new && formatversion>=1)
+		{
+			printf("WFAR: 0x%08x\n", debuginfo[(0x90+0x164 + 0x0)>>2]);
+			printf("c13 contextID register: 0x%08x\n", debuginfo[(0x90+0x164 + 0x4)>>2]);
+			printf("c13 threadID register: 0x%08x\n", debuginfo[(0x90+0x164 + 0x8)>>2]);
+			printf("CPUID register: 0x%08x\n", debuginfo[(0x90+0x164 + 0xc)>>2]);
+			printf("KThread kernel VA: 0x%08x\n", debuginfo[(0x90+0x164 + 0x10)>>2]);
+			printf("KProcess kernel VA: 0x%08x\n", debuginfo[(0x90+0x164 + 0x14)>>2]);
+		}
 	}
 
 	if(enable_hexdump)
@@ -324,6 +335,7 @@ int main(int argc, char **argv)
 	unsigned int *debuginfo_ptr = NULL;
 	unsigned int debuginfo[0x200>>2];
 	unsigned int debuginfo_size;
+	uint32_t formatversion, parser_formatversion = 0x1;
 	struct stat filestat;
 
 	if(argc<2)return 0;
@@ -376,21 +388,29 @@ int main(int argc, char **argv)
 
 		if(debuginfo[1]==0x47424445)
 		{
-			printf("Exception\n");
-			parse_debuginfo_exception(&debuginfo_ptr[3]);
+			printf("Exception(old format)\n");
+			parse_debuginfo_exception(&debuginfo_ptr[3], 0, 0);
 		}
+		else if(debuginfo[1]==0x4e474445)
+		{
+			formatversion = debuginfo_ptr[3];
 
-		if(debuginfo[1]==0x444d4344)
+			printf("Exception(new format, version=0x%x)\n", formatversion);
+			if(formatversion > parser_formatversion)
+			{
+				printf("The exception dump format version(0x%x) is newer than the version supported by this parser(0x%x). Skipping parsing.\n", formatversion, parser_formatversion);
+			}
+			parse_debuginfo_exception(&debuginfo_ptr[4], 1, formatversion);
+		}
+		else if(debuginfo[1]==0x444d4344)
 		{
 			parse_debuginfo_command(&debuginfo_ptr[3]);
 		}
-
-		if(debuginfo[1]==0x33435847)
+		else if(debuginfo[1]==0x33435847)
 		{
 			parse_debuginfo_gxcmd3(&debuginfo_ptr[3]);
 		}
-
-		if(debuginfo[1]!=0x47424445 && debuginfo[1]!=0x444d4344 && debuginfo[1]!=0x33435847)
+		else
 		{
 			printf("Skipping unknown debuginfo with type 0x%08x\n", debuginfo[1]);
 
