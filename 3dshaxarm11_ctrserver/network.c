@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <malloc.h>
 
 #include <3ds.h>
 
@@ -31,6 +32,12 @@ static u32 *net_payloadptr, net_payload_maxsize;
 static ctrserver net_server;
 static u32 net_kernelmode_paramblock[4];
 
+static Handle threadevents[3];
+static Handle threadhandle;
+static u32 thread_initialized = 0, *thread_stackbottom = NULL, thread_threadpriority = 0, thread_processorid = 0, selected_cmdhandler_thread = 0;
+static u64 thread_cmdreplyevent_timeout = U64_MAX;
+static u32 net_thread_paramblock[4];
+
 static u32 arm9access_available = 0;
 
 static u32 amserv_available = 0;
@@ -48,6 +55,8 @@ extern Handle SOCU_handle;
 extern u32* gxCmdBuf;
 
 extern u32 *arm11kernel_textvaddr;
+
+void network_cmdhandler_thread(void *arg);
 
 int ctrserver_recvdata(ctrserver *server, u8 *buf, int size);
 int ctrserver_senddata(ctrserver *server, u8 *buf, int size);
@@ -462,7 +471,7 @@ int net_kernelmode_handlecmd(u32 param)
 		return 0;
 	}
 
-	if(cmdid==0xa0 || cmdid==0xa1)//Due to ctrserver running on MP11 core1, this code can currently only access the debug registers for core1.
+	if(cmdid==0xa0 || cmdid==0xa1)
 	{
 		if(*bufsize < 4)
 		{
@@ -687,7 +696,7 @@ static int ctrserver_handlecmd_installcia(u32 *buf, u32 *bufsize)
 
 static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 {
-	u8 *buf8 = (u8*)buf;
+	//u8 *buf8 = (u8*)buf;
 	u32 size;
 	int ret=0, ret2, ret3;
 	u32 filehandle=0;
@@ -763,6 +772,128 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 			}
 
 			svcCloseHandle(buf[1]);
+		}
+
+		return 0;
+	}
+
+	if(cmdid==0x4d)
+	{
+		if(*bufsize != 20)
+		{
+			*bufsize = 8;
+			buf[0] = 0;
+			buf[1] = ~0;
+			return 0;
+		}
+
+		if(buf[0]==0)//Start the seperate thread for cmd-handling.
+		{
+			if(thread_initialized)
+			{
+				*bufsize = 8;
+				buf[0] = 0;
+				buf[1] = ~1;
+				return 0;
+			}
+
+			for(pos=0; pos<3; pos++)svcClearEvent(threadevents[pos]);
+
+			memset(net_thread_paramblock, 0, sizeof(net_thread_paramblock));
+
+			thread_threadpriority = buf[1];
+			thread_processorid = buf[2];
+			if(thread_threadpriority == ~0)thread_threadpriority = 0x31;
+
+			memcpy(&thread_cmdreplyevent_timeout, &buf[3], 8);
+
+			if(thread_stackbottom)free(thread_stackbottom);
+			thread_stackbottom = memalign(0x8, 0x1000);
+
+			if(thread_stackbottom==NULL)
+			{
+				*bufsize = 8;
+				buf[0] = 0;
+				buf[1] = ~2;
+				return 0;
+			}
+
+			buf[0] = 1;
+			buf[1] = svcCreateThread(&threadhandle, network_cmdhandler_thread, 0x0, &thread_stackbottom[0x1000>>2], thread_threadpriority, thread_processorid);
+
+			if(buf[1]==0)
+			{
+				thread_initialized = 1;
+				selected_cmdhandler_thread = 1;
+			}
+			else
+			{
+				free(thread_stackbottom);
+				thread_stackbottom = NULL;
+			}
+
+			*bufsize = 8;
+		}
+		else if(buf[0]==1)//Terminate the seperate thread for cmd-handling.
+		{
+			if(!thread_initialized)
+			{
+				*bufsize = 8;
+				buf[0] = 0;
+				buf[1] = ~1;
+				return 0;
+			}
+
+			svcSignalEvent(threadevents[0]);//Send the signal for thread termination, then wait for the actual thread termination.
+			svcWaitSynchronization(threadhandle, U64_MAX);
+			svcCloseHandle(threadhandle);
+
+			free(thread_stackbottom);
+			thread_stackbottom = NULL;
+
+			for(pos=0; pos<3; pos++)svcClearEvent(threadevents[pos]);
+
+			thread_initialized = 0;
+			selected_cmdhandler_thread = 0;
+
+			*bufsize = 8;
+			buf[0] = 0;
+			buf[1] = 0;
+		}
+		else if(buf[0]==2)
+		{
+			buf[0] = thread_initialized;
+			if(!thread_initialized)
+			{
+				*bufsize = 4;
+				return 0;
+			}
+
+			for(pos=0; pos<3; pos++)buf[1+pos] = threadevents[pos];
+
+			buf[4] = threadhandle;
+
+			buf[5] = (u32)thread_stackbottom;
+			buf[6] = 0x1000;//stacksize
+			buf[7] = thread_threadpriority;
+			buf[8] = thread_processorid;
+			buf[9] = selected_cmdhandler_thread;
+
+			*bufsize = 10*4;
+		}
+		else if(buf[0]==3)
+		{
+			if(!thread_initialized)
+			{
+				*bufsize = 8;
+				buf[0] = 0;
+				buf[1] = ~1;
+				return 0;
+			}
+
+			selected_cmdhandler_thread = buf[1];
+			*bufsize = 0;
+			return 0;
 		}
 
 		return 0;
@@ -1146,6 +1277,20 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		return 0;
 	}
 
+	if(cmdid==0x67)
+	{
+		if(*bufsize != 5*4)
+		{
+			*bufsize = 0;
+			return 0;
+		}
+
+		buf[0] = svcCreateThread(&buf[1], (ThreadFunc)buf[0], buf[1], (u32*)buf[2], buf[3], buf[4]);
+
+		*bufsize = 8;
+		return 0;
+	}
+
 	if(cmdid==0x80)
 	{
 		//buf[0]=archiveid, [1]=archive_lowpathtype, [2]=archive_lowpathsize, [3]=file_lowpathtype, [4]=file_lowpathsize, [5]=openflags. starting @ buf[6]: archive_lowpathdata. starting @ buf[6 + <archive_lowpathsize aligned to 4-bytes>]: file_lowpathdata. immediately after the file_lowpathdata with 4-byte alignment is the data to write, when openflags bit1 is set.
@@ -1370,6 +1515,38 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 	return 0;
 }
 
+void network_cmdhandler_thread(void *arg)
+{
+	Result ret;
+	s32 syncedID;
+	u32 cmdid, *buf, *bufsize;
+
+	while(1)
+	{
+		ret = svcWaitSynchronizationN(&syncedID, threadevents, 2, 0, U64_MAX);
+		if(ret!=0 || (syncedID<0 || syncedID>1))break;
+
+		svcClearEvent(threadevents[syncedID]);
+
+		if(syncedID==0)//terminate
+		{
+			break;
+		}
+		else//cmdreq
+		{
+			cmdid = net_thread_paramblock[0];
+			buf = (u32*)net_thread_paramblock[1];
+			bufsize = (u32*)net_thread_paramblock[2];
+
+			ctrserver_handlecmd(cmdid, buf, bufsize);
+
+			svcSignalEvent(threadevents[2]);
+		}
+	}
+
+	svcExitThread();
+}
+
 int ctrserver_recvdata(ctrserver *server, u8 *buf, int size)
 {
 	int ret, pos=0;
@@ -1478,7 +1655,31 @@ int ctrserver_processcmd(ctrserver *server, u32 *payloadptr)
 	ret = ctrserver_transfermessage(server, 0, &cmdid, &payloadsize, payloadptr);
 	if(ret<=0)return ret;
 
-	ret = ctrserver_handlecmd(cmdid, payloadptr, &payloadsize);
+	if(selected_cmdhandler_thread==0 || ((cmdid & 0xcff) == 0x84d))//The thread-management command for the cmd-handler thread must be run under the current thread. Other commands will be sent to the cmd-handler thread if available, otherwise those are processed by the current thread.
+	{
+		ret = ctrserver_handlecmd(cmdid, payloadptr, &payloadsize);
+	}
+	else
+	{
+		ret = 1;
+
+		memset(net_thread_paramblock, 0, sizeof(net_thread_paramblock));
+		
+		net_thread_paramblock[0] = cmdid;
+		net_thread_paramblock[1] = (u32)payloadptr;
+		net_thread_paramblock[2] = (u32)&payloadsize;
+
+		ret = svcSignalEvent(threadevents[1]);//Signal the cmdreq event.
+		if(ret<0)ret = -7;
+		ret = svcWaitSynchronization(threadevents[2], thread_cmdreplyevent_timeout);//Wait for cmdreply.
+		if(ret<0 || ret==0x09401bfe)ret = -8;
+		if(ret==0)svcClearEvent(threadevents[2]);
+
+		if(ret<0)selected_cmdhandler_thread = 0;
+
+		if(ret>=0)ret = 1;
+	}
+
 	if(ret<0)return ret;
 
 	ret = ctrserver_transfermessage(server, 1, &cmdid, &payloadsize, payloadptr);
@@ -1632,6 +1833,8 @@ void network_initialize()
 
 void network_stuff(u32 *payloadptr, u32 payload_maxsize)
 {
+	Result ret;
+	u32 pos;
 	struct sockaddr addr;
 	socklen_t addrlen;
 
@@ -1644,6 +1847,12 @@ void network_stuff(u32 *payloadptr, u32 payload_maxsize)
 
 	/*process_clientconnection_test_udp(listen_sock);
 	while(1);*/
+
+	for(pos=0; pos<3; pos++)
+	{
+		ret = svcCreateEvent(&threadevents[pos], 0);
+		if(ret!=0)((u32*)0x86000000)[pos] = ret;
+	}
 
 	while(1)
 	{
