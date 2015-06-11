@@ -797,6 +797,13 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 				return 0;
 			}
 
+			for(pos=0; pos<3; pos++)
+			{
+				ret = 0;
+				if(threadevents[pos] == 0)ret = svcCreateEvent(&threadevents[pos], 0);
+				if(ret!=0)((u32*)0x86000000)[pos] = ret;
+			}
+
 			for(pos=0; pos<3; pos++)svcClearEvent(threadevents[pos]);
 
 			memset(net_thread_paramblock, 0, sizeof(net_thread_paramblock));
@@ -1834,7 +1841,6 @@ void network_initialize()
 void network_stuff(u32 *payloadptr, u32 payload_maxsize)
 {
 	Result ret;
-	u32 pos;
 	struct sockaddr addr;
 	socklen_t addrlen;
 
@@ -1847,12 +1853,6 @@ void network_stuff(u32 *payloadptr, u32 payload_maxsize)
 
 	/*process_clientconnection_test_udp(listen_sock);
 	while(1);*/
-
-	for(pos=0; pos<3; pos++)
-	{
-		ret = svcCreateEvent(&threadevents[pos], 0);
-		if(ret!=0)((u32*)0x86000000)[pos] = ret;
-	}
 
 	while(1)
 	{
