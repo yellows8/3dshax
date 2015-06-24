@@ -2447,7 +2447,7 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 		ret = cmd_sendexceptionhandler_signal(client, 1);
 		if(ret==0)printf("Successfully sent exception-handler signal.\n");
 	}
-	else if(strncmp(customcmd, "armdebug:accessregs", 9)==0)
+	else if(strncmp(customcmd, "armdebug:", 9)==0)
 	{
 		pos = 9;
 		if(strncmp(&customcmd[pos], "accessregs", 10)==0)

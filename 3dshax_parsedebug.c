@@ -108,6 +108,8 @@ void parse_debuginfo_exception(unsigned int *debuginfo, uint32_t new, uint32_t f
 			printf("CPUID register: 0x%08x\n", debuginfo[(0x90+0x164 + 0xc)>>2]);
 			printf("KThread kernel VA: 0x%08x\n", debuginfo[(0x90+0x164 + 0x10)>>2]);
 			printf("KProcess kernel VA: 0x%08x\n", debuginfo[(0x90+0x164 + 0x14)>>2]);
+
+			if(formatversion>=2)printf("DSCR: 0x%08x\n", debuginfo[(0x90+0x164 + 0x18)>>2]);
 		}
 	}
 
@@ -335,7 +337,7 @@ int main(int argc, char **argv)
 	unsigned int *debuginfo_ptr = NULL;
 	unsigned int debuginfo[0x200>>2];
 	unsigned int debuginfo_size;
-	uint32_t formatversion, parser_formatversion = 0x1;
+	uint32_t formatversion, parser_formatversion = 0x2;
 	struct stat filestat;
 
 	if(argc<2)return 0;

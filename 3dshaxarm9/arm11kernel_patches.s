@@ -878,7 +878,7 @@ bl arm11kernel_waitpxisync_val
 
 mov r0, r4
 mov r1, #0
-ldr r2, =0x21c
+ldr r2, =0x220
 
 arm11kernel_exceptionregdump_clrbuf:
 str r1, [r0], #4
@@ -890,10 +890,10 @@ mov r2, #0
 
 ldr r1, =0x4e474445 @ Debuginfo type = "EDGN".
 str r1, [r0], #4
-ldr r1, =0x21c
+ldr r1, =0x220
 str r1, [r0], #4 @ Total size of the debuginfo.
 
-mov r1, #1
+mov r1, #2
 str r1, [r0], #4 @ Exception debuginfo structure version
 
 arm11kernel_exceptionregdump_L1:
@@ -1073,6 +1073,12 @@ ldr r3, [r1, #4]
 str r2, [r0], #4 @ Write the current KThread ptr.
 str r3, [r0], #4 @ Write the current KProcess ptr.
 
+mrc p14, 0, r1, c0, c1, 0 @ Get the debug DSCR.
+str r1, [r0], #4
+ands r2, r1, #0x3c
+bicne r1, r1, #0x3c
+mcrne p14, 0, r1, c0, c1, 0 @ When method-of-entry is non-zero, clear it to zero. This is required: no debug exceptions (breakpoint/watchpoint) will trigger when this is non-zero.
+
 arm11kernel_exceptionregdump_L2_end_finish:
 ldr r1, =0x58584148
 str r1, [r4]
@@ -1081,7 +1087,7 @@ bl arm11kernel_getdebugstateptr
 add r5, r0, #0x200
 add r6, r5, #0x500
 mov r2, #0
-ldr r3, =0x21c
+ldr r3, =0x220
 arm11kernel_exceptionregdump_blkcpy:
 ldr r0, [r4, r2]
 str r0, [r5, r2]
