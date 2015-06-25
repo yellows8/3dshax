@@ -52,6 +52,7 @@ void parse_debuginfo_exception(unsigned int *debuginfo, uint32_t new, uint32_t f
 	unsigned int exceptiontype;
 	unsigned char *ptr8;
 	unsigned int RUNNINGFWVER;
+	unsigned int tmp;
 	char processname[16];
 	char str[256];
 
@@ -109,7 +110,57 @@ void parse_debuginfo_exception(unsigned int *debuginfo, uint32_t new, uint32_t f
 			printf("KThread kernel VA: 0x%08x\n", debuginfo[(0x90+0x164 + 0x10)>>2]);
 			printf("KProcess kernel VA: 0x%08x\n", debuginfo[(0x90+0x164 + 0x14)>>2]);
 
-			if(formatversion>=2)printf("DSCR: 0x%08x\n", debuginfo[(0x90+0x164 + 0x18)>>2]);
+			if(formatversion>=2)
+			{
+				tmp = debuginfo[(0x90+0x164 + 0x18)>>2];
+				printf("DSCR: 0x%08x. ", tmp);
+
+				tmp = (tmp & 0x3c) >> 2;
+				printf("Method-of-entry: 0x%x, ", tmp);
+				if(tmp==0)
+				{
+					printf(" default setting.\n");
+				}
+				else
+				{
+					switch(tmp)
+					{
+						case 1:
+							printf("breakpoint");
+						break;
+
+						case 2:
+							printf("watchpoint");
+						break;
+
+						case 3:
+							printf("bkpt instruction");
+						break;
+
+						case 4:
+							printf("EDBGRQ signal");
+						break;
+
+						case 5:
+							printf("vector catch");
+						break;
+
+						case 6:
+							printf("data-side abort");
+						break;
+
+						case 7:
+							printf("instruction-side abort");
+						break;
+
+						default:
+							printf("invalid");
+						break;
+					}
+
+					printf(".\n");
+				}
+			}
 		}
 	}
 
