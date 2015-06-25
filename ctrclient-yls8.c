@@ -2508,7 +2508,7 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 			ret = cmd_armdebugaccessregs(client, 0, 0x2, debugregs);
 			if(ret==0)
 			{
-				printf("DIDR = 0x%08x. Mode select: %s. Monitor debug-mode: %s.\n", debugregs[1], debugregs[1] & 0x4000 ? "Halting debug-mode selected and enabled":"Monitor debug-mode selected", debugregs[1] & 0x8000 ? "enabled":"disabled");
+				printf("DSCR = 0x%08x. Mode select: %s. Monitor debug-mode: %s.\n", debugregs[1], debugregs[1] & 0x4000 ? "Halting debug-mode selected and enabled":"Monitor debug-mode selected", debugregs[1] & 0x8000 ? "enabled":"disabled");
 				if(debugregs[1] & 0x8000)
 				{
 					printf("Hardware debugging is enabled.\n");
