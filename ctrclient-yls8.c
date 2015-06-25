@@ -2527,6 +2527,64 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 				{
 					printf("no.\n");
 				}
+
+				if(debugregs[1] & 0xc000)
+				{
+					ret = cmd_armdebugaccessregs(client, 0, ~0, debugregs);//Most of the debug regs are only accessible when hw debugging is enabled.
+
+					if(ret==0)
+					{
+						for(pos=0; pos<6; pos++)
+						{
+							printf("BRP%d: ", pos);
+
+							val = debugregs[3 + pos*2 + 1];
+
+							if((val & 1) == 0)
+							{
+								printf("disabled.\n");
+								continue;
+							}
+
+							printf("enabled. BCR = 0x%08x, BVR = 0x%08x. Type = %s. ", val, debugregs[3 + pos*2], (val & (1<<21)) ? "contextID" : "IVA");
+							
+							printf("Linked BRP if any: ");
+							if(val & (1<<20))
+							{
+								printf("0x%x. ", (val >> 16) & 0xf);
+							}
+							else
+							{
+								printf("none. ");
+							}
+
+							if(val & (1<<21))
+							{
+								printf("Byte address select bitmask: 0x%x. ", (val >> 5) & 0xf);
+							}
+
+							printf("Cpumode: ");
+							switch((val>>1) & 3)
+							{
+								case 1:
+									printf("privileged.\n");
+								break;
+
+								case 2:
+									printf("user.\n");
+								break;
+
+								case 3:
+									printf("either(priv/user).\n");
+								break;
+
+								default:
+									printf("reserved.\n");
+								break;
+							}
+						}
+					}
+				}
 			}
 		}
 		else if(strncmp(&customcmd[pos], "enable", 6)==0)
