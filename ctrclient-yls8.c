@@ -782,9 +782,9 @@ int cmd_armdebugaccessregs_getdebugenabled(ctrclient *client, uint32_t *out)
 	return 0;
 }
 
-int cmd_armdebugaccessregs_allocslot(ctrclient *client, uint32_t *out, uint32_t skip_bitmask, int type)
+int cmd_armdebugaccessregs_allocslot(ctrclient *client, uint32_t *out, uint32_t skip_bitmask, int type, uint32_t cr, uint32_t vr, uint32_t *already_exists)
 {
-	int ret, i;
+	int ret, i, startpos;
 	int base=0, count;
 	uint32_t debugregs[0x4c];
 
@@ -802,13 +802,33 @@ int cmd_armdebugaccessregs_allocslot(ctrclient *client, uint32_t *out, uint32_t 
 		base = 12;
 	}
 
+	*already_exists = 0;
 	*out = ~0;
-	for(i=0; i<count; i++)
+
+	startpos = 0;
+	if(type==0 && (cr & (1<<21)))startpos = count-2;
+
+	for(i=startpos; i<count; i++)
 	{
 		if(skip_bitmask & (1<<i))continue;
-		if(debugregs[3 + base + i*2 + 1] & 1)continue;
+
+		if(debugregs[3 + base + i*2 + 1] != cr)continue;
+		if(debugregs[3 + base + i*2] != vr)continue;
+
 		*out = i;
+		*already_exists = 1;
 		break;
+	}
+
+	if(*out == ~0)
+	{
+		for(i=startpos; i<count; i++)
+		{
+			if(skip_bitmask & (1<<i))continue;
+			if(debugregs[3 + base + i*2 + 1] & 1)continue;
+			*out = i;
+			break;
+		}
 	}
 
 	if(*out == ~0)
@@ -1964,9 +1984,13 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 	unsigned int val=0;
 	uint64_t val64 = 0;
 	unsigned int chunksize;
-	unsigned char contextid;
 	uint32_t kprocessptr=0;
-	uint32_t bkptid0, bkptid1;
+
+	unsigned char contextid;
+	uint32_t bkptid0 = ~0, bkptid1 = ~0;
+	uint32_t context_bcr;
+	uint32_t iva_cr, iva_vr;
+	uint32_t context_pr_exists = 0, iva_pr_exists = 0;
 
 	memset(paramblock, 0, 16*4);
 
@@ -2698,12 +2722,6 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 
 			if(ret==0 && contextid==0xfe)contextid = 0xff;
 
-			if(ret==0 && contextid!=0xff)
-			{
-				ret = 4;
-				printf("Context must be set to 'all' for now.\n");
-			}
-
 			if(ret==0)
 			{
 				ret = parsecmd_hexvalue(NULL, " ", &paramblock[2]);
@@ -2721,27 +2739,79 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 				if(ret==0)printf("Successfully enabled hardware debugging.\n");
 			}
 
-			if(ret==0)ret = cmd_armdebugaccessregs(client, 0, ~0, debugregs);
-
-			if(ret==0)ret = cmd_armdebugaccessregs_allocslot(client, &bkptid0, 0x0, 0);//contextID bkpt
-			if(ret==0)ret = cmd_armdebugaccessregs_allocslot(client, &bkptid1, 1<<bkptid0, 0);//address bkpt
-
 			if(ret==0)
 			{
-				printf("Using contextID 0x%x and address 0x%x. bkptid0=0x%x and bkptid1=0x%x.\n", contextid, paramblock[2], bkptid0, bkptid1);
-
 				paramblock[1] |= (0x1<<5);//Trigger on address + 0 accesses.
 
-				debugregs[3 + bkptid1*2 + 0] = paramblock[2] & ~3;//BVR
-				debugregs[3 + bkptid1*2 + 1] = paramblock[1];//BCR
+				iva_vr = paramblock[2] & ~3;
+				iva_cr = paramblock[1];
 
-				ret = cmd_armdebugaccessregs(client, 1, 1<<(3 + bkptid1*2 + 0), debugregs);//Write BVR.
-				if(ret==0)ret = cmd_armdebugaccessregs(client, 1, 1<<(3 + bkptid1*2 + 1), debugregs);//Write BCR.
+				if(contextid!=0xff)printf("Using contextID: 0x%x.\n", contextid);
+				printf("Using address(for the actual regvalue): 0x%x.\n", iva_vr);
+
+				if(contextid!=0xff)
+				{
+					context_bcr = 0x1 | (0x3<<1) | (0xf<<5) | (0x3<<20);
+				}
+			}
+
+			if(ret==0)ret = cmd_armdebugaccessregs(client, 0, ~0, debugregs);
+			if(ret==0 && contextid!=0xff)
+			{
+				ret = cmd_armdebugaccessregs_allocslot(client, &bkptid0, 0x0, 0, context_bcr, contextid, &context_pr_exists);//contextID bkpt
+				printf("Context bkptid=0x%x.\n", bkptid0);
+				printf("Context BCR: 0x%x.\n", context_bcr);
+			}
+			if(ret==0)
+			{
+				val = 0;
+				if(contextid!=0xff)
+				{
+					val = 1<<bkptid0;
+					iva_cr |= (1<<20) | ((bkptid0 & 0xf) << 16);//Link the IVA *RP to the contextID-BRP if the contextID is not set for all.
+				}
+
+				printf("IVA *CR = 0x%x.\n", iva_cr);
+
+				ret = cmd_armdebugaccessregs_allocslot(client, &bkptid1, val, 0, iva_cr, iva_vr, &iva_pr_exists);//address bkpt
+				if(ret==0)printf("IVA bkptid=0x%x.\n", bkptid1);
 			}
 
 			if(ret==0)
 			{
-				printf("Successfully setup bkpt, id=0x%x. BCR = 0x%x.\n", bkptid1, paramblock[1]);
+				if(contextid!=0xff)
+				{
+					if(context_pr_exists==0)
+					{
+						debugregs[3 + bkptid0*2 + 0] = contextid;//BVR
+						debugregs[3 + bkptid0*2 + 1] = context_bcr;//BCR
+
+						ret = cmd_armdebugaccessregs(client, 1, 1<<(3 + bkptid0*2 + 0), debugregs);//Write BVR.
+						if(ret==0)ret = cmd_armdebugaccessregs(client, 1, 1<<(3 + bkptid0*2 + 1), debugregs);//Write BCR.
+					}
+					else
+					{
+						printf("The context *PR already exists, skipping register writing for it.\n");
+					}
+				}
+
+				if(iva_pr_exists==0)
+				{
+					debugregs[3 + bkptid1*2 + 0] = iva_vr;//BVR
+					debugregs[3 + bkptid1*2 + 1] = iva_cr;//BCR
+
+					ret = cmd_armdebugaccessregs(client, 1, 1<<(3 + bkptid1*2 + 0), debugregs);//Write BVR.
+					if(ret==0)ret = cmd_armdebugaccessregs(client, 1, 1<<(3 + bkptid1*2 + 1), debugregs);//Write BCR.
+				}
+				else
+				{
+					printf("The IVA *PR already exists, skipping register writing for it.\n");
+				}
+			}
+
+			if(ret==0)
+			{
+				printf("Successfully setup the bkpt(s).\n");
 			}
 		}
 	}
