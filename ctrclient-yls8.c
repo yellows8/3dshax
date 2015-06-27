@@ -2741,7 +2741,16 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 
 			if(ret==0)
 			{
-				paramblock[1] |= (0x1<<5);//Trigger on address + 0 accesses.
+				if((paramblock[2] & 2) == 0)
+				{
+					paramblock[1] |= (0x1<<5);//Trigger on address + 0 accesses.
+					printf("The IVA *RP will trigger on accesses to address+0.\n");
+				}
+				else
+				{
+					paramblock[1] |= (0x4<<5);//Trigger on address + 2 accesses.
+					printf("The IVA *RP will trigger on accesses to address+2.\n");
+				}
 
 				iva_vr = paramblock[2] & ~3;
 				iva_cr = paramblock[1];
