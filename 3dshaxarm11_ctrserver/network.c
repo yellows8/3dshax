@@ -471,7 +471,7 @@ int net_kernelmode_handlecmd(u32 param)
 		return 0;
 	}
 
-	if(cmdid==0xa0 || cmdid==0xa1)
+	if(cmdid==0xa0 || cmdid==0xa1)//Register writing is broken with this, the register values don't always get updated.
 	{
 		if(*bufsize < 4)
 		{

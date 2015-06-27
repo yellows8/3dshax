@@ -2814,6 +2814,83 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 				printf("Successfully setup the bkpt(s).\n");
 			}
 		}
+		else if(strncmp(&customcmd[pos], "removebkpt", 10)==0)
+		{
+			pos+= 10;
+
+			str = strtok(&customcmd[pos], " ");
+			if(str==NULL)
+			{
+				ret = 4;
+				printf("Invalid input parameters.\n");
+			}
+			else
+			{
+				sscanf(str, "0x%x", &bkptid1);
+
+				printf("Using *RP 0x%x.\n", bkptid1);
+			}
+
+			if(ret==0)ret = cmd_armdebugaccessregs_getdebugenabled(client, &paramblock[0]);
+			if(ret==0 && paramblock[0]==0)
+			{
+				printf("Hardware debugging isn't enabled, aborting.\n");
+				ret = 5;
+			}
+
+			if(ret==0)ret = cmd_armdebugaccessregs(client, 0, ~0, debugregs);
+
+			if(ret==0)
+			{
+				iva_cr = debugregs[3 + bkptid1*2 + 1];
+
+				if((iva_cr & 1) == 0)
+				{
+					printf("The specified *RP isn't enabled.\n");
+				}
+				else
+				{
+					debugregs[3 + bkptid1*2 + 1] &= ~1;
+					ret = cmd_armdebugaccessregs(client, 1, 1<<(3 + bkptid1*2 + 0), debugregs);
+
+					if(ret==0)
+					{
+						printf("Successfully disabled *RP 0x%x.\n", bkptid1);
+
+						if((iva_cr & (1<<21)) == 0)//Linked-BRP-number is only valid for IVA *RPs.
+						{
+							if(iva_cr & (1<<20))//Check if linking is enabled.
+							{
+								bkptid0 = (iva_cr >> 16) & 0xf;
+
+								val = 0;
+
+								for(pos=0; pos<6; pos++)//Calculate how many IVA *RPs are linked to the context BRP.
+								{
+									iva_cr = debugregs[3 + pos*2 + 1];
+									if((iva_cr & 1) == 0)continue;//*RP must be enabled.
+									if(iva_cr & (1<<21))continue;//*RP must be an IVA *RP.
+									if((iva_cr & (1<<20)) == 0)continue;//Linking must be enabled.
+
+									if(((iva_cr >> 16) & 0xf) == bkptid0)val++;
+								}
+
+								if(val)
+								{
+									printf("Skipping *RP disabling for the contextID BRP, since 0x%x *RPs are still linked to it.\n", val);
+								}
+								else
+								{
+									debugregs[3 + bkptid0*2 + 1] &= ~1;
+									ret = cmd_armdebugaccessregs(client, 1, 1<<(3 + bkptid0*2 + 0), debugregs);
+									if(ret==0)printf("Successfully disabled contextID BRP 0x%x.\n", bkptid0);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 	else
 	{
