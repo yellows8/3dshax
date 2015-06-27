@@ -471,7 +471,7 @@ int net_kernelmode_handlecmd(u32 param)
 		return 0;
 	}
 
-	if(cmdid==0xa0 || cmdid==0xa1)//Register writing with this doesn't always work right.
+	if(cmdid==0xa0 || cmdid==0xa1)
 	{
 		if(*bufsize < 4)
 		{

@@ -52,7 +52,7 @@ bx lr
 
 getdebug_bvr_l0:
 mrc p14, 0, r0, c0, c0, 4
-
+bx lr
 
 getdebug_bvr_l1:
 mrc p14, 0, r0, c0, c1, 4
@@ -65,6 +65,7 @@ bx lr
 getdebug_bvr_l3:
 mrc p14, 0, r0, c0, c3, 4
 bx lr
+
 getdebug_bvr_l4:
 mrc p14, 0, r0, c0, c4, 4
 bx lr
@@ -154,6 +155,7 @@ bx lr
 getdebug_bcr_l3:
 mrc p14, 0, r0, c0, c3, 5
 bx lr
+
 getdebug_bcr_l4:
 mrc p14, 0, r0, c0, c4, 5
 bx lr
