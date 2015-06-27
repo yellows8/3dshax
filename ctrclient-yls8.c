@@ -2851,7 +2851,7 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 				else
 				{
 					debugregs[3 + bkptid1*2 + 1] &= ~1;
-					ret = cmd_armdebugaccessregs(client, 1, 1<<(3 + bkptid1*2 + 0), debugregs);
+					ret = cmd_armdebugaccessregs(client, 1, 1<<(3 + bkptid1*2 + 1), debugregs);
 
 					if(ret==0)
 					{
@@ -2882,7 +2882,7 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 								else
 								{
 									debugregs[3 + bkptid0*2 + 1] &= ~1;
-									ret = cmd_armdebugaccessregs(client, 1, 1<<(3 + bkptid0*2 + 0), debugregs);
+									ret = cmd_armdebugaccessregs(client, 1, 1<<(3 + bkptid0*2 + 1), debugregs);
 									if(ret==0)printf("Successfully disabled contextID BRP 0x%x.\n", bkptid0);
 								}
 							}
