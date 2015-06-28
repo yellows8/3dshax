@@ -119,7 +119,7 @@ void parse_debuginfo_exception(unsigned int *debuginfo, uint32_t new, uint32_t f
 				printf("Method-of-entry: 0x%x, ", tmp);
 				if(tmp==0)
 				{
-					printf(" default setting.\n");
+					printf("default setting.\n");
 				}
 				else
 				{
