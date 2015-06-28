@@ -620,25 +620,53 @@ int cmd_getdebuginfoblk(ctrclient *client, unsigned int **buf, unsigned int *siz
 	return 0;
 }
 
-int cmd_sendexceptionhandler_signal(ctrclient *client, int type, unsigned int setdefault)
+int cmd_writearm11debug_settings(ctrclient *client, uint32_t index, uint32_t value)
 {
-	unsigned int header[3];
+	int ret = 0;
+	uint32_t header[4];
 
-	memset(header, 0, 3*4);
+	memset(header, 0, sizeof(header));
+
+	header[0] = 0x493;
+	header[1] = 0x8;
+
+	header[2] = index;
+	header[3] = value;
+
+	if(ctrclient_sendbuffer(client, header, 4*4)!=1)return 1;
+	if(ctrclient_recvbuffer(client, header, 2*4)!=1)return 1;
+
+	if(header[1] == 4)
+	{
+		if(ctrclient_recvbuffer(client, &header[2], 4)!=1)return 1;
+		printf("cmd_writearm11debug_settings() failed: ");
+
+		if(header[2] == ~0)
+		{
+			ret = 2;
+			printf("the sent cmd request payload size is invalid for the server.\n");
+		}
+		else if(header[2] == ~1)
+		{
+			ret = 3;
+			printf("the specified index is invalid.\n");
+		}
+	}
+
+	return ret;
+}
+
+int cmd_sendexceptionhandler_signal(ctrclient *client, uint32_t type, uint32_t setdefault)
+{
+	uint32_t value=0;
 	
 	if(setdefault)setdefault = 1;
 
-	header[0] = 0x491 + setdefault;
-	header[1] = 0x4;
+	if(type==0)value = 1;//continue
+	if(type==1)value = 0x4d524554;//"TERM", terminate
+	if(type==2 && setdefault)value = 0;
 
-	if(type==0)header[2] = 1;//continue
-	if(type==1)header[2] = 0x4d524554;//"TERM", terminate
-	if(type==2 && setdefault)header[2] = 0;
-
-	if(ctrclient_sendbuffer(client, header, 3*4)!=1)return 1;
-	if(ctrclient_recvbuffer(client, header, 2*4)!=1)return 1;
-
-	return 0;
+	return cmd_writearm11debug_settings(client, setdefault, value);
 }
 
 int cmd_pscryptaes(ctrclient *client, unsigned int algotype, unsigned int keytype, unsigned char *iv, unsigned int bufsize, unsigned char *buf, unsigned int *resultcode)

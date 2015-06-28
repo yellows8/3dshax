@@ -53,6 +53,7 @@ void parse_debuginfo_exception(unsigned int *debuginfo, uint32_t new, uint32_t f
 	unsigned char *ptr8;
 	unsigned int RUNNINGFWVER;
 	unsigned int tmp;
+	uint32_t zeros_x20[0x20];
 	char processname[16];
 	char str[256];
 
@@ -166,7 +167,9 @@ void parse_debuginfo_exception(unsigned int *debuginfo, uint32_t new, uint32_t f
 
 	if(enable_hexdump)
 	{
-		if(exceptiontype!=1)
+		memset(zeros_x20, 0, 0x20);
+
+		if(memcmp(&debuginfo[(0x68+4)>>2], zeros_x20, 0x20)!=0)
 		{
 			ftmp = fopen("3dshaxparsedebug_tmpcode.bin", "wb");
 
@@ -192,11 +195,51 @@ void parse_debuginfo_exception(unsigned int *debuginfo, uint32_t new, uint32_t f
 				printf("Failed to open file for writing: 3dshaxparsedebug_tmpcode.bin\n");
 			}
 		}
+		else
+		{
+			printf("Skippig disasm since the dumped code is all-zero(probably due to inaccessible memory / prefetch abort).\n");
+		}
 
 		RUNNINGFWVER = debuginfo[(0x8c)>>2];
 		printf("RUNNINGFWVER = 0x%08x. Hardware type = %s. FIRM tidlow u16 = 0x%x. Actual FWVER = %u/0x%x.\n", RUNNINGFWVER, RUNNINGFWVER & 0x40000000 ? "New3DS":"Old3DS", (RUNNINGFWVER>>8) & 0xffff, RUNNINGFWVER & 0xff, RUNNINGFWVER & 0xff);
 
-		printf("Stack dump:\n");
+		tmp = debuginfo[(0x210)>>2];
+		if(tmp == 0x38)
+		{
+			printf("Stack dump:\n");
+		}
+		else
+		{
+			printf("Memory dump from ");
+			if(tmp < 13*4)
+			{
+				printf("%s", regnames[tmp>>2]);
+			}
+			else
+			{
+				if(tmp == 14*4)
+				{
+					printf("%s", regnames[13]);
+				}
+				else if(tmp == 15*4)
+				{
+					printf("%s", regnames[14]);
+				}
+				else if(tmp == 17*4)
+				{
+					printf("%s", regnames[15]);
+				}
+				else if(tmp == 18*4)
+				{
+					printf("%s", regnames[14]);
+				}
+				else
+				{
+					printf("<invalid debuginfo register offset>");
+				}
+			}
+			printf(":\n");
+		}
 		hexdump(&debuginfo[(0x90)>>2], 0x164);
 		printf("\n");
 	}
@@ -388,7 +431,7 @@ int main(int argc, char **argv)
 	unsigned int *debuginfo_ptr = NULL;
 	unsigned int debuginfo[0x200>>2];
 	unsigned int debuginfo_size;
-	uint32_t formatversion, parser_formatversion = 0x2;
+	uint32_t formatversion, parser_formatversion = 0x3;
 	struct stat filestat;
 
 	if(argc<2)return 0;

@@ -878,7 +878,7 @@ bl arm11kernel_waitpxisync_val
 
 mov r0, r4
 mov r1, #0
-ldr r2, =0x220
+ldr r2, =0x224
 
 arm11kernel_exceptionregdump_clrbuf:
 str r1, [r0], #4
@@ -890,10 +890,10 @@ mov r2, #0
 
 ldr r1, =0x4e474445 @ Debuginfo type = "EDGN".
 str r1, [r0], #4
-ldr r1, =0x220
+ldr r1, =0x224
 str r1, [r0], #4 @ Total size of the debuginfo.
 
-mov r1, #2
+mov r1, #3
 str r1, [r0], #4 @ Exception debuginfo structure version
 
 arm11kernel_exceptionregdump_L1:
@@ -965,6 +965,7 @@ moveq r5, #1 @ r5=1 when this exception was triggered via a breakpoint.
 
 ldr r1, [r4, #0x50]
 cmp r1, #1
+cmpeq r7, #0
 addeq r0, r0, #0x20
 beq arm11kernel_exceptionregdump_datadump_init
 
@@ -996,22 +997,34 @@ cmp r3, #0x20
 blt arm11kernel_exceptionregdump_datadump_pclp
 
 arm11kernel_exceptionregdump_datadump_init:
+mov r2, r4 @ When available, load the ptr to dump memory based @ regdump, with the offset loaded from arm11kernel_getdebugstateptr()+8.
+sub r2, r2, #0x800
+ldr r2, [r2, #0x8]
+cmp r2, #0
+beq arm11kernel_exceptionregdump_datadump_init_normal
+sub r2, r2, #4 @ Base the offset at 0x4 to workaround the above 0x0 value check.
+cmp r2, #0x50
+bhi arm11kernel_exceptionregdump_datadump_init_normal
+
+ldr r1, =0x220
+add r1, r1, r4
+str r2, [r1] @ Write the register offset for the memdump-ptr to debuginfo+0x220.
+
+add r2, r2, #0x10
+add r2, r2, r4
+ldr r1, [r2]
+mov r3, #0
+b arm11kernel_exceptionregdump_datadumpstart
+
+arm11kernel_exceptionregdump_datadump_init_normal:
+ldr r1, =0x220 @ Write the register offset for the memdump-ptr to debuginfo+0x220.
+add r1, r1, r4
+mov r2, #0x38
+str r2, [r1]
+
 mov r3, #0
 add r1, r4, #0x48//sp = #0x48, lr = #0x4c, pc = #0x54
 ldr r1, [r1]
-
-//cmp r5, #1
-/*streq r1, [r6, #12] @ saved r3 = sp, for CSND debug.
-ldreq r1, [r6, #24] @ r1 = saved r6
-ldr r2, =0xfff
-biceq r1, r1, r2*/
-/*ldr r2, =0x108618
-ldr r3, [r4, #0x4c] @ r3 = saved lr
-cmpeq r3, r2
-ldrne r2, =0xfff8b00a
-strne r2, [r6] @ saved r0 = 0xfff8b00a*/
-
-//b arm11kernel_exceptionregdump_datadumpstart
 
 /*mov r0, #0
 str r0, [r6, #12] @ saved r3 = 0
@@ -1027,7 +1040,6 @@ str r2, [r0], #4
 cmp r1, #0
 beq arm11kernel_exceptionregdump_L2_end
 bic r1, r1, #3
-//sub r1, r1, #0x10
 
 arm11kernel_exceptionregdump_L2:
 cmp r7, #0
@@ -1087,7 +1099,7 @@ bl arm11kernel_getdebugstateptr
 add r5, r0, #0x200
 add r6, r5, #0x500
 mov r2, #0
-ldr r3, =0x220
+ldr r3, =0x224
 arm11kernel_exceptionregdump_blkcpy:
 ldr r0, [r4, r2]
 str r0, [r5, r2]
