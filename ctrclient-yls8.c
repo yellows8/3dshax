@@ -1991,6 +1991,7 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 	uint32_t context_bcr;
 	uint32_t va_cr, va_vr;
 	uint32_t context_pr_exists = 0, va_pr_exists = 0;
+	int pr_type=0;
 
 	memset(paramblock, 0, 16*4);
 
@@ -2558,9 +2559,19 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 
 					if(ret==0)
 					{
-						for(pos=0; pos<6; pos++)
+						pr_type = 0;
+						printf("\n");
+
+						for(pos=0; pos<8; pos++)
 						{
-							printf("BRP%d: ", pos);
+							if(pos==6)
+							{
+								pr_type = 1;
+								printf("\n");
+							}
+
+							if(pr_type==0)printf("BRP%d: ", pos);
+							if(pr_type)printf("WRP%d: ", pos-6);
 
 							val = debugregs[3 + pos*2 + 1];
 
@@ -2570,8 +2581,9 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 								continue;
 							}
 
-							printf("enabled. BCR = 0x%08x, BVR = 0x%08x. Type = %s. ", val, debugregs[3 + pos*2], (val & (1<<21)) ? "contextID" : "VA");
-							
+							printf("enabled. *CR = 0x%08x, *VR = 0x%08x. ", val, debugregs[3 + pos*2]);
+							if(pr_type==0)printf("Type = %s. ", (val & (1<<21)) ? "contextID" : "VA");
+
 							printf("Linked BRP if any: ");
 							if(val & (1<<20))
 							{
@@ -2582,7 +2594,7 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 								printf("none. ");
 							}
 
-							if(val & (1<<21))
+							if((pr_type==0 && (val & (1<<21))) || pr_type)
 							{
 								printf("Byte address select bitmask: 0x%x. ", (val >> 5) & 0xf);
 							}
@@ -2591,21 +2603,46 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 							switch((val>>1) & 3)
 							{
 								case 1:
-									printf("privileged.\n");
+									printf("privileged.");
 								break;
 
 								case 2:
-									printf("user.\n");
+									printf("user.");
 								break;
 
 								case 3:
-									printf("either(priv/user).\n");
+									printf("either(priv/user).");
 								break;
 
 								default:
-									printf("reserved.\n");
+									printf("reserved.");
 								break;
 							}
+
+							if(pr_type)
+							{
+								printf(" R/W access: ");
+								switch((val>>3) & 3)
+								{
+									case 1:
+										printf("load.");
+									break;
+
+									case 2:
+										printf("store.");
+									break;
+
+									case 3:
+										printf("either(load/store).");
+									break;
+
+									default:
+										printf("reserved.");
+									break;
+								}
+							}
+
+							printf("\n");
 						}
 					}
 				}
@@ -2621,11 +2658,14 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 			ret = cmd_armdebugaccessregs_disabledebug(client);
 			if(ret==0)printf("Successfully disabled hardware debugging.\n");
 		}
-		else if(strncmp(&customcmd[pos], "addbkpt", 7)==0)
+		else if(strncmp(&customcmd[pos], "addbkpt", 7)==0 || strncmp(&customcmd[pos], "addwhpt", 7)==0)
 		{
+			pr_type = 0;
+			if(strncmp(&customcmd[pos], "addwhpt", 7)==0)pr_type = 1;
+
 			pos+= 7;
 
-			paramblock[1] = 1;
+			va_cr = 1;//enable bit
 
 			str = strtok(&customcmd[pos], " ");
 			if(str==NULL)
@@ -2639,15 +2679,15 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 				{
 					if(strncmp(&str[8], "11kern", 6)==0)
 					{
-						paramblock[1] |= 0x1<<1;
+						va_cr |= 0x1<<1;
 					}
 					else if(strncmp(&str[8], "11usr", 5)==0)
 					{
-						paramblock[1] |= 0x2<<1;
+						va_cr |= 0x2<<1;
 					}
 					else if(strncmp(&str[8], "all", 3)==0)
 					{
-						paramblock[1] |= 0x3<<1;
+						va_cr |= 0x3<<1;
 					}
 					else
 					{
@@ -2731,6 +2771,44 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 				}
 			}
 
+			if(ret==0 && pr_type)
+			{
+				str = strtok(NULL, " ");
+				if(str==NULL)
+				{
+					ret = 4;
+					printf("Invalid input parameters.\n");
+				}
+				else
+				{
+					if(strncmp(str, "memaccess=", 10)==0)
+					{
+						if(strncmp(&str[10], "load", 4)==0)
+						{
+							va_cr |= 0x1<<3;
+						}
+						else if(strncmp(&str[10], "store", 5)==0)
+						{
+							va_cr |= 0x2<<3;
+						}
+						else if(strncmp(&str[10], "either", 6)==0)
+						{
+							va_cr |= 0x3<<3;
+						}
+						else
+						{
+							printf("Invalid memaccess param value.\n");
+							ret = 4;
+						}
+					}
+					else
+					{
+						printf("Invalid memaccess param.\n");
+						ret = 4;
+					}
+				}
+			}
+
 			if(ret==0)ret = cmd_armdebugaccessregs_getdebugenabled(client, &paramblock[0]);
 			if(ret==0 && paramblock[0]==0)
 			{
@@ -2741,19 +2819,26 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 
 			if(ret==0)
 			{
-				if((paramblock[2] & 2) == 0)
+				if(pr_type==0)
 				{
-					paramblock[1] |= (0x1<<5);//Trigger on address + 0 accesses.
-					printf("The VA *RP will trigger on accesses to address+0.\n");
+					if((paramblock[2] & 2) == 0)
+					{
+						va_cr |= (0x1<<5);//Trigger on address + 0 accesses.
+						printf("The VA *RP will trigger on accesses to address+0x0.\n");
+					}
+					else
+					{
+						va_cr |= (0x4<<5);//Trigger on address + 2 accesses.
+						printf("The VA *RP will trigger on accesses to address+0x2.\n");
+					}
 				}
 				else
 				{
-					paramblock[1] |= (0x4<<5);//Trigger on address + 2 accesses.
-					printf("The VA *RP will trigger on accesses to address+2.\n");
+					va_cr |= ((1<<(paramblock[2] & 3))<<5);
+					printf("The VA *RP will trigger on accesses to address+0x%x.\n", paramblock[2] & 3);
 				}
 
 				va_vr = paramblock[2] & ~3;
-				va_cr = paramblock[1];
 
 				if(contextid!=0xff)printf("Using contextID: 0x%x.\n", contextid);
 				printf("Using address(for the actual regvalue): 0x%x.\n", va_vr);
@@ -2782,8 +2867,10 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 
 				printf("VA *CR = 0x%x.\n", va_cr);
 
-				ret = cmd_armdebugaccessregs_allocslot(client, &bkptid1, val, 0, va_cr, va_vr, &va_pr_exists);//address bkpt
+				ret = cmd_armdebugaccessregs_allocslot(client, &bkptid1, val, pr_type, va_cr, va_vr, &va_pr_exists);//address bkpt
 				if(ret==0)printf("VA bkptid=0x%x.\n", bkptid1);
+
+				if(pr_type)bkptid1+= 6;
 			}
 
 			if(ret==0)
@@ -2805,8 +2892,8 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 
 				if(va_pr_exists==0)
 				{
-					debugregs[3 + bkptid1*2 + 0] = va_vr;//BVR
-					debugregs[3 + bkptid1*2 + 1] = va_cr;//BCR
+					debugregs[3 + bkptid1*2 + 0] = va_vr;//*VR
+					debugregs[3 + bkptid1*2 + 1] = va_cr;//*CR
 
 					ret = cmd_armdebugaccessregs(client, 1, 0x3<<(3 + bkptid1*2), debugregs);//Write *VR and *CR.
 				}
@@ -2821,8 +2908,11 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 				printf("Successfully setup the bkpt(s).\n");
 			}
 		}
-		else if(strncmp(&customcmd[pos], "removebkpt", 10)==0)
+		else if(strncmp(&customcmd[pos], "removebkpt", 10)==0 || strncmp(&customcmd[pos], "removewhpt", 10)==0)
 		{
+			pr_type = 0;
+			if(strncmp(&customcmd[pos], "removewhpt", 10)==0)pr_type = 1;
+
 			pos+= 10;
 
 			str = strtok(&customcmd[pos], " ");
@@ -2836,6 +2926,7 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 				sscanf(str, "0x%x", &bkptid1);
 
 				printf("Using *RP 0x%x.\n", bkptid1);
+				if(pr_type)bkptid1+= 6;
 			}
 
 			if(ret==0)ret = cmd_armdebugaccessregs_getdebugenabled(client, &paramblock[0]);
@@ -2862,21 +2953,28 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 
 					if(ret==0)
 					{
-						printf("Successfully disabled *RP 0x%x.\n", bkptid1);
+						printf("Successfully disabled the specified *RP.\n");
 
-						if((va_cr & (1<<21)) == 0)//Linked-BRP-number is only valid for VA *RPs.
+						if((pr_type==0 && ((val & (1<<21)) == 0)) || pr_type)//Linked-BRP-number is only valid for VA *RPs.
 						{
 							if(va_cr & (1<<20))//Check if linking is enabled.
 							{
 								bkptid0 = (va_cr >> 16) & 0xf;
+								if(bkptid0 > 5)
+								{
+									printf("Warning: linked BRP#(0x%x) loaded from the VA *RP is too large, using value 0x5 instead.\n", bkptid0);
+									bkptid0 = 5;
+								}
 
 								val = 0;
 
-								for(pos=0; pos<6; pos++)//Calculate how many VA *RPs are linked to the context BRP.
+								for(pos=0; pos<8; pos++)//Calculate how many VA *RPs are linked to the context BRP.
 								{
+									if(pos==bkptid0)continue;
+
 									va_cr = debugregs[3 + pos*2 + 1];
 									if((va_cr & 1) == 0)continue;//*RP must be enabled.
-									if(va_cr & (1<<21))continue;//*RP must be an VA *RP.
+									if(pos<6 && (val & (1<<21)))continue;//*RP must be an VA *RP.
 									if((va_cr & (1<<20)) == 0)continue;//Linking must be enabled.
 
 									if(((va_cr >> 16) & 0xf) == bkptid0)val++;
