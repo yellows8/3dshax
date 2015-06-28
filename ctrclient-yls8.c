@@ -698,6 +698,23 @@ int cmd_readctrcard(ctrclient *client, unsigned int sector, unsigned int sectorc
 	return 0;
 }
 
+int cmd_getmpcore_cpuid(ctrclient *client, uint32_t *out)
+{
+	uint32_t tmpbuf[0xc>>2];
+
+	if(out==NULL)return 2;
+
+	tmpbuf[0] = 0x841;
+	tmpbuf[1] = 0x0;
+
+	if(ctrclient_sendbuffer(client, tmpbuf, 0x8)!=1)return 1;
+	if(ctrclient_recvbuffer(client, tmpbuf, 0xc)!=1)return 1;
+
+	*out = tmpbuf[2];
+
+	return 0;
+}
+
 int cmd_armdebugaccessregs(ctrclient *client, int rw, uint32_t regs_bitmask, uint32_t *regdata)
 {
 	uint32_t tmpbuf[0x58>>2];
@@ -2530,7 +2547,15 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 		}
 		else if(strncmp(&customcmd[pos], "status", 6)==0)
 		{
-			ret = cmd_armdebugaccessregs(client, 0, 0x2, debugregs);
+			ret = cmd_getmpcore_cpuid(client, &paramblock[0]);
+
+			if(ret==0)
+			{
+				printf("The server is currently handling commands on CPUID 0x%x, all of the ARM debug registers accessed over the network are only for this core currently.\n", paramblock[0]);
+
+				ret = cmd_armdebugaccessregs(client, 0, 0x2, debugregs);
+			}
+
 			if(ret==0)
 			{
 				printf("DSCR = 0x%08x. Mode select: %s. Monitor debug-mode: %s.\n", debugregs[1], debugregs[1] & 0x4000 ? "Halting debug-mode selected and enabled":"Monitor debug-mode selected", debugregs[1] & 0x8000 ? "enabled":"disabled");
