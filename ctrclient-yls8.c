@@ -1989,8 +1989,8 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 	unsigned char contextid;
 	uint32_t bkptid0 = ~0, bkptid1 = ~0;
 	uint32_t context_bcr;
-	uint32_t iva_cr, iva_vr;
-	uint32_t context_pr_exists = 0, iva_pr_exists = 0;
+	uint32_t va_cr, va_vr;
+	uint32_t context_pr_exists = 0, va_pr_exists = 0;
 
 	memset(paramblock, 0, 16*4);
 
@@ -2570,7 +2570,7 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 								continue;
 							}
 
-							printf("enabled. BCR = 0x%08x, BVR = 0x%08x. Type = %s. ", val, debugregs[3 + pos*2], (val & (1<<21)) ? "contextID" : "IVA");
+							printf("enabled. BCR = 0x%08x, BVR = 0x%08x. Type = %s. ", val, debugregs[3 + pos*2], (val & (1<<21)) ? "contextID" : "VA");
 							
 							printf("Linked BRP if any: ");
 							if(val & (1<<20))
@@ -2744,19 +2744,19 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 				if((paramblock[2] & 2) == 0)
 				{
 					paramblock[1] |= (0x1<<5);//Trigger on address + 0 accesses.
-					printf("The IVA *RP will trigger on accesses to address+0.\n");
+					printf("The VA *RP will trigger on accesses to address+0.\n");
 				}
 				else
 				{
 					paramblock[1] |= (0x4<<5);//Trigger on address + 2 accesses.
-					printf("The IVA *RP will trigger on accesses to address+2.\n");
+					printf("The VA *RP will trigger on accesses to address+2.\n");
 				}
 
-				iva_vr = paramblock[2] & ~3;
-				iva_cr = paramblock[1];
+				va_vr = paramblock[2] & ~3;
+				va_cr = paramblock[1];
 
 				if(contextid!=0xff)printf("Using contextID: 0x%x.\n", contextid);
-				printf("Using address(for the actual regvalue): 0x%x.\n", iva_vr);
+				printf("Using address(for the actual regvalue): 0x%x.\n", va_vr);
 
 				if(contextid!=0xff)
 				{
@@ -2777,13 +2777,13 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 				if(contextid!=0xff)
 				{
 					val = 1<<bkptid0;
-					iva_cr |= (1<<20) | ((bkptid0 & 0xf) << 16);//Link the IVA *RP to the contextID-BRP if the contextID is not set for all.
+					va_cr |= (1<<20) | ((bkptid0 & 0xf) << 16);//Link the VA *RP to the contextID-BRP if the contextID is not set for all.
 				}
 
-				printf("IVA *CR = 0x%x.\n", iva_cr);
+				printf("VA *CR = 0x%x.\n", va_cr);
 
-				ret = cmd_armdebugaccessregs_allocslot(client, &bkptid1, val, 0, iva_cr, iva_vr, &iva_pr_exists);//address bkpt
-				if(ret==0)printf("IVA bkptid=0x%x.\n", bkptid1);
+				ret = cmd_armdebugaccessregs_allocslot(client, &bkptid1, val, 0, va_cr, va_vr, &va_pr_exists);//address bkpt
+				if(ret==0)printf("VA bkptid=0x%x.\n", bkptid1);
 			}
 
 			if(ret==0)
@@ -2795,8 +2795,7 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 						debugregs[3 + bkptid0*2 + 0] = contextid;//BVR
 						debugregs[3 + bkptid0*2 + 1] = context_bcr;//BCR
 
-						ret = cmd_armdebugaccessregs(client, 1, 1<<(3 + bkptid0*2 + 0), debugregs);//Write BVR.
-						if(ret==0)ret = cmd_armdebugaccessregs(client, 1, 1<<(3 + bkptid0*2 + 1), debugregs);//Write BCR.
+						ret = cmd_armdebugaccessregs(client, 1, 0x3<<(3 + bkptid0*2), debugregs);//Write *VR and *CR.
 					}
 					else
 					{
@@ -2804,17 +2803,16 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 					}
 				}
 
-				if(iva_pr_exists==0)
+				if(va_pr_exists==0)
 				{
-					debugregs[3 + bkptid1*2 + 0] = iva_vr;//BVR
-					debugregs[3 + bkptid1*2 + 1] = iva_cr;//BCR
+					debugregs[3 + bkptid1*2 + 0] = va_vr;//BVR
+					debugregs[3 + bkptid1*2 + 1] = va_cr;//BCR
 
-					ret = cmd_armdebugaccessregs(client, 1, 1<<(3 + bkptid1*2 + 0), debugregs);//Write BVR.
-					if(ret==0)ret = cmd_armdebugaccessregs(client, 1, 1<<(3 + bkptid1*2 + 1), debugregs);//Write BCR.
+					ret = cmd_armdebugaccessregs(client, 1, 0x3<<(3 + bkptid1*2), debugregs);//Write *VR and *CR.
 				}
 				else
 				{
-					printf("The IVA *PR already exists, skipping register writing for it.\n");
+					printf("The VA *PR already exists, skipping register writing for it.\n");
 				}
 			}
 
@@ -2851,9 +2849,9 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 
 			if(ret==0)
 			{
-				iva_cr = debugregs[3 + bkptid1*2 + 1];
+				va_cr = debugregs[3 + bkptid1*2 + 1];
 
-				if((iva_cr & 1) == 0)
+				if((va_cr & 1) == 0)
 				{
 					printf("The specified *RP isn't enabled.\n");
 				}
@@ -2866,22 +2864,22 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 					{
 						printf("Successfully disabled *RP 0x%x.\n", bkptid1);
 
-						if((iva_cr & (1<<21)) == 0)//Linked-BRP-number is only valid for IVA *RPs.
+						if((va_cr & (1<<21)) == 0)//Linked-BRP-number is only valid for VA *RPs.
 						{
-							if(iva_cr & (1<<20))//Check if linking is enabled.
+							if(va_cr & (1<<20))//Check if linking is enabled.
 							{
-								bkptid0 = (iva_cr >> 16) & 0xf;
+								bkptid0 = (va_cr >> 16) & 0xf;
 
 								val = 0;
 
-								for(pos=0; pos<6; pos++)//Calculate how many IVA *RPs are linked to the context BRP.
+								for(pos=0; pos<6; pos++)//Calculate how many VA *RPs are linked to the context BRP.
 								{
-									iva_cr = debugregs[3 + pos*2 + 1];
-									if((iva_cr & 1) == 0)continue;//*RP must be enabled.
-									if(iva_cr & (1<<21))continue;//*RP must be an IVA *RP.
-									if((iva_cr & (1<<20)) == 0)continue;//Linking must be enabled.
+									va_cr = debugregs[3 + pos*2 + 1];
+									if((va_cr & 1) == 0)continue;//*RP must be enabled.
+									if(va_cr & (1<<21))continue;//*RP must be an VA *RP.
+									if((va_cr & (1<<20)) == 0)continue;//Linking must be enabled.
 
-									if(((iva_cr >> 16) & 0xf) == bkptid0)val++;
+									if(((va_cr >> 16) & 0xf) == bkptid0)val++;
 								}
 
 								if(val)
