@@ -733,6 +733,8 @@ cpsid aif
 pop {r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, sl, fp, ip, lr}
 ldm sp, {sp, lr}^
 add sp, sp, #8
+ldr lr, [sp, #4]
+str lr, [sp, #12] @ Return to the instruction which aborted.
 add sp, sp, #12
 rfeia sp!
 
