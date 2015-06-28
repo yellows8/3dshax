@@ -620,17 +620,20 @@ int cmd_getdebuginfoblk(ctrclient *client, unsigned int **buf, unsigned int *siz
 	return 0;
 }
 
-int cmd_sendexceptionhandler_signal(ctrclient *client, int type)
+int cmd_sendexceptionhandler_signal(ctrclient *client, int type, unsigned int setdefault)
 {
 	unsigned int header[3];
 
 	memset(header, 0, 3*4);
 	
-	header[0] = 0x491;
+	if(setdefault)setdefault = 1;
+
+	header[0] = 0x491 + setdefault;
 	header[1] = 0x4;
 
 	if(type==0)header[2] = 1;//continue
-	if(type)header[2] = 0x4d524554;//"TERM", terminate
+	if(type==1)header[2] = 0x4d524554;//"TERM", terminate
+	if(type==2 && setdefault)header[2] = 0;
 
 	if(ctrclient_sendbuffer(client, header, 3*4)!=1)return 1;
 	if(ctrclient_recvbuffer(client, header, 2*4)!=1)return 1;
@@ -2005,10 +2008,11 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 
 	unsigned char contextid;
 	uint32_t bkptid0 = ~0, bkptid1 = ~0;
-	uint32_t context_bcr;
-	uint32_t va_cr, va_vr;
+	uint32_t context_bcr = 0;
+	uint32_t va_cr = 0, va_vr = 0;
 	uint32_t context_pr_exists = 0, va_pr_exists = 0;
 	int pr_type=0;
+	int debug_noaddr = 0;
 
 	memset(paramblock, 0, 16*4);
 
@@ -2481,13 +2485,44 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 	}
 	else if(strncmp(customcmd, "continue", 8)==0)
 	{
-		ret = cmd_sendexceptionhandler_signal(client, 0);
+		ret = cmd_sendexceptionhandler_signal(client, 0, 0);
 		if(ret==0)printf("Successfully sent exception-handler signal.\n");
 	}
 	else if(strncmp(customcmd, "kill", 4)==0)
 	{
-		ret = cmd_sendexceptionhandler_signal(client, 1);
+		ret = cmd_sendexceptionhandler_signal(client, 1, 0);
 		if(ret==0)printf("Successfully sent exception-handler signal.\n");
+	}
+	else if(strncmp(customcmd, "setdefault_exceptionsignal", 26)==0)
+	{
+		str = strtok(&customcmd[26], " ");
+		if(str==NULL)
+		{
+			ret = 4;
+			printf("Invalid input parameters.\n");
+		}
+		else
+		{
+			if(strncmp(str, "continue", 8)==0)
+			{
+				ret = cmd_sendexceptionhandler_signal(client, 0, 1);
+			}
+			else if(strncmp(str, "kill", 4)==0)
+			{
+				ret = cmd_sendexceptionhandler_signal(client, 1, 1);
+			}
+			else if(strncmp(str, "none", 4)==0)
+			{
+				ret = cmd_sendexceptionhandler_signal(client, 2, 1);
+			}
+			else
+			{
+				ret = 4;
+				printf("Invalid signal type.\n");
+			}
+		}
+
+		if(ret==0)printf("Successfully set the default exception-handler signal.\n");
 	}
 	else if(strncmp(customcmd, "armdebug:", 9)==0)
 	{
@@ -2789,14 +2824,27 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 
 			if(ret==0)
 			{
-				ret = parsecmd_hexvalue(NULL, " ", &paramblock[2]);
-				if(ret!=0)
+				str = strtok(NULL, " ");
+				if(str==NULL)
 				{
-					printf("Invalid address param.\n");
+					ret = 4;
+					printf("Invalid input parameters.\n");
+				}
+				else
+				{
+					if(strncmp(str, "none", 4))
+					{
+						sscanf(str, "0x%x", &paramblock[2]);
+						debug_noaddr = 0;
+					}
+					else
+					{
+						debug_noaddr = 1;
+					}
 				}
 			}
 
-			if(ret==0 && pr_type)
+			if(ret==0 && pr_type && !debug_noaddr)
 			{
 				str = strtok(NULL, " ");
 				if(str==NULL)
@@ -2844,33 +2892,37 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 
 			if(ret==0)
 			{
-				if(pr_type==0)
+				if(!debug_noaddr)
 				{
-					if((paramblock[2] & 2) == 0)
+					if(pr_type==0)
 					{
-						va_cr |= (0x1<<5);//Trigger on address + 0 accesses.
-						printf("The VA *RP will trigger on accesses to address+0x0.\n");
+						if((paramblock[2] & 2) == 0)
+						{
+							va_cr |= (0x1<<5);//Trigger on address + 0 accesses.
+							printf("The VA *RP will trigger on accesses to address+0x0.\n");
+						}
+						else
+						{
+							va_cr |= (0x4<<5);//Trigger on address + 2 accesses.
+							printf("The VA *RP will trigger on accesses to address+0x2.\n");
+						}
 					}
 					else
 					{
-						va_cr |= (0x4<<5);//Trigger on address + 2 accesses.
-						printf("The VA *RP will trigger on accesses to address+0x2.\n");
+						va_cr |= ((1<<(paramblock[2] & 3))<<5);
+						printf("The VA *RP will trigger on accesses to address+0x%x.\n", paramblock[2] & 3);
 					}
-				}
-				else
-				{
-					va_cr |= ((1<<(paramblock[2] & 3))<<5);
-					printf("The VA *RP will trigger on accesses to address+0x%x.\n", paramblock[2] & 3);
-				}
 
-				va_vr = paramblock[2] & ~3;
+					va_vr = paramblock[2] & ~3;
+				}
 
 				if(contextid!=0xff)printf("Using contextID: 0x%x.\n", contextid);
 				printf("Using address(for the actual regvalue): 0x%x.\n", va_vr);
 
 				if(contextid!=0xff)
 				{
-					context_bcr = 0x1 | (0x3<<1) | (0xf<<5) | (0x3<<20);
+					context_bcr = 0x1 | (0x3<<1) | (0xf<<5) | (0x2<<20);
+					if(!debug_noaddr)context_bcr |= (0x1<<20);//Only enable linking in the contextID BCR when addr is not set to 'none'.
 				}
 			}
 
@@ -2917,10 +2969,17 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 
 				if(va_pr_exists==0)
 				{
-					debugregs[3 + bkptid1*2 + 0] = va_vr;//*VR
-					debugregs[3 + bkptid1*2 + 1] = va_cr;//*CR
+					if(!debug_noaddr)
+					{
+						debugregs[3 + bkptid1*2 + 0] = va_vr;//*VR
+						debugregs[3 + bkptid1*2 + 1] = va_cr;//*CR
 
-					ret = cmd_armdebugaccessregs(client, 1, 0x3<<(3 + bkptid1*2), debugregs);//Write *VR and *CR.
+						ret = cmd_armdebugaccessregs(client, 1, 0x3<<(3 + bkptid1*2), debugregs);//Write *VR and *CR.
+					}
+					else
+					{
+						printf("Skipping VA *BR register writing, since the address is set to 'none'.\n");
+					}
 				}
 				else
 				{

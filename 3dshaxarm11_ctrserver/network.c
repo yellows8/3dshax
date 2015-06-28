@@ -387,13 +387,14 @@ int net_kernelmode_handlecmd(u32 param)
 		}
 	}
 
-	if(cmdid==0x91)
+	if(cmdid==0x91 || cmdid==0x92)
 	{
 		if(*bufsize == 4)
 		{
 			ptr = funcptr();
 
-			*ptr = buf[0];//Write to the exception-handler signal word.
+			if(cmdid==0x91)ptr[0] = buf[0];//Write to the exception-handler signal word.
+			if(cmdid==0x92)ptr[1] = buf[0];//Default exception-handler signal word.
 
 			*bufsize = 0;
 		}

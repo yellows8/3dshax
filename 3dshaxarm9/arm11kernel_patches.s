@@ -1116,6 +1116,11 @@ mrs r4, cpsr @ Enable IRQs (msr/mrs is used here for arm9+arm11 support)
 bic r4, r4, #0x80
 msr cpsr, r4
 
+bl arm11kernel_getdebugstateptr
+ldr r1, [r0, #4]
+cmp r1, #0
+bne arm11kernel_exceptionregdump_waitsignalend
+
 mov r0, r6
 bl arm11kernel_waitdebuginfo_magic
 
@@ -1132,6 +1137,7 @@ mrs r4, cpsr @ Disable IRQs (msr/mrs is used here for arm9+arm11 support)
 orr r4, r4, #0x80
 msr cpsr, r4
 
+arm11kernel_exceptionregdump_waitsignalend:
 ldr r2, =0x4d524554 @ "TERM"
 cmp r1, r2
 bne arm11kernel_exceptionregdump_exit
