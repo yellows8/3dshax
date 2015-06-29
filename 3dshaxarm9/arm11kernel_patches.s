@@ -1089,10 +1089,10 @@ str r3, [r0], #4 @ Write the current KProcess ptr.
 
 mrc p14, 0, r1, c0, c1, 0 @ Get the debug DSCR.
 str r1, [r0], #4
-ands r2, r1, #0x3c
+/*ands r2, r1, #0x3c
 bicne r1, r1, #0x3c
 mcrne p14, 0, r1, c0, c1, 0 @ When method-of-entry is non-zero, clear it to zero. This is required: no debug exceptions (breakpoint/watchpoint) will trigger when this is non-zero.
-
+*/
 arm11kernel_exceptionregdump_L2_end_finish:
 ldr r1, =0x58584148
 str r1, [r4]
