@@ -74,8 +74,6 @@ void __appInit() {
 		((u32*)0x94000000)[0x800>>2] = ret;
 	}
 
-	hidInit(NULL);
-
 	fsInit();
 }
 
@@ -94,23 +92,19 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			//aptInit(APPID_WEB);
-			//aptSetupEventHandler();
+			//aptInit();
 
 			gfxInitDefault();
 		}
 	}
 	else
 	{
-		aptInit(APPID_APPLICATION);
-		//aptSetupEventHandler();
+		aptInit();
 
 		gfxInitDefault();
 	}
 
 	ACU_WaitInternetConnection();
-
-	CFGNOR_Initialize(1);
 
 	ptr = memalign(0x1000, 0x48000);
 	if(ptr==NULL)((u32*)0x84000000)[2] = 0x50505050;

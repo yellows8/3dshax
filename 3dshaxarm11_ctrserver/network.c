@@ -1205,6 +1205,30 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		return 0;
 	}
 
+	if(cmdid==0x5e)
+	{
+		if(*bufsize != 4)
+		{
+			*bufsize = 0;
+			return 0;
+		}
+		
+		if(buf[0] == 0x0)
+		{
+			buf[0] = hidInit(NULL);
+		}
+		else if(buf[0] == 0x1)
+		{
+			buf[0] = CFGNOR_Initialize(1);
+		}
+		else
+		{
+			*bufsize = 0;
+		}
+
+		return 0;
+	}
+
 	if(cmdid==0x60)
 	{
 		if(*bufsize != 0x18)
