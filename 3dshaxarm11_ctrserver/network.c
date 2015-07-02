@@ -1850,7 +1850,7 @@ void network_initialize()
 	//listen_sock = socket(AF_INET, SOCK_DGRAM, 0);
 	if(listen_sock<0)
 	{
-		((u32*)0x84000000)[3] = (u32)listen_sock;
+		((u32*)0x84000000)[3] = errno;
 		SOC_Shutdown();
 		return;
 	}
