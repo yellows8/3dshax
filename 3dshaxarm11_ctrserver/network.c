@@ -718,6 +718,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 	Handle handle, *handleptr;
 	u32 val=0;
 	u32 pos;
+	u32 openflags;
 	u64 filesize;
 	u32 handletype=0;
 	u32 *ptr;
@@ -1359,12 +1360,14 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		fileLowPath.size = buf[4];
 		fileLowPath.data = (u8*)&buf[6 + pos];
 
+		openflags = buf[5];
+
 		ret = FSUSER_OpenArchive(NULL, &archive);
 		ret2 = ret;
 
-		if(ret==0)ret = FSUSER_OpenFile(NULL, &filehandle, archive, fileLowPath, buf[5], FS_ATTRIBUTE_NONE);
+		if(ret==0)ret = FSUSER_OpenFile(NULL, &filehandle, archive, fileLowPath, openflags, FS_ATTRIBUTE_NONE);
 
-		//ret = FSUSER_OpenFileDirectly(NULL, &filehandle, archive, fileLowPath, buf[5], FS_ATTRIBUTE_NONE);
+		//ret = FSUSER_OpenFileDirectly(NULL, &filehandle, archive, fileLowPath, openflags, FS_ATTRIBUTE_NONE);
 		pos+= 6 + (((buf[4] + 3) & ~3)>>2);
 
 		filesize = 0;
@@ -1374,24 +1377,23 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 			ret = FSFILE_GetSize(filehandle, &filesize);
 			if(ret!=0)FSFILE_Close(filehandle);
 
-			//if((buf[5] & 2) && ((*bufsize)-pos*4) < filesize)filesize = (*bufsize)-pos*4;
-			if(buf[5] & 2)filesize = (*bufsize)-pos*4;
+			//if((openflags & 2) && ((*bufsize)-pos*4) < filesize)filesize = (*bufsize)-pos*4;
+			if(openflags & 2)filesize = (*bufsize)-pos*4;
 		}
 
 		*bufsize = 0;
 
 		if(ret==0)
 		{
-			if(buf[5] == 1)ret = FSFILE_Read(filehandle, bufsize, 0, buf, filesize);
-			if(buf[5] & 2)
+			if(openflags == 1)ret = FSFILE_Read(filehandle, bufsize, 0, buf, filesize);
+			if(openflags & 2)
 			{
 				ret = FSFILE_Write(filehandle, &buf[0], 0, &buf[pos], filesize, 0x10001);
 				*bufsize = 4;
 			}
 			FSFILE_Close(filehandle);
-			svcCloseHandle(filehandle);
 
-			if(buf[5] & 2)
+			if(openflags & 2)
 			{
 				if(archive.id==4 || archive.id==8 || archive.id==0x1234567C || archive.id==0x567890B1 || archive.id==0x567890B2)FSUSER_ControlArchive(fsGetSessionHandle(), archive);
 			}
