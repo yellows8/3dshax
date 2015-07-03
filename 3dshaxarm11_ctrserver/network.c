@@ -385,6 +385,17 @@ int net_kernelmode_handlecmd(u32 param)
 			memcpy(buf, ptr, *bufsize);
 			memset(ptr, 0, *bufsize);
 		}
+
+		return 0;
+	}
+
+	if(cmdid==0x91)
+	{
+		*bufsize = 4;
+
+		buf[0] = arm11kernel_textvaddr[0x1804>>2];
+
+		return 0;
 	}
 
 	if(cmdid==0x93)

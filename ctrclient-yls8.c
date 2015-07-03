@@ -620,6 +620,29 @@ int cmd_getdebuginfoblk(ctrclient *client, unsigned int **buf, unsigned int *siz
 	return 0;
 }
 
+int cmd_getfwver(ctrclient *client, uint32_t *fwver)
+{
+	uint32_t header[2];
+
+	memset(header, 0, sizeof(header));
+	
+	header[0] = 0x491;
+	header[1] = 0x0;
+
+	if(ctrclient_sendbuffer(client, header, 2*4)!=1)return 1;
+	if(ctrclient_recvbuffer(client, header, 2*4)!=1)return 1;
+
+	if(header[1] != 4)
+	{
+		printf("Response size is invalid.\n");
+		return 2;
+	}
+
+	if(ctrclient_recvbuffer(client, fwver, 4)!=1)return 1;
+
+	return 0;
+}
+
 int cmd_writearm11debug_settings(ctrclient *client, uint32_t index, uint32_t value)
 {
 	int ret = 0;
@@ -2026,7 +2049,7 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 	unsigned char *inbuffer=NULL, *outbuf=NULL;
 	unsigned int *outbuf32;
 	unsigned int inbuffersize=0, outbufsize=0;
-	unsigned int paramblock[16];
+	uint32_t paramblock[16];
 	uint32_t debugregs[0x4c>>2];
 	struct stat filestat;
 	unsigned int val=0;
@@ -2042,7 +2065,7 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 	int pr_type=0;
 	int debug_noaddr = 0;
 
-	memset(paramblock, 0, 16*4);
+	memset(paramblock, 0, sizeof(paramblock));
 
 	if(strncmp(customcmd, "quit", 4)==0)
 	{
@@ -2510,6 +2533,14 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 	else if(strncmp(customcmd, "getdebuginfoblk", 15)==0)
 	{
 		ret = parsecmd_getdebuginfoblk(client, customcmd);
+	}
+	else if(strncmp(customcmd, "getfwver", 8)==0)
+	{
+		ret = cmd_getfwver(client, &paramblock[0]);
+		if(ret==0)
+		{
+			printf("RUNNINGFWVER = 0x%08x. Hardware type = %s. FIRM tidlow u16 = 0x%x. Actual FWVER = %u/0x%x.\n", paramblock[0], paramblock[0] & 0x40000000 ? "New3DS":"Old3DS", (paramblock[0]>>8) & 0xffff, paramblock[0] & 0xff, paramblock[0] & 0xff);
+		}
 	}
 	else if(strncmp(customcmd, "continue", 8)==0)
 	{
