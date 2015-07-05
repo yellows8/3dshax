@@ -1194,7 +1194,14 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 			mmutable = get_kprocessptr(((u64)buf[0]) | ((u64)buf[1]<<32), 0, 1);
 			if(mmutable)
 			{
-				buf[0] = (u32)mmutable_convert_vaddr2physaddr(mmutable, buf[2]);
+				if((((RUNNINGFWVER & 0xff) < 44) && buf[2]>=0x20000000) || (((RUNNINGFWVER & 0xff) >= 44) && buf[2]>=0x40000000))//Verify the the specified address is actually within userland memory for the mmutable.
+				{
+					buf[0] = 0;
+				}
+				else
+				{
+					buf[0] = (u32)mmutable_convert_vaddr2physaddr(mmutable, buf[2]);
+				}
 				if(buf[0]==0)buf[0] = ~1;
 			}
 			else
