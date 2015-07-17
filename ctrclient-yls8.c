@@ -3161,7 +3161,7 @@ int main(int argc, char *argv[])
 
 	int argi;
 	int keytype = 0;
-	unsigned int keyslot = 0;
+	unsigned int keyslot = 0xff;
 	int cryptmode = 2;
 	int brute=0;
 	int ret;
@@ -3185,24 +3185,33 @@ int main(int argc, char *argv[])
 	{
 		ret = 0;
 
-		if(strncmp(argv[argi], "--key=", 6)==0)
+		if(strncmp(argv[argi], "--normalkey=", 12)==0)
 		{
 			tmpsize = 0x10;
-			load_bindata(&argv[argi][6], (unsigned char**)&key, &tmpsize);
-			keytype = 1;
+			if((ret = load_bindata(&argv[argi][12], (unsigned char**)&key, &tmpsize)!=0) || tmpsize<0x10)
+			{
+				printf("The specified input for the normalkey is invalid.\n");
+			}
+			if(ret==0)keytype = 1;
 		}
 
 		if(strncmp(argv[argi], "--keyY=", 7)==0)
 		{
 			tmpsize = 0x10;
-			load_bindata(&argv[argi][7], (unsigned char**)&key, &tmpsize);
-			keytype = 2;
+			if((ret = load_bindata(&argv[argi][7], (unsigned char**)&key, &tmpsize)!=0) || tmpsize<0x10)
+			{
+				printf("The specified input for the keyY is invalid.\n");
+			}
+			if(ret==0)keytype = 2;
 		}
 
 		if(strncmp(argv[argi], "--keyX=", 7)==0)
 		{
 			tmpsize = 0x10;
-			load_bindata(&argv[argi][7], (unsigned char**)&keyX, &tmpsize);
+			if((ret = load_bindata(&argv[argi][7], (unsigned char**)&keyX, &tmpsize)!=0) || tmpsize<0x10)
+			{
+				printf("The specified input for the keyX is invalid.\n");
+			}
 		}
 
 		if(strncmp(argv[argi], "--keyslot=", 10)==0)sscanf(&argv[argi][10], "%x", &keyslot);
@@ -3217,13 +3226,13 @@ int main(int argc, char *argv[])
 			tmpsize = 0x10;
 			ret = load_bindata(&argv[argi][5], (unsigned char**)&ctr, &tmpsize);
 		}
-		if(strncmp(argv[argi], "--input=", 8)==0)
+		if(strncmp(argv[argi], "--indata=", 9)==0)
 		{
-			ret = load_bindata(&argv[argi][8], &inputbuffer, &inbufsize);
+			ret = load_bindata(&argv[argi][9], &inputbuffer, &inbufsize);
 		}
-		if(strncmp(argv[argi], "--ctrcrypt", 10)==0)cryptmode = 2;
-		if(strncmp(argv[argi], "--cbcdecrypt", 12)==0)cryptmode = 4;
-		if(strncmp(argv[argi], "--cbcencrypt", 12)==0)cryptmode = 5;
+		if(strncmp(argv[argi], "--aesctr", 8)==0)cryptmode = 2;
+		if(strncmp(argv[argi], "--aescbcdecrypt", 15)==0)cryptmode = 4;
+		if(strncmp(argv[argi], "--aescbcencrypt", 15)==0)cryptmode = 5;
 		if(strncmp(argv[argi], "--cryptmode=", 12)==0)sscanf(&argv[argi][12], "%x", &cryptmode);
 
 		if(strncmp(argv[argi], "--brute", 7)==0)brute = 1;
@@ -3376,22 +3385,29 @@ int main(int argc, char *argv[])
 		return ret;
 	}
 	
-	if(keyX==NULL || brute==0)
+	if(keyslot==0xff)
 	{
-		ret = cryptdata(&client, keyslot, keytype, cryptmode, key, ctr, inputbuffer, inbufsize, outpath, keyX);
+		printf("No keyslot specified, skipping crypto.\n");
 	}
 	else
 	{
-		memset(tmpkey, 0, 16);
-
-		for(pos=0; pos<16; pos++)
+		if(keyX==NULL || brute==0)
 		{
-			memcpy(tmpkey, keyX, 16);
+			ret = cryptdata(&client, keyslot, keytype, cryptmode, key, ctr, inputbuffer, inbufsize, outpath, keyX);
+		}
+		else
+		{
+			memset(tmpkey, 0, 16);
 
-			for(pos2=0; pos2<0x100; pos2++)
+			for(pos=0; pos<16; pos++)
 			{
-				tmpkey[pos] = (unsigned char)pos2;
-				ret = cryptdata(&client, keyslot, keytype, cryptmode, key, ctr, inputbuffer, inbufsize, outpath, tmpkey);
+				memcpy(tmpkey, keyX, 16);
+
+				for(pos2=0; pos2<0x100; pos2++)
+				{
+					tmpkey[pos] = (unsigned char)pos2;
+					ret = cryptdata(&client, keyslot, keytype, cryptmode, key, ctr, inputbuffer, inbufsize, outpath, tmpkey);
+				}
 			}
 		}
 	}
