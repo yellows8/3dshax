@@ -34,7 +34,7 @@
 	dumpmem((u32*)0x20703000, filesize);
 }*/
 
-u32 nand_readsector(u32 sector, u32 *outbuf, u32 sectorcount)
+u32 nand_rwsector(u32 sector, u32 *buf, u32 sectorcount, u32 rw)
 {
 	u32 val;
 	u32 *state;
@@ -42,7 +42,7 @@ u32 nand_readsector(u32 sector, u32 *outbuf, u32 sectorcount)
 	val = ((u32)pxifs_state) - 8;
 	state = (u32*)(*((u32*)val));
 
-	return archive_readsectors(state, outbuf, sectorcount, sector);
+	return archive_rwsectors(state, buf, sectorcount, sector, rw);
 }
 
 #ifdef ENABLE_DUMP_NANDIMAGE
@@ -70,7 +70,7 @@ void dump_nandimage()
 
 		for(sectori=0; sectori<(0x100000/0x200); sectori+=8)
 		{
-			ret = nand_readsector(sectorbase + sectori, ((u32*)(0x21000000 + sectori*0x200)), 8);
+			ret = nand_rwsector(sectorbase + sectori, ((u32*)(0x21000000 + sectori*0x200)), 8, 0);
 			if(ret!=0)
 			{
 				closefile(fileobj);

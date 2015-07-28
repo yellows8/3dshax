@@ -1118,15 +1118,25 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 
 	if(cmdid==0xc2)
 	{
-		if(*bufsize != 8)
+		if(*bufsize < 12)
 		{
 			*bufsize = 0;
 			return 0;
 		}
 
-		*bufsize = (buf[1] * 0x200) + 4;
-		buf[0] = nand_readsector(buf[0], &buf[1], buf[1]);//buf[0]=sector#, buf[1]=sectorcount
+		rw = buf[2];
+
+		if(rw > 1)
+		{
+			*bufsize = 4;
+			buf[0] = ~0;
+			return 0;
+		}
+
+		if(rw==0)*bufsize = (buf[1] * 0x200) + 4;
+		buf[0] = nand_rwsector(buf[0], &buf[1+(rw*2)], buf[1], rw);//buf[0]=sector#, buf[1]=sectorcount, buf[2]=rw
 		if(buf[0]!=0)*bufsize = 4;
+		if(rw && buf[0]==0)*bufsize = 0;
 
 		return 0;
 	}
@@ -1180,6 +1190,44 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 		return 0;
 	}
 	#endif
+
+	if(cmdid==0xef)
+	{
+		if(*bufsize != 4)return -2;
+
+		vu32 *regptr = (vu32*)0x1000B000;
+
+		u64 start_tick, end_tick;
+		u64 *timeptr = (u64*)&buf[6];
+
+		*bufsize = 6*4 + buf[0]*16;
+
+		while(regptr[0] & 1);//Wait for RSA_CNT busy bit to clear.
+
+		start_tick = svcGetSystemTick();
+
+		while(buf[0])
+		{
+			*timeptr = svcGetSystemTick();
+			timeptr++;
+
+			regptr[0] |= 1;
+
+			while(regptr[0] & 1)buf[1]++;
+
+			*timeptr = svcGetSystemTick();
+			timeptr++;
+
+			buf[0]--;
+		}
+
+		end_tick = svcGetSystemTick();
+		timeptr = (u64*)&buf[2];
+		timeptr[0] = start_tick;
+		timeptr[1] = end_tick;
+
+		return 0;
+	}
 
 	if(cmdid==0xf0)
 	{

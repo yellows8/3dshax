@@ -13,7 +13,7 @@
 .global getfilesize
 .global setfilesize
 .global initialize_nandarchiveobj
-.global archive_readsectors
+.global archive_rwsectors
 .global pxifs_openarchive
 
 .type fs_initialize STT_FUNC
@@ -26,7 +26,7 @@
 .type getfilesize STT_FUNC
 .type setfilesize STT_FUNC
 .type initialize_nandarchiveobj STT_FUNC
-.type archive_readsectors STT_FUNC
+.type archive_rwsectors STT_FUNC
 .type pxifs_openarchive STT_FUNC
 
 fs_initialize:
@@ -404,11 +404,12 @@ ldr r4, [r4, r5]
 blx r4
 pop {r4, r5, pc}
 
-archive_readsectors: @ r0=archiveclass*, r1=buffer, r2=sectorcount, r3=mediaoffset/sector#
-push {r0, r1, r2, r3, r4, r5, lr}
+archive_rwsectors: @ r0=archiveclass*, r1=buffer, r2=sectorcount, r3=mediaoffset/sector#, insp0=rw(0=read, 1=write)
+push {r0, r1, r2, r3, r4, r5, r6, lr}
 sub sp, sp, #24
 
-mov r0, #0
+ldr r0, [sp, #0x38]
+archive_rwsectors_start:
 bl fs_getvtableptr_rw
 
 ldr r2, [sp, #32]
@@ -437,12 +438,16 @@ archive_readsectors_l0:
 mov r5, #0x8
 
 archive_readsectors_l1:
+ldr r6, [sp, #0x38]
+lsl r6, r6, #2
+add r5, r5, r6
+
 ldr r4, [r0]
 ldr r4, [r4, r5]
 blx r4
 
 add sp, sp, #28
-pop {r1, r2, r3, r4, r5, pc}
+pop {r1, r2, r3, r4, r5, r6, pc}
 .pool
 
 pxifs_openarchive: @ inr0=ptr where the archiveobj* will be written, inr1=archiveid, and inr2=lowpath*

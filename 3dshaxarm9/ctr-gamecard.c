@@ -156,7 +156,7 @@ u32 gamecard_readsectors(u32 *outbuf, u32 sector, u32 sectorcount)
 	ptr = (u32*)(gamecard_archiveobj[0x24>>2]+8);
 	ptr = (u32*)*ptr;
 
-	return archive_readsectors(ptr, outbuf, sectorcount, sector);
+	return archive_rwsectors(ptr, outbuf, sectorcount, sector, 0);
 }
 
 /*u32 read_gamecardsector(u64 mediaoffset, u32 *outbuf, u32 readsize, u16 total_datablocks)
