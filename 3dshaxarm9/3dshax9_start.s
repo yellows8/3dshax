@@ -79,7 +79,7 @@ b _start_codebegin
 
 .word 0x4d415250 @ "PRAM", magic number for paramaters.
 
-FIRMLAUNCH_RUNNINGTYPE: @ 0 = native(no FIRM-launch), 1 = FIRM-launch was done via the below code, 2 = _start was called via other means with a Process9 hook.
+FIRMLAUNCH_RUNNINGTYPE: @ 0 = native(no FIRM-launch), 1 = FIRM-launch was done via the below code, 2 = _start was called via other means with a Process9 hook. 3 = _start was called via an ARM9 FIRM entrypoint hook, at entry LR *must* be set to the address of the original entrypoint from the FIRM header.
 .word 0
 
 RUNNINGFWVER: @ FWVER of the currently running system. Format: byte0 = KERNEL_MINORVERSION(from arm11kernel configmem), byte1-2 = FIRM tidlow u16, byte3 = flags. Bit31 in this u32 indicates a different FWVER format, used by FIRMLAUNCH_RUNNINGTYPE val3. Bit30 = hardware type: 0 = Old3DS, 1 = New3DS.
