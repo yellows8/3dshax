@@ -237,6 +237,7 @@ clean:
 	make clean -f Makefile_ctrserver.arm11 CTRULIB=$(CTRULIB)
 
 export OUTPATH
+export ARM9BINCPOUT_PATH
 
 3dshax_arm9.bin:
 	make -f Makefile.arm9 $(PARAMS)

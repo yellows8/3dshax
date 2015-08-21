@@ -32,6 +32,11 @@ SOURCES		:=	3dshaxarm11_ctrserver 3dshax11_common 3dshax_common
 INCLUDES	:=	include 3dshax11_common 3dshax_common
 DATA		:=	3dshaxarm11_ctrserver_data
 
+BINCPCMD	:=	
+ifneq ($(strip $(OUTPATH)),)
+	BINCPCMD	:=	@cp $(OUTPUT).bin $(OUTPATH)/3dshax_arm11.bin
+endif
+
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
@@ -150,7 +155,7 @@ $(OUTPUT).elf	:	$(OFILES)
 
 $(OUTPUT).bin	: 	$(OUTPUT).elf
 	@$(OBJCOPY) -O binary $< $@
-	@cp $(OUTPUT).bin $(OUTPATH)/3dshax_arm11.bin
+	$(BINCPCMD)
 	@echo built ... $(notdir $@)
 
 #---------------------------------------------------------------------------------

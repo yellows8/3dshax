@@ -29,6 +29,16 @@ DEFINES	:=
 
 LDNAME	:=	3dshaxarm9.ld
 
+ARM9BINCPOUT_PATH	:=	
+ifneq ($(strip $(ARM9BINCPOUT_PATH)),)
+	ARM9BINCPOUT_PATH	:=	$(ARM9BINCPOUT_PATH)
+endif
+
+BINCPCMD	:=	
+ifneq ($(strip $(OUTPATH)),)
+	BINCPCMD	:=	@cp $(OUTPUT).bin $(OUTPATH)$(ARM9BINCPOUT_PATH)
+endif
+
 ifeq ($(strip $(DISABLEAES)),)
 	DEFINES	:=	$(DEFINES) -DENABLEAES
 endif
@@ -354,7 +364,8 @@ else
 
 $(OUTPUT).bin	: 	$(OUTPUT).elf
 	@$(OBJCOPY) -O binary $< $@
-	@cp $(OUTPUT).bin $(OUTPATH)
+	$(BINCPCMD)
+	@echo "ARM9BINCPOUT_PATH: $(ARM9BINCPOUT_PATH)"
 	@echo built ... $(notdir $@)
 
 $(OUTPUT).elf	:	$(OFILES)

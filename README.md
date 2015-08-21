@@ -1,9 +1,9 @@
 Codebase for 3ds arm9 stuff + arm11 kernel/userland patches etc. This also includes ctrserver, which is a network server which runs on the 3ds.
 
 # Building
-To build just the non-ctrserver codebase: make -f Makefile.arm9 OUTPATH={path to sdcard root} {other optional makefile parameters}  
-To build just ctrserver: make -f Makefile_ctrserver.arm11 OUTPATH={path to sdcard root} {other optional makefile parameters}  
-To build arm9code+ctrserver: make OUTPATH={path to sdcard root} {other optional makefile parameters}  
+To build just the non-ctrserver codebase: make -f Makefile.arm9 {other optional makefile parameters}  
+To build just ctrserver: make -f Makefile_ctrserver.arm11 {other optional makefile parameters}  
+To build arm9code+ctrserver: make {other optional makefile parameters}  
 
 Building ctrserver requires "3dshaxarm11_ctrserver_data/auth.bin", this is the "auth.txt" which would be used on the client-side.
 
@@ -18,6 +18,9 @@ By default NAND-redir is enabled, see below for disabling it. When NAND-redir is
 By default the FIRM-launch code loads the plaintext FIRM from SD "/firm.bin", see the below *_FIRMLAUNCH_LOAD* options. The FWVER values used by the arm9code is automatically determined via the arm11kernel configmem init code in the FIRM being loaded.
 
 # Makefile parameters  
+* "OUTPATH={path to sdcard root}" Optional, this can be used to copy the built binaries to the specified path.
+* "ARM9BINCPOUT_PATH={path}" When OUTPATH is used, copy the built arm9bin to "$(OUTPATH)$(ARM9BINCPOUT_PATH)" instead of just "$(OUTPATH)".
+
 * "DISABLEAES=1" Disables all arm9 AES code.
 * "DISABLENANDREDIR=1" Disables NAND->SD redirection.
 * "NANDREDIR_SECTORNUM={sectornum}" Sector-num base for the SD nandimage, for NAND-redir when enabled.
