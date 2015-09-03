@@ -1146,17 +1146,16 @@ cmp r1, r3
 beq arm11kernel_exceptionregdump_waitsignal
 str r3, [r0]
 
+arm11kernel_exceptionregdump_waitsignalend:
 //cpsid i @ disable IRQs
 mrs r4, cpsr @ Disable IRQs (msr/mrs is used here for arm9+arm11 support)
 orr r4, r4, #0x80
 msr cpsr, r4
+#endif
 
-arm11kernel_exceptionregdump_waitsignalend:
 ldr r2, =0x4d524554 @ "TERM"
 cmp r1, r2
 bne arm11kernel_exceptionregdump_exit
-
-#endif
 
 arm11kernel_exceptionregdump_end:
 cmp r7, #0
