@@ -95,6 +95,7 @@ Supported NATIVE_FIRM system-versions(versions where NATIVE_FIRM wasn't updated 
 * v9.3
 * v9.5
 * v9.6
+* v10.0 FIRM is not supported due to changes in Process9 main() (or at minimum anyway).
 
 The above doesn't really apply for functionality where addresses are located on-the-fly, unless specificly mentioned otherwise.
 
@@ -116,4 +117,3 @@ The codebase also determines the version of the FIRM being loaded on-the-fly, he
 * ARM11-kernel patch addrs/etc
 * ARM11-kernel cmd-logging patch addresses/etc
 * ...
-
