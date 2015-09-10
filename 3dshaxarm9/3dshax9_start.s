@@ -110,7 +110,6 @@ bl launchcode_kernelmode
 
 /*cmp r0, #0
 bne _start_code_fsinitdone*/
-
 mov r0, #0
 bl fs_initialize
 cmp r0, #0
@@ -835,15 +834,20 @@ bl parse_branch
 sub r0, r0, r4
 add r0, r0, r5 @ r0 = .code addr of Process9 main()
 
-ldr r1, =0xe8bd4010
+ldr r1, =0xe8bd
 
 proc9_autolocate_hookpatchaddr_lp:
 ldr r2, [r0]
-cmp r2, r1
+lsr r3, r2, #16
+cmp r3, r1
 addne r0, r0, #4
 bne proc9_autolocate_hookpatchaddr_lp @ r0 = Addr of the pop instruction in main().
 
-sub r0, r0, #0x10
+lsr r2, r2, #12
+ldr r1, =0xe8bd8
+cmp r2, r1
+subne r0, r0, #0x10 @ <v10.0 FIRM
+subeq r0, r0, #0x28
 
 ldr r1, [r0]
 sub r0, r0, r5

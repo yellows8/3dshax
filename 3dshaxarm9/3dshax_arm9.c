@@ -204,6 +204,11 @@ u32 *proc9_locate_main_endaddr()//Returns a ptr to the last instruction in Proce
 	while(1)
 	{
 		if((ptr[pos] & ~0xfff) == 0xe8bd4000)break;//"pop {... lr}"
+		if((ptr[pos] & ~0xfff) == 0xe8bd8000)//"pop {... pc}"
+		{
+			pos--;//Return the address of the pop instruction.
+			break;
+		}
 		pos++;
 	}
 	pos++;
@@ -218,7 +223,16 @@ void patch_proc9_launchfirm()
 	u32 pos, pos2;
 	u32 val0, val1;
 
-	ptr = (u32*)parse_branch((u32)proc9_locate_main_endaddr(), 0);//ptr = address of launch_firm function called @ the end of main().
+	ptr = proc9_locate_main_endaddr();
+
+	if((ptr[0] & ~0xfff) != 0xe8bd8000)//<v10.0 FIRM
+	{
+		ptr = (u32*)parse_branch((u32)ptr, 0);//ptr = address of launch_firm function called @ the end of main().
+	}
+	else
+	{
+		ptr = (u32*)ptr[5];//Load launch_firm func address from main() .pool.
+	}
 
 	pos = 0;
 

@@ -643,10 +643,20 @@ bl proc9_locate_main_endaddr
 cmp r0, #0
 beq initializeptr_pxifs_state_end
 
+ldr r1, [r0]
+lsr r1, r1, #12
+ldr r2, =0xe8bd8
+cmp r1, r2
+bne initializeptr_pxifs_state_lp0_init_getfuncaddr
+ldr r0, [r0, #0x10]
+b initializeptr_pxifs_state_lp0_init @ >=v10.0 FIRM
+
+initializeptr_pxifs_state_lp0_init_getfuncaddr:
 sub r0, r0, #0x18
 mov r1, #0
 bl parse_branch
 
+initializeptr_pxifs_state_lp0_init:
 ldr r1, =0xe2800008
 ldr r4, =0x000ff000
 
@@ -762,11 +772,17 @@ initializeptr_fsvtables_lp1next:
 add r0, r0, #4
 cmp r0, r1
 blt initializeptr_fsvtables_lp1
-b initializeptr_fsvtables_end
+
+ldr r0, =fs_vtableptr_fileread @ When locating vtableptr_filewrite fails with the above, like with FIRM >=v10.0, just assume that it's at fs_vtableptr_fileread-0x38.
+ldr r0, [r0]
+sub r0, r0, #0x38
+b initializeptr_fsvtables_lp1end_stateinit
 
 initializeptr_fsvtables_lp1end:
 add r0, r0, #4
 ldr r0, [r0]
+
+initializeptr_fsvtables_lp1end_stateinit:
 ldr r1, =fs_vtableptr_filewrite
 str r0, [r1]
 

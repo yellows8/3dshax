@@ -95,7 +95,7 @@ Supported NATIVE_FIRM system-versions(versions where NATIVE_FIRM wasn't updated 
 * v9.3
 * v9.5
 * v9.6
-* v10.0 FIRM is not supported due to changes in Process9 main() (or at minimum anyway).
+* v10.0 The LOADA9_NEW3DSMEM option is currently not usable starting with this version on new3ds, due to the baseaddr for the relocated Process9 NCCH(the tmp one used for loading) being moved from 0x080fffe0 to 0x0817ffe0(this mem-copy is done by kernel9). Using this again would require implementing a workaround.
 
 The above doesn't really apply for functionality where addresses are located on-the-fly, unless specificly mentioned otherwise.
 
