@@ -405,6 +405,7 @@ u32 *get_framebuffers_addr()
 	return NULL;
 }
 
+#ifdef ENABLE_ARM11KERNEL_PROCSTARTHOOK
 void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 {
 	u64 procname;
@@ -594,6 +595,7 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 	}
 	#endif
 }
+#endif
 
 #ifdef ENABLE_ARM11KERNEL_DEBUG
 #ifdef ARM11KERNEL_ENABLECMDLOG
@@ -691,7 +693,9 @@ void dump_arm11debuginfo()
 
 	if(debuginfo_ptr[1]==0x3131444c)//"LD11"
 	{
+		#ifdef ENABLE_ARM11KERNEL_PROCSTARTHOOK
 		handle_debuginfo_ld11(debuginfo_ptr);
+		#endif
 	}
 	else if(debuginfo_ptr[1]==0x35375653)//"SV75"
 	{
@@ -1811,6 +1815,7 @@ int main(void)
 
 	launchcode_kernelmode(changempu_memregions);
 
+	#ifdef ENABLE_RUNNINGTYPE0
 	if(FIRMLAUNCH_RUNNINGTYPE==0)
 	{
 		if((*((vu16*)0x10146000) & 1) == 0)framebuf_addr = /*0x18000000+0x1e6000;*/get_framebuffers_addr();
@@ -1821,9 +1826,11 @@ int main(void)
 			memset(&framebuf_addr[(0x46500)>>2], 0xffffffff, 0x46500);
 		}
 	}
+	#endif
 
 	if((*((vu16*)0x10146000) & 1) == 0 && FIRMLAUNCH_RUNNINGTYPE==0)memset(framebuf_addr, pos | (pos<<8) | (pos<<16) | (pos<<24), 0x46500*10);
 
+	#ifdef ENABLE_RUNNINGTYPE0
 	if(FIRMLAUNCH_RUNNINGTYPE==0)
 	{
 		if((*((vu16*)0x10146000) & 0x100) == 0)//button R
@@ -1852,6 +1859,7 @@ int main(void)
 		main_startupcommon();
 	}
 	else
+	#endif
 	{
 		if(FIRMLAUNCH_RUNNINGTYPE==2)
 		{
