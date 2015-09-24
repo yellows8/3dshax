@@ -163,29 +163,6 @@ blx r7
 stm r8, {r0, r1, r2, r3, r4, r5, r6}
 pop {r4, r5, r6, r7, r8, pc}
 
-.global svcStartInterProcessDma
-.type svcStartInterProcessDma, %function
-svcStartInterProcessDma:
-	push {r0, r4, r5}
-	ldr  r0, [sp, #0xc]
-	ldr  r4, [sp, #0xc+0x4]
-	ldr  r5, [sp, #0xc+0x8]
-	svc  0x55
-	ldr  r2, [sp], #4
-	str  r1, [r2]
-	ldr  r4, [sp], #4
-	ldr  r5, [sp], #4
-	bx   lr
-
-.global svcGetDmaState
-.type svcGetDmaState, %function
-svcGetDmaState:
-	str r0, [sp, #-0x4]!
-	svc 0x57
-	ldr r3, [sp], #4
-	str r1, [r3]
-	bx  lr
-
 .global initsrvhandle_allservices
 .type initsrvhandle_allservices, %function
 initsrvhandle_allservices: @ Init a srv handle which has access to all services.

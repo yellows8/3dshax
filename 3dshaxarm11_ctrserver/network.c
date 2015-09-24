@@ -64,9 +64,6 @@ int ctrserver_senddata(ctrserver *server, u8 *buf, int size);
 u32 launchcode_kernelmode(void*, u32 param);
 void call_arbitaryfuncptr(void* funcptr, u32 *regdata);
 
-s32 svcStartInterProcessDma(u32* dmahandle, u32 dstProcess, u32* dst, u32 srcProcess, u32* src, u32 size, u32 *config);
-s32 svcGetDmaState(u32 *state, u32 dmahandle);
-
 void kernelmode_cachestuff();
 
 Result FSUSER_ControlArchive(Handle *handle, FS_archive archive)//This is based on code from smea.
@@ -720,6 +717,8 @@ static int ctrserver_handlecmd_installcia(u32 *buf, u32 *bufsize)
 	return 0;
 }
 
+vu32 someflag = 0;
+
 static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 {
 	//u8 *buf8 = (u8*)buf;
@@ -770,6 +769,31 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		svcSleepThread(1000000000LL);
 		*val64ptr = svcGetSystemTick() - val64;
 		*bufsize = 8;
+		return 0;
+	}
+
+	if(cmdid==0x2f)
+	{
+		u64 start_tick, diff_tick, i;
+
+		start_tick = svcGetSystemTick();
+		i=0;//268123480;
+		diff_tick = 0;
+		pos = buf[0];
+		//while(diff_tick < pos)
+		while(someflag==0)
+		{
+			i++;
+			//diff_tick = svcGetSystemTick() - start_tick;
+		}
+
+		diff_tick = svcGetSystemTick() - start_tick;
+
+		buf[0] = (u32)i;
+		buf[1] = i>>32;
+		buf[2] = (u32)diff_tick;
+		buf[3] = diff_tick>>32;
+		*bufsize = 0x10;
 		return 0;
 	}
 
@@ -1578,6 +1602,13 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		return 0;
 	}
 
+	if(cmdid==0xc9)
+	{
+		buf[0] = APT_LaunchLibraryApplet(buf[0], 0, NULL, 0);
+		*bufsize = 4;
+		return 0;
+	}
+
 	return 0;
 }
 
@@ -1735,8 +1766,12 @@ int ctrserver_processcmd(ctrserver *server, u32 *payloadptr)
 		net_thread_paramblock[1] = (u32)payloadptr;
 		net_thread_paramblock[2] = (u32)&payloadsize;
 
+		someflag = 0;
+
 		ret = svcSignalEvent(threadevents[1]);//Signal the cmdreq event.
 		if(ret<0)ret = -7;
+		svcSleepThread(1000000000LL);
+		someflag = 1;
 		ret = svcWaitSynchronization(threadevents[2], thread_cmdreplyevent_timeout);//Wait for cmdreply.
 		if(ret<0 || ret==0x09401bfe)ret = -8;
 		if(ret==0)svcClearEvent(threadevents[2]);

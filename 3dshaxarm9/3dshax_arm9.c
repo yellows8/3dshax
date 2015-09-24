@@ -376,7 +376,7 @@ void patch_proc9_launchfirm()
 	}
 	pos2++;
 
-	svcFlushProcessDataCache(ptr, 0x630);
+	svcFlushProcessDataCache(0xffff8001, ptr, 0x630);
 
 	init_arm9patchcode3((u32*)val0, (u32*)val1, (u32*)ptr[pos2]);
 }
@@ -1474,7 +1474,7 @@ void patch_pxidev_cmdhandler_cmd0(u32 *startptr, u32 size)
 	if(ptr==NULL)return;
 
 	*ptr = (u32)pxidev_cmdhandler_cmd0;
-	svcFlushProcessDataCache(ptr, 0x4);
+	svcFlushProcessDataCache(0xffff8001, ptr, 0x4);
 }
 
 #ifdef ENABLE_GETEXHDRHOOK
@@ -1628,7 +1628,7 @@ void thread_entry()
 	if(((u8)RUNNINGFWVER)==39)//v7.0
 	{
 		*((u16*)0x0805ed34) |= 1;
-		svcFlushProcessDataCache((u32*)0x0805ed34, 0x4);//Patch the code which reads the arm9 access-control mount flags, so that all of these archives are accessible.
+		svcFlushProcessDataCache(0xffff8001, (u32*)0x0805ed34, 0x4);//Patch the code which reads the arm9 access-control mount flags, so that all of these archives are accessible.
 
 		//arm9general_debughook_writepatch(0x0802ea90);//Hook the gamecard v6.0 savegame keyY init code for debug.
 		//arm9general_debughook_writepatch(0x0807b49c);
@@ -1642,12 +1642,12 @@ void thread_entry()
 	else if(((u8)RUNNINGFWVER)==40)//v7.2
 	{
 		*((u16*)0x0805ed38) |= 1;
-		svcFlushProcessDataCache((u32*)0x0805ed38, 0x4);//Patch the code which reads the arm9 access-control mount flags, so that all of these archives are accessible.
+		svcFlushProcessDataCache(0xffff8001, (u32*)0x0805ed38, 0x4);//Patch the code which reads the arm9 access-control mount flags, so that all of these archives are accessible.
 	}
 	else if(((u8)RUNNINGFWVER)==44)//v8.0
 	{
 		*((u16*)0x0805ef38) |= 1;
-		svcFlushProcessDataCache((u32*)0x0805ef38, 0x4);//Patch the code which reads the arm9 access-control mount flags, so that all of these archives are accessible.
+		svcFlushProcessDataCache(0xffff8001, (u32*)0x0805ef38, 0x4);//Patch the code which reads the arm9 access-control mount flags, so that all of these archives are accessible.
 	}
 
 	patch_pxidev_cmdhandler_cmd0((u32*)proc9_textstartaddr, 0x080ff000-proc9_textstartaddr);
@@ -1732,20 +1732,20 @@ void thread_entry()
 			//gsp_physaddr[0xaaf0>>2] = 0xE1200070;//Patch the "mov r3, #0" at the start of the GSP module function for handling gxcmd3, with: "bkpt #0".
 
 			//*((u32*)0x808a944) = 0;//Patch the pxifs cmdhandler so that it always executes the code-path for invalid cmdid.
-			//svcFlushProcessDataCache((u32*)0x808a944, 0x4);
+			//svcFlushProcessDataCache(0xffff8001, (u32*)0x808a944, 0x4);
 			/**((u32*)0x808d81c) = 0xe3a05000;//"mov r5, #0"
-			svcFlushProcessDataCache((u32*)0x808d81c, 0x4);//Patch the pxipm cmdhandler so that it always executes the code-path for invalid cmdid.
+			svcFlushProcessDataCache(0xffff8001, (u32*)0x808d81c, 0x4);//Patch the pxipm cmdhandler so that it always executes the code-path for invalid cmdid.
 			*((u32*)0x8087a48) = 0;//Patch the pxi gamecard cmdhandler so that it always executes the code-path for invalid cmdid.
-			svcFlushProcessDataCache((u32*)0x8087a48, 0x4);
+			svcFlushProcessDataCache(0xffff8001, (u32*)0x8087a48, 0x4);
 			*((u32*)0x808ddf4) = 0;//Patch the pxiam9 cmdhandler so that it always executes the code-path for invalid cmdid.
-			svcFlushProcessDataCache((u32*)0x808ddf4, 0x4);
+			svcFlushProcessDataCache(0xffff8001, (u32*)0x808ddf4, 0x4);
 			// *((u32*)0x808d98c) = 0;//Patch the pxips9 cmdhandler so that it always executes the code-path for invalid cmdid.
-			//svcFlushProcessDataCache((u32*)0x808d98c, 0x4);
+			//svcFlushProcessDataCache(0xffff8001, (u32*)0x808d98c, 0x4);
 			*((u32*)0x808d58c) = 0;//Patch the pxidev cmdhandler so that it always executes the code-path for invalid cmdid.
-			svcFlushProcessDataCache((u32*)0x808d58c, 0x4);
+			svcFlushProcessDataCache(0xffff8001, (u32*)0x808d58c, 0x4);
 
 			*((u32*)0x808db1c) = 0xe3a00000;//"mov r0, #0"
-			svcFlushProcessDataCache((u32*)0x808db1c, 0x4);//Patch the bl used for calling the pxips9 RSA-verify func in the pxips9 cmdhandler, with the above instruction.
+			svcFlushProcessDataCache(0xffff8001, (u32*)0x808db1c, 0x4);//Patch the bl used for calling the pxips9 RSA-verify func in the pxips9 cmdhandler, with the above instruction.
 			*/
 		}
 

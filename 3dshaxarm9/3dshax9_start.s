@@ -651,6 +651,9 @@ str r2, [r0]
 ldr r2, [r1, #4]
 str r2, [r0, #4]
 mov r1, #8
+mov r2, r1
+mov r1, r0
+ldr r0, =0xffff8001
 b svcFlushProcessDataCache
 .pool
 
@@ -1090,6 +1093,9 @@ ldr r2, [r1, #4]
 str r2, [r0, #4]
 mov r1, #8
 pop {r4, lr}
+mov r2, r1
+mov r1, r0
+ldr r0, =0xffff8001
 b svcFlushProcessDataCache
 .pool
 #endif
@@ -1103,6 +1109,9 @@ str r2, [r0, #4]
 /*ldr r2, [r1, #8]
 str r2, [r0, #8]*/
 mov r1, #8
+mov r2, r1
+mov r1, r0
+ldr r0, =0xffff8001
 b svcFlushProcessDataCache
 .pool
 

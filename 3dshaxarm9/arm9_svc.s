@@ -50,9 +50,6 @@ svc 0x18
 bx lr
 
 svcFlushProcessDataCache:
-mov r2, r1
-mov r1, r0
-ldr r0, =0xffff8001
 svc 0x54
 bx lr
 .pool

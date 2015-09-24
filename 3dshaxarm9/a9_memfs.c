@@ -75,7 +75,7 @@ u32 loadfile_charpath(char *path, u32 *addr, u32 maxsize)
 
 	closefile(fileobj);
 
-	svcFlushProcessDataCache(addr, filesize);
+	svcFlushProcessDataCache(0xffff8001, addr, filesize);
 
 	return 0;
 }

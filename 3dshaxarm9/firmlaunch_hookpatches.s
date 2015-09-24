@@ -396,6 +396,9 @@ ldr r0, =0xfff
 bic r4, r4, r0
 mov r0, r4
 ldr r1, =0xc00
+mov r2, r1
+mov r1, r0
+ldr r0, =0xffff8001
 bl svcFlushProcessDataCache
 
 mov r0, #0
