@@ -66,6 +66,8 @@ void call_arbitaryfuncptr(void* funcptr, u32 *regdata);
 
 void kernelmode_cachestuff();
 
+void get_armcfgregs(u32 *out);
+
 Result FSUSER_ControlArchive(Handle *handle, FS_archive archive)//This is based on code from smea.
 {
 	u32* cmdbuf=getThreadCommandBuffer();
@@ -490,6 +492,14 @@ int net_kernelmode_handlecmd(u32 param)
 		}
 
 		regaddr[1] |= tmpval<<10;
+
+		return 0;
+	}
+
+	if(cmdid==0x9f)
+	{
+		get_armcfgregs(buf);
+		*bufsize = 0x40;
 
 		return 0;
 	}
