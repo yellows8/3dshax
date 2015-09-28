@@ -1361,11 +1361,14 @@ void pxipmcmd1_getexhdr(u32 *exhdr)
 			exhdr[(0x30+4)>>2] += 0x20;
 			exhdr[(0x30+8)>>2] += (0x20<<12);
 		}
+
+		return;
 	}
 
 	if(exhdr[0]==0x45454154)//"TAEE" for NES VC for TLoZ
 	{
 		for(pos=0x248; pos<0x248+0x7; pos++)exhdr8[pos] = 0xFF;//Set FS accessinfo to all 0xFF.
+		return;
 	}
 
 	#ifdef ADDEXHDR_SYSMODULE_DEPENDENCY
