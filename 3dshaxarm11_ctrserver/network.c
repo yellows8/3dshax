@@ -1612,6 +1612,33 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		return 0;
 	}
 
+	if(cmdid==0xc2)
+	{
+		if(*bufsize != 4)return 0;
+		if(amserv_available==0)
+		{
+			if(am_init()!=0)return -5;
+		}
+
+		val = buf[0];
+		buf[1] = 0;
+		buf[2] = 0;
+		buf[3] = 0;//padding
+
+		buf[0] = AM_GetTitleCount(val, &buf[2]);
+		if(buf[2] > 512)buf[2] = 512;
+		if(buf[0]==0)buf[1] = AM_GetTitleIdList(val, buf[2], &buf[4]);
+
+		*bufsize = 0x10;
+
+		if(buf[0]==0 && buf[1]==0)
+		{
+			*bufsize += buf[2]*0x8;
+		}
+
+		return 0;
+	}
+
 	if(cmdid==0xc9)
 	{
 		buf[0] = APT_LaunchLibraryApplet(buf[0], 0, NULL, 0);

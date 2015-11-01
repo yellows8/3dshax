@@ -233,6 +233,54 @@ int cmd_deletetitle(ctrclient *client, unsigned int mediatype, unsigned int cmdt
 	return 0;
 }
 
+int cmd_gettidlist(ctrclient *client, unsigned int mediatype, unsigned int *total_titles, uint64_t **out_titleids, unsigned int *resultcodes)
+{
+	unsigned int header[0x18>>2];
+
+	header[0] = 0x8c2;
+	header[1] = 0x4;
+	header[2] = mediatype;
+
+	if(ctrclient_sendbuffer(client, header, 0xc)!=1)return 1;
+	if(ctrclient_recvbuffer(client, header, 0x8)!=1)return 1;
+
+	if(header[1]<0x10)
+	{
+		printf("Invalid response payload size: 0x%x.\n", header[1]);
+		return 1;
+	}
+
+	if(ctrclient_recvbuffer(client, &header[2], 0x10)!=1)return 1;
+
+	resultcodes[0] = header[2+0];
+	resultcodes[1] = header[2+1];
+
+	if(resultcodes[0]==0 && resultcodes[1]==0)
+	{
+		*total_titles = header[2+2];
+
+		if(*total_titles)
+		{
+			*out_titleids = malloc((*total_titles) * 0x8);
+			if(*out_titleids == NULL)
+			{
+				printf("Failed to alloc mem.\n");
+			}
+			else
+			{
+				memset(*out_titleids, 0, (*total_titles) * 0x8);
+				if(ctrclient_recvbuffer(client, *out_titleids, (*total_titles) * 0x8)!=1)
+				{
+					free(*out_titleids);
+					return 1;
+				}
+			}
+		}
+	}
+
+	return 0;
+}
+
 int cryptdata(ctrclient *client, unsigned int keyslot, int keytype, int cryptmode, unsigned char *key, unsigned char *ctr, unsigned char *buffer, unsigned int bufsize, char *outpath, unsigned char *keyX)
 {
 	FILE *fout;
@@ -2057,6 +2105,8 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 	unsigned int chunksize;
 	uint32_t kprocessptr=0;
 
+	uint64_t *val64_buf = NULL;
+
 	unsigned char contextid;
 	uint32_t bkptid0 = ~0, bkptid1 = ~0;
 	uint32_t context_bcr = 0;
@@ -2220,6 +2270,33 @@ int parse_customcmd(ctrclient *client, char *customcmd)
 		}
 
 		if(ret==0)ret = cmd_deletetitle(client, paramblock[0], paramblock[1], val64);
+	}
+	else if(strncmp(customcmd, "gettidlist", 10)==0)
+	{
+		ret = parsecmd_hexvalue(&customcmd[11], " ", &val);
+		if(ret!=0)
+		{
+			printf("Invalid input for mediatype.\n");
+		}
+		else
+		{
+			ret = cmd_gettidlist(client, val, &paramblock[0], &val64_buf, &paramblock[1]);
+			if(ret==0)
+			{
+				printf("AM_GetTitleCount result-code: 0x%08x.\n", paramblock[1+0]);
+				if(paramblock[1+0]==0)printf("AM_GetTitleIdList result-code: 0x%08x.\n", paramblock[1+1]);
+
+				if(val64_buf)
+				{
+					printf("Total titles: %u.\n\n", paramblock[0]);
+
+					for(val=0; val<paramblock[0]; val++)printf("%016"PRIx64"\n", val64_buf[val]);
+
+					free(val64_buf);
+					val64_buf = NULL;
+				}
+			}
+		}
 	}
 	else if(strncmp(customcmd, "sendservicecmd", 14)==0)
 	{
