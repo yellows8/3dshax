@@ -3436,7 +3436,11 @@ int main(int argc, char *argv[])
 					{
 						ret = parse_customcmd(&client, customcmd);
 						printf("\n");
-						if(ret==1)break;
+						if(ret==1)
+						{
+							ret = 0;
+							break;
+						}
 					}
 
 					printf("> ");
