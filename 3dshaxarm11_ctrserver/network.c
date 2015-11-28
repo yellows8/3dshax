@@ -596,6 +596,13 @@ int net_kernelmode_handlecmd(u32 param)
 		return 0;
 	}
 
+	if(cmdid==0xa2)//Clean/invalidate dcache+icache etc.
+	{
+		*bufsize = 0;
+		kernelmode_cachestuff();
+		return 0;
+	}
+
 	return ret;
 }
 
