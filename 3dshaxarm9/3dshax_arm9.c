@@ -122,13 +122,15 @@ typedef struct {
 
 s_arm11_processoverride_list *arm11_processoverride_list = (s_arm11_processoverride_list*)0x08001600;
 
-void load_arm11code(u32 *loadptr, u32 maxloadsize, u64 procname, u16 *filepath)
+void load_arm11code(u32 *mmutable, u32 codebin_vaddr, u32 maxloadsize, u64 procname, u16 *filepath)
 {
 	//int i;
 	u32 *fileobj = NULL;
-	u32 *app_physaddr = NULL;
+	//u32 *app_physaddr = NULL;
 	u32 *ptr = NULL;
 	u32 pos;
+	u32 chunksize;
+	u32 *loadptr = NULL;
 
 	if(filepath==NULL)filepath = arm11code_filepath;
 
@@ -140,13 +142,29 @@ void load_arm11code(u32 *loadptr, u32 maxloadsize, u64 procname, u16 *filepath)
 
 	if(openfile(sdarchive_obj, 4, filepath, pos*2, 1, &fileobj)!=0)return;
 	input_filesize = getfilesize(fileobj);
-	ptr = loadptr;
+	/*ptr = loadptr;
 	if(ptr==NULL)
 	{
 		ptr = app_physaddr;
+	}*/
+	if(maxloadsize>0 && maxloadsize<input_filesize)return;
+
+	pos = 0;
+
+	while(pos < input_filesize)
+	{
+		chunksize = 0;
+		ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, codebin_vaddr + pos, &chunksize);
+		if(ptr==NULL)return;
+
+		if(chunksize > (input_filesize - pos))chunksize = input_filesize - pos;
+
+		fileread(fileobj, ptr, chunksize, pos);
+
+		pos+= chunksize;
 	}
-	if((maxloadsize>0 && maxloadsize<input_filesize) || ptr==NULL)return;
-	fileread(fileobj, ptr, input_filesize, 0);
+
+	loadptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, codebin_vaddr, NULL);
 
 	if(loadptr)
 	{
@@ -165,7 +183,7 @@ void load_arm11code(u32 *loadptr, u32 maxloadsize, u64 procname, u16 *filepath)
 		}
 	}
 
-	if(loadptr==NULL)
+	/*if(loadptr==NULL)
 	{
 		app_physaddr[(0x20da98>>2) + 0] = arm11_stub[0];//0xffffffff This stub is executed after the APT thread handles the signal triggered by NS, in APTU_shutdownhandle where it returns.
 		app_physaddr[(0x20da98>>2) + 1] = arm11_stub[1];
@@ -181,7 +199,7 @@ void load_arm11code(u32 *loadptr, u32 maxloadsize, u64 procname, u16 *filepath)
 				ptr[pos] = 0x00100000;
 			}
 		}
-	}
+	}*/
 }
 
 /*void rsaengine_setpubk(u32 keyslot, u32 bitsize, u8* modulo, u32 pubexponent)
@@ -409,7 +427,9 @@ u32 *get_framebuffers_addr()
 void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 {
 	u64 procname;
-	u32 *codebin_physaddr, codebin_vaddr, total_codebin_size;
+	//u32 *codebin_physaddr;
+	//u32 codebin_vaddr;
+	u32 total_codebin_size;
 	u32 *ptr, *ptr2;
 	u32 *mmutable;
 	u32 pos, pos2;
@@ -429,18 +449,15 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 
 	procname = ((u64)debuginfo_ptr[5]) | (((u64)debuginfo_ptr[6])<<32);
 
-	codebin_vaddr = debuginfo_ptr[4];
+	//codebin_vaddr = debuginfo_ptr[4];
 	total_codebin_size = debuginfo_ptr[3]<<12;
 
 	mmutable = (u32*)get_kprocessptr(0x726564616f6cLL, 0, 1);//"loader"
 	if(mmutable==NULL)return;
 
-	codebin_physaddr =  (u32*)mmutable_convert_vaddr2physaddr(mmutable, codebin_vaddr);
-	if(codebin_physaddr==NULL)return;
-
 	if(procname==ARM11CODELOAD_PROCNAME)
 	{
-		load_arm11code(codebin_physaddr, total_codebin_size, procname, arm11code_filepath);
+		load_arm11code(mmutable, 0x10000000, total_codebin_size, procname, arm11code_filepath);
 		return;
 	}
 
@@ -457,7 +474,7 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 
 			for(pos2=0; pos2<0x1f; pos2++)tmp_path[pos2] = (u16)ent->codebin_path[pos2];
 
-			load_arm11code(codebin_physaddr, total_codebin_size, procname, tmp_path);
+			load_arm11code(mmutable, 0x10000000, total_codebin_size, procname, tmp_path);
 			return;
 		}
 	}
@@ -469,9 +486,8 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 		bool done=false;
 		for(pos=0; pos<total_codebin_size; pos+=0x1000)
 		{
-			ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x10000000 + pos);
+			ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x10000000 + pos, NULL);
 			if(ptr==NULL)continue;
-			u8* ptr8 = (u8*)ptr;
 
 			#ifdef ENABLE_THEMECACHENAME
 			//search for theme:/ and append a '_' if found
@@ -509,17 +525,17 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 	#ifdef DISABLE_GAMECARDUPDATE//Patch the ns:s cmd7 code so that result-code 0xc821180b is always returned, indicating that no gamecard sysupdate installation is needed. This is required for launching gamecards from other regions.
 	if(procname==0x736e)//"ns"
 	{
-		ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x10000000);
+		ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x10000000, NULL);
 		if(ptr==NULL)return;
 
 		ptr2 = locate_cmdhandler_code(ptr, 0x1e000, cmpblock_nss, 7, 1);
 		if(ptr2==NULL)return;
 
-		ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x10000000 + (ptr2[0x7] - 0x00100000));//ptr = code for handling ns:s cmd7
+		ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x10000000 + (ptr2[0x7] - 0x00100000), NULL);//ptr = code for handling ns:s cmd7
 		if(ptr==NULL)return;
 
 		ptr2 = (u32*)parse_branch(ptr2[0x7] + 0x28, ptr[0x28>>2]);
-		ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x10000000 + (((u32)ptr2) - 0x00100000));//ptr = function for handling ns:s cmd7
+		ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x10000000 + (((u32)ptr2) - 0x00100000), NULL);//ptr = function for handling ns:s cmd7
 		if(ptr==NULL)return;
 
 		pos2 = 0;
@@ -536,7 +552,7 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 		{
 			pos2++;
 			ptr2 = (u32*)parse_branch(((u32)ptr2) + (pos2<<2), ptr[pos2]);
-			ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x10000000 + (((u32)ptr2) - 0x00100000));//ptr = physaddr of the function code called immediately after the above bne instruction.
+			ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x10000000 + (((u32)ptr2) - 0x00100000), NULL);//ptr = physaddr of the function code called immediately after the above bne instruction.
 			if(ptr==NULL)return;
 
 			ptr[0] = 0xe59f0000;//ldr r0, [pc, #0]
@@ -550,19 +566,19 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 
 	if(procname==0x45454154)//"TAEE", NES VC for TLoZ.
 	{
-		ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x1000e1bc);
+		ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x1000e1bc, NULL);
 
 		*ptr = (*ptr & ~0xff) | 0x09;//Change the archiveid used for the savedata archive from the savedata archiveid, to sdmc.
 
-		ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x1000a920);//Patch the romfs mount code so that it opens the sdmc archive instead of using the actual romfs.
+		ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x1000a920, NULL);//Patch the romfs mount code so that it opens the sdmc archive instead of using the actual romfs.
 		ptr[0] = 0xe3a01009;//"mov r1, #9"
 		ptr[3] = generate_branch(0x10a92c, 0x115a88, 1);
 
-		/*ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x10103ff6);
+		/*ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x10103ff6, NULL);
 		ptr[0] = 0x61746164;//Change the archive mount-point string used by the code which generates the config.ini and .patch paths, from "rom:" to "data:".
 		ptr[1] = 0x3a;
 
-		ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x10104028);
+		ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x10104028, NULL);
 		ptr[0] = 0x61746164;//Change the archive mount-point string used by the functions which generates "rom:/rom/" paths, from "rom:" to "data:".
 		ptr[1] = 0x3a;*/
 		return;
@@ -580,7 +596,7 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 
 		for(pos=0; pos<total_codebin_size; pos+=0x1000)
 		{
-			ptr = (char*)mmutable_convert_vaddr2physaddr(mmutable, 0x10000000 + pos);
+			ptr = (char*)mmutable_convert_vaddr2physaddr(mmutable, 0x10000000 + pos, NULL);
 			if(ptr==NULL)continue;
 
 			for(pos2=0; pos2<0x1000; pos2++)
@@ -634,7 +650,7 @@ void arm11debuginfo_convertcmd_vaddr2phys(u64 procname, u32 *cmdbuf, u32 *outdat
 
 		if(addr>>28 != 0x2)//Don't convert the addr to physaddr when it's already a physaddr.
 		{
-			physaddr = (u32)mmutable_convert_vaddr2physaddr(mmutable, addr);
+			physaddr = (u32)mmutable_convert_vaddr2physaddr(mmutable, addr, NULL);
 		}
 
 		outdata[(pos - wordindex_translateparams)] = size;
@@ -654,7 +670,6 @@ void dump_arm11debuginfo()
 	//u32 *ptr;
 	u32 val=0;
 	vu32 *ptrpxi = (vu32*)0x10008000;
-	u64 procname=0;
 
 	debuginfo_ptr = (vu32*)((u32)get_arm11debuginfo_physaddr() + 0x200);
 	debuginfo_arm9flag = (vu32*)((u32)get_arm11debuginfo_physaddr() + 0x20);
@@ -800,9 +815,8 @@ int ctrserver_process_aescontrol(aescontrol *control)
 
 int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 {
-	int ret=0;
-	u32 rw, openflags;
-	u32 pos, val;
+	u32 rw;
+	u32 pos;
 	u64 val64;
 	u64 *val64ptr;
 	u32 *addr;
@@ -1266,7 +1280,7 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 				}
 				else
 				{
-					buf[0] = (u32)mmutable_convert_vaddr2physaddr(mmutable, buf[2]);
+					buf[0] = (u32)mmutable_convert_vaddr2physaddr(mmutable, buf[2], NULL);
 				}
 				if(buf[0]==0)buf[0] = ~1;
 			}
@@ -1333,7 +1347,6 @@ void pxidev_cmdhandler_cmd0handler(u32 *cmdbuf)
 #ifdef ENABLE_GETEXHDRHOOK
 void pxipmcmd1_getexhdr(u32 *exhdr)
 {
-	u32 *servlist;
 	u8 *exhdr8 = (u8*)exhdr;
 	u32 pos;
 
@@ -1345,9 +1358,11 @@ void pxipmcmd1_getexhdr(u32 *exhdr)
 
 	if(exhdr[0] == ((u32)(ARM11CODELOAD_PROCNAME)) && exhdr[1] == ((u32)(ARM11CODELOAD_PROCNAME>>32)))//Only modify the exheader for this block when the exhdr name matches ARM11CODELOAD_PROCNAME.
 	{
+		#ifdef ENABLE_ARM11CODELOAD_SERVACCESSCONTROL_OVERWRITE
+		u32 *servlist;
+
 		servlist = &exhdr[0x250>>2];
 
-		#ifdef ENABLE_ARM11CODELOAD_SERVACCESSCONTROL_OVERWRITE
 		memset(servlist, 0, 0x100);
 		memcpy(servlist, arm11codeload_servaccesscontrol, sizeof(arm11codeload_servaccesscontrol));
 		#endif
@@ -1356,10 +1371,18 @@ void pxipmcmd1_getexhdr(u32 *exhdr)
 		for(pos=0x248; pos<0x248+0x7; pos++)exhdr8[pos] = 0xFF;//Set FS accessinfo to all 0xFF.
 		#endif
 
-		if(exhdr[0] == 0x706c64)//When loading code under dlp-module, increase the .data section size by 0x20000-bytes so that there's enough space for ctrserver(and some unused space as well).
+		if(exhdr[0] == 0x706c64)//When loading code under dlp-module, increase the .text section size by 0x20000-bytes so that there's enough space for ctrserver(and some unused space as well).
 		{
-			exhdr[(0x30+4)>>2] += 0x20;
-			exhdr[(0x30+8)>>2] += (0x20<<12);
+			//.text
+			exhdr[(0x10+4)>>2] += 0x20;
+			exhdr[(0x10+8)>>2] += (0x20<<12);
+
+			//.rodata
+			exhdr[0x20>>2] += (0x20<<12);
+
+			//.data
+			//exhdr[(0x30+4)>>2] += 0x20;
+			exhdr[0x30>>2] += (0x20<<12);
 		}
 
 		return;
@@ -1624,24 +1647,24 @@ void thread_entry()
 	//u32 *ptr;
 	u32 debuginitialized = 0;
 	//u32 totalmenu_textoverwrite = 0;
-	u32 *mmutable, *ptr;
+	//u32 *mmutable;
 
 	if(FIRMLAUNCH_RUNNINGTYPE==0)svcSleepThread(2000000000LL);
 
-	if(((u8)RUNNINGFWVER)==39)//v7.0
+	/*if(((u8)RUNNINGFWVER)==39)//v7.0
 	{
 		*((u16*)0x0805ed34) |= 1;
 		svcFlushProcessDataCache(0xffff8001, (u32*)0x0805ed34, 0x4);//Patch the code which reads the arm9 access-control mount flags, so that all of these archives are accessible.
-
+*/
 		//arm9general_debughook_writepatch(0x0802ea90);//Hook the gamecard v6.0 savegame keyY init code for debug.
 		//arm9general_debughook_writepatch(0x0807b49c);
 
 		//axiwram[0x1b6f8>>2] = ~0;
 
-		/*ptr = mmutable_convert_vaddr2physaddr(get_kprocessptr(0x707367, 0, 1), 0x10a474);//Patch the GSP module gxcmd4 code so that it uses the input addresses as the physical addresses, when the addresses are outside of the VRAM/LINEAR-mem range.
+		/*ptr = mmutable_convert_vaddr2physaddr(get_kprocessptr(0x707367, 0, 1), 0x10a474, NULL);//Patch the GSP module gxcmd4 code so that it uses the input addresses as the physical addresses, when the addresses are outside of the VRAM/LINEAR-mem range.
 		ptr[0x8>>2] = 0xe1a03001;//"mov r3, r1"
 		ptr[0x2C>>2] = 0xe1a01002;//"mov r1, r2"*/
-	}
+	/*}
 	else if(((u8)RUNNINGFWVER)==40)//v7.2
 	{
 		*((u16*)0x0805ed38) |= 1;
@@ -1651,7 +1674,7 @@ void thread_entry()
 	{
 		*((u16*)0x0805ef38) |= 1;
 		svcFlushProcessDataCache(0xffff8001, (u32*)0x0805ef38, 0x4);//Patch the code which reads the arm9 access-control mount flags, so that all of these archives are accessible.
-	}
+	}*/
 
 	patch_pxidev_cmdhandler_cmd0((u32*)proc9_textstartaddr, 0x080ff000-proc9_textstartaddr);
 	#ifdef ENABLE_GETEXHDRHOOK
@@ -1678,7 +1701,7 @@ void thread_entry()
 			/*mmutable = (u32*)get_kprocessptr(0x707041727443LL, 0, 1);
 			if(mmutable)
 			{
-				ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x2e772c);
+				ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x2e772c, NULL);
 				if(ptr)*ptr = 0xE1200070;
 			}*/
 			//memset((u32*)0x18000000, pos | (pos<<8) | (pos<<16) | (pos<<24), 0x00600000);
@@ -1813,8 +1836,6 @@ void main_startupcommon()
 int main(void)
 {
 	u32 pos=0;
-	u32 *ptr;
-	u8 *ptr8;
 
 	launchcode_kernelmode(changempu_memregions);
 
@@ -1836,11 +1857,11 @@ int main(void)
 	#ifdef ENABLE_RUNNINGTYPE0
 	if(FIRMLAUNCH_RUNNINGTYPE==0)
 	{
-		if((*((vu16*)0x10146000) & 0x100) == 0)//button R
+		/*if((*((vu16*)0x10146000) & 0x100) == 0)//button R
 		{
 			FIRMLAUNCH_CLEARPARAMS = 1;
 			patch_proc9_launchfirm();
-			//load_arm11code(NULL, 0, 0x707041727443LL, arm11code_filepath);
+			load_arm11code(NULL, 0, 0x707041727443LL, arm11code_filepath);
 
 			writearm11_firmlaunch_usrpatch();
 			svcSleepThread(10000000000LL);
@@ -1849,7 +1870,7 @@ int main(void)
 		if((*((vu16*)0x10146000) & 0x200) == 0)//button L
 		{
 			load_arm11code(NULL, 0, 0x707041727443LL, arm11code_filepath);
-		}
+		}*/
 
 		if((*((vu16*)0x10146000) & 1) == 0)
 		{
@@ -1869,15 +1890,17 @@ int main(void)
 			FIRMLAUNCH_CLEARPARAMS = 1;
 			patch_proc9_launchfirm();
 		}
-		else if((*((vu16*)0x10146000) & 0x100))//button R not pressed
+		else //if((*((vu16*)0x10146000) & 0x100))//button R not pressed
 		{
 			#ifdef ENABLE_ARM11KERNEL_DEBUG
 			write_arm11debug_patch();
 			#endif
 
 			#ifdef ENABLE_CONFIGMEM_DEVUNIT
+			u8 *ptr8;
+
 			ptr8 = NULL;
-			while(ptr8 == NULL)ptr8 = (u32*)mmutable_convert_vaddr2physaddr(get_kprocessptr(0x697870, 0, 1), 0x1FF80014);
+			while(ptr8 == NULL)ptr8 = (u32*)mmutable_convert_vaddr2physaddr(get_kprocessptr(0x697870, 0, 1), 0x1FF80014, NULL);
 			*ptr8 = 0;
 			#endif
 

@@ -13,10 +13,12 @@ Result initsrvhandle_allservices();
 
 extern char* fake_heap_start;
 extern char* fake_heap_end;
-u32 __heapBase;
-extern u32 __heap_size, __linear_heap_size;
-u32 __linear_heap;
 static u32 linearheapsize;
+
+extern u32 __ctru_heap;
+extern u32 __ctru_heap_size;
+extern u32 __ctru_linear_heap;
+extern u32 __ctru_linear_heap_size;
 
 void __system_allocateHeaps() {
 	u32 tmp=0;
@@ -41,10 +43,12 @@ void __system_allocateHeaps() {
 	}
 
 	heapsize = 0x00088000;
+	__ctru_heap_size = heapsize;
+	__ctru_linear_heap_size = linearheapsize;
 
 	// Allocate the application heap
-	__heapBase = 0x08000000;
-	ret = svcControlMemory(&tmp, __heapBase, 0x0, heapsize, MEMOP_ALLOC, 0x3);
+	__ctru_heap = 0x08000000;
+	ret = svcControlMemory(&tmp, __ctru_heap, 0x0, heapsize, MEMOP_ALLOC, 0x3);
 
 	if(ret!=0)
 	{
@@ -52,7 +56,7 @@ void __system_allocateHeaps() {
 	}
 
 	// Allocate the linear heap
-	ret = svcControlMemory(&__linear_heap, 0x0, 0x0, linearheapsize, MEMOP_ALLOC_LINEAR, 0x3);
+	ret = svcControlMemory(&__ctru_linear_heap, 0x0, 0x0, linearheapsize, MEMOP_ALLOC_LINEAR, 0x3);
 
 	if(ret!=0)
 	{
@@ -60,7 +64,7 @@ void __system_allocateHeaps() {
 	}
 
 	// Set up newlib heap
-	fake_heap_start = (char*)__heapBase;
+	fake_heap_start = (char*)__ctru_heap;
 	fake_heap_end = fake_heap_start + heapsize;
 }
 
@@ -104,18 +108,18 @@ int main(int argc, char **argv)
 		gfxInitDefault();
 	}
 
-	ACU_WaitInternetConnection();
+	acWaitInternetConnection();
 
 	ptr = memalign(0x1000, 0x48000);
 	if(ptr==NULL)((u32*)0x84000000)[2] = 0x50505050;
 
-	ret = SOC_Initialize(ptr, 0x48000);
+	ret = socInit(ptr, 0x48000);
 	if(ret!=0)
 	{
 		((u32*)0x84000000)[1] = ret;
 	}
 
-	network_stuff((u32*)__linear_heap, linearheapsize);
+	network_stuff((u32*)__ctru_linear_heap, linearheapsize);
 
 	while(1);
 

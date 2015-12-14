@@ -47,7 +47,7 @@ extern Handle srvHandle;
 extern Handle aptLockHandle;
 extern Handle aptuHandle;
 extern Handle gspGpuHandle;
-extern Handle CFGNOR_handle;
+extern Handle cfgnorHandle;
 extern Handle hidHandle;
 extern Handle CSND_handle;
 extern Handle SOCU_handle;
@@ -67,29 +67,6 @@ void call_arbitaryfuncptr(void* funcptr, u32 *regdata);
 void kernelmode_cachestuff();
 
 void get_armcfgregs(u32 *out);
-
-Result FSUSER_ControlArchive(Handle *handle, FS_archive archive)//This is based on code from smea.
-{
-	u32* cmdbuf=getThreadCommandBuffer();
-
-	u32 b1 = 0, b2 = 0;
-
-	cmdbuf[0]=0x080d0144;
-	cmdbuf[1]=archive.handleLow;
-	cmdbuf[2]=archive.handleHigh;
-	cmdbuf[3]=0x0;
-	cmdbuf[4]=0x1; //buffer1 size
-	cmdbuf[5]=0x1; //buffer1 size
-	cmdbuf[6]=0x1a;
-	cmdbuf[7]=(u32)&b1;
-	cmdbuf[8]=0x1c;
-	cmdbuf[9]=(u32)&b2;
-
-	Result ret=0;
-	if((ret=svcSendSyncRequest(*handle)))return ret;
-
-	return cmdbuf[1];
-}
 
 Result am_init()//This is based on code by smea.
 {
@@ -158,7 +135,7 @@ Result ctrserver_arm9cmd(u32 cmdid, u32 *buf, u32 *bufsize)
 
 	if(*bufsize)
 	{
-		ret = GSPGPU_FlushDataCache(NULL, (u8*)buf, *bufsize);
+		ret = GSPGPU_FlushDataCache(buf, *bufsize);
 		if(ret<0)return ret;
 	}
 
@@ -167,7 +144,7 @@ Result ctrserver_arm9cmd(u32 cmdid, u32 *buf, u32 *bufsize)
 	
 	if(*bufsize)
 	{
-		ret = GSPGPU_InvalidateDataCache(NULL, (u8*)buf, *bufsize);
+		ret = GSPGPU_InvalidateDataCache(buf, *bufsize);
 		if(ret<0)return ret;
 	}
 
@@ -752,9 +729,9 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 	u64 val64;
 	u64 *val64ptr;
 	u32 *cmdbuf = getThreadCommandBuffer();
-	GSP_FramebufferInfo framebufinfo;
-	FS_archive archive;
-	FS_path fileLowPath;
+	GSPGPU_FramebufferInfo framebufinfo;
+	FS_Archive archive;
+	FS_Path fileLowPath;
 	char namebuf[8];
 	u32 dmaconfig[24>>2];
 
@@ -1043,7 +1020,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 			}
 			else if(handletype==3)
 			{
-				buf[0] = IRU_GetServHandle();
+				buf[0] = iruGetServHandle();
 			}
 			else if(handletype==4 && aptLockHandle)
 			{
@@ -1061,7 +1038,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 			}
 			else if(handletype==7)
 			{
-				buf[0] = CFGNOR_handle;
+				buf[0] = cfgnorHandle;
 			}
 			else if(handletype==8)
 			{
@@ -1114,7 +1091,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 	if(cmdid==0x51)
 	{
 		*bufsize = 0x20000;
-		CFGNOR_DumpFlash(buf, 0x20000);
+		cfgnorDumpFlash(buf, 0x20000);
 
 		return 0;
 	}
@@ -1124,7 +1101,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		size = *bufsize;
 		if(size>0x20000)size = 0x20000;
 		*bufsize = 0x0;
-		CFGNOR_WriteFlash(buf, size);
+		cfgnorWriteFlash(buf, size);
 
 		return 0;
 	}
@@ -1133,7 +1110,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 	{
 		size = (*bufsize) - 4;
 
-		ret = GSPGPU_FlushDataCache(NULL, (u8*)&buf[1], size);
+		ret = GSPGPU_FlushDataCache(&buf[1], size);
 		if(ret<0)return ret;
 
 		*bufsize = 0;
@@ -1158,13 +1135,13 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 
 	if(cmdid==0x55)
 	{
-		memset(&framebufinfo, 0, sizeof(GSP_FramebufferInfo));
-		memcpy(&framebufinfo, &buf[1], sizeof(GSP_FramebufferInfo));
+		memset(&framebufinfo, 0, sizeof(GSPGPU_FramebufferInfo));
+		memcpy(&framebufinfo, &buf[1], sizeof(GSPGPU_FramebufferInfo));
 
-		framebufinfo.framebuf0_vaddr = &buf[(1 + sizeof(GSP_FramebufferInfo))>>2];
-		framebufinfo.framebuf1_vaddr = &buf[(1 + sizeof(GSP_FramebufferInfo))>>2];
+		framebufinfo.framebuf0_vaddr = &buf[(1 + sizeof(GSPGPU_FramebufferInfo))>>2];
+		framebufinfo.framebuf1_vaddr = &buf[(1 + sizeof(GSPGPU_FramebufferInfo))>>2];
 
-		buf[0] = GSPGPU_SetBufferSwap(NULL, buf[0], &framebufinfo);
+		buf[0] = GSPGPU_SetBufferSwap(buf[0], &framebufinfo);
 
 		*bufsize = 4;
 
@@ -1235,7 +1212,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 			return 0;
 		}
 		*bufsize = 4;
-		buf[0] = GX_RequestDma(gxCmdBuf, (u32*)buf[0], (u32*)buf[1], buf[2]);
+		buf[0] = GX_RequestDma((u32*)buf[0], (u32*)buf[1], buf[2]);
 		return 0;
 	}
 
@@ -1247,7 +1224,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 			return 0;
 		}
 		*bufsize = 4;
-		buf[0] = GX_SetTextureCopy(gxCmdBuf, (u32*)buf[0], buf[2], (u32*)buf[1], buf[3], buf[4], buf[5]);
+		buf[0] = GX_TextureCopy((u32*)buf[0], buf[2], (u32*)buf[1], buf[3], buf[4], buf[5]);
 		return 0;
 	}
 
@@ -1268,11 +1245,11 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		
 		if(buf[0] == 0x0)
 		{
-			buf[0] = hidInit(NULL);
+			buf[0] = hidInit();
 		}
 		else if(buf[0] == 0x1)
 		{
-			buf[0] = CFGNOR_Initialize(1);
+			buf[0] = cfgnorInit(1);
 		}
 		else
 		{
@@ -1414,12 +1391,12 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 
 		openflags = buf[5];
 
-		ret = FSUSER_OpenArchive(NULL, &archive);
+		ret = FSUSER_OpenArchive(&archive);
 		ret2 = ret;
 
-		if(ret==0)ret = FSUSER_OpenFile(NULL, &filehandle, archive, fileLowPath, openflags, FS_ATTRIBUTE_NONE);
+		if(ret==0)ret = FSUSER_OpenFile(&filehandle, archive, fileLowPath, openflags, 0);
 
-		//ret = FSUSER_OpenFileDirectly(NULL, &filehandle, archive, fileLowPath, openflags, FS_ATTRIBUTE_NONE);
+		//ret = FSUSER_OpenFileDirectly(&filehandle, archive, fileLowPath, openflags, 0);
 		pos+= 6 + (((buf[4] + 3) & ~3)>>2);
 
 		filesize = 0;
@@ -1447,11 +1424,15 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 
 			if(openflags & 2)
 			{
-				if(archive.id==4 || archive.id==8 || archive.id==0x1234567C || archive.id==0x567890B1 || archive.id==0x567890B2)FSUSER_ControlArchive(fsGetSessionHandle(), archive);
+				if(archive.id==4 || archive.id==8 || archive.id==0x1234567C || archive.id==0x567890B1 || archive.id==0x567890B2)
+				{
+					val = 0;
+					FSUSER_ControlArchive(archive, ARCHIVE_ACTION_COMMIT_SAVE_DATA, &val, 1, &val, 1);
+				}
 			}
 		}
 
-		if(ret2==0)FSUSER_CloseArchive(NULL, &archive);
+		if(ret2==0)FSUSER_CloseArchive(&archive);
 
 		if(ret!=0)
 		{
@@ -1475,24 +1456,24 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		fileLowPath.size = buf[4];
 		fileLowPath.data = (u8*)&buf[6 + pos];
 
-		ret = FSUSER_OpenArchive(NULL, &archive);
+		ret = FSUSER_OpenArchive( &archive);
 		ret2 = ret;
 
 		if(ret==0)
 		{
-			ret = FSUSER_OpenDirectory(NULL, &filehandle, archive, fileLowPath);
+			ret = FSUSER_OpenDirectory(&filehandle, archive, fileLowPath);
 		}
 
 		ret3 = 1;
 		if(ret==0)
 		{
-			ret = FSDIR_Read(filehandle, &buf[1], buf[5], (FS_dirent*)&buf[2]);
+			ret = FSDIR_Read(filehandle, &buf[1], buf[5], (FS_DirectoryEntry*)&buf[2]);
 			ret3 = ret;
 			FSDIR_Close(filehandle);
 			svcCloseHandle(filehandle);
 		}
 
-		if(ret2==0)FSUSER_CloseArchive(NULL, &archive);
+		if(ret2==0)FSUSER_CloseArchive(&archive);
 
 		buf[0] = (u32)ret;
 		*bufsize = 4;
@@ -1634,7 +1615,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 
 		buf[0] = AM_GetTitleCount(val, &buf[2]);
 		if(buf[2] > 512)buf[2] = 512;
-		if(buf[0]==0)buf[1] = AM_GetTitleIdList(val, buf[2], &buf[4]);
+		if(buf[0]==0)buf[1] = AM_GetTitleIdList(val, buf[2], (u64*)&buf[4]);
 
 		*bufsize = 0x10;
 
@@ -1943,7 +1924,7 @@ void network_initialize()
 	if(listen_sock<0)
 	{
 		((u32*)0x84000000)[3] = errno;
-		SOC_Shutdown();
+		socExit();
 		return;
 	}
 
@@ -1960,7 +1941,7 @@ void network_initialize()
 	if(ret<0)
 	{
 		((u32*)0x84000000)[5] = (u32)errno;
-		SOC_Shutdown();
+		socExit();
 		return;
 	}
 
@@ -1969,7 +1950,7 @@ void network_initialize()
 	if(ret<0)
 	{
 		((u32*)0x84000000)[8] = (u32)ret;
-		SOC_Shutdown();
+		socExit();
 		return;
 	}
 
@@ -1978,7 +1959,6 @@ void network_initialize()
 
 void network_stuff(u32 *payloadptr, u32 payload_maxsize)
 {
-	Result ret;
 	struct sockaddr addr;
 	socklen_t addrlen;
 

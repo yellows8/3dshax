@@ -228,6 +228,7 @@ ldr r6, =0x24000
 arm11kernel_locate_cmdlogadr_lp0:
 ldr r0, =0x1FFF8000
 mov r1, r5
+mov r2, #0
 bl mmutable_convert_vaddr2physaddr
 cmp r0, #0
 beq arm11kernel_locate_cmdlogadr_end

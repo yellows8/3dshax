@@ -107,11 +107,11 @@ add r1, r1, #4
 b bss_clr
 
 _start_done:
-@ System initialization
-mov r0, r4
-bl initSystem
-
 pop {r4, r5, r6, r7, r8, lr}
+
+@ System initialization
+mov r0, lr
+bl initSystem
 
 @ Set up argc/argv arguments for main()
 ldr r0, =__system_argc

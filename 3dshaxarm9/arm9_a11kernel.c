@@ -14,12 +14,11 @@ u32 slabheap_vaddr = 0;
 u32 arm11kernel_initialize_slabheapvaddr()
 {
 	u32 pos;
-	u32 *ptr;
 	u8 *ptr8;
 
 	for(pos=0; pos<0x100; pos++)
 	{
-		ptr8 = mmutable_convert_vaddr2physaddr((u32*)0x1FFF8000, 0xFFF00000 + (pos<<12));
+		ptr8 = mmutable_convert_vaddr2physaddr((u32*)0x1FFF8000, 0xFFF00000 + (pos<<12), NULL);
 		if((u32)ptr8 == slabheap_physaddr)
 		{
 			slabheap_vaddr = 0xFFF00000 + (pos<<12);
@@ -98,7 +97,7 @@ u8 *get_kprocess_contextid(u32 *kprocess)
 	return (u8*)&kprocess[(0x44 + kprocess_adjustoffset) >> 2];
 }
 
-u8 *mmutable_convert_vaddr2physaddr(u32 *mmutable, u32 vaddr)
+u8 *mmutable_convert_vaddr2physaddr(u32 *mmutable, u32 vaddr, u32 *remaining_pagesize)
 {
 	u32 *ptr;
 	u32 val;
@@ -109,7 +108,15 @@ u8 *mmutable_convert_vaddr2physaddr(u32 *mmutable, u32 vaddr)
 	if((val & 0x3) == 0x0 || (val & 0x3) == 0x3)return NULL;
 	if((val & 0x3) == 0x2)
 	{
-		if(((val >> 18) & 1) == 0)return (u8*)((val & ~0xFFFFF) | (vaddr & 0xFFFFF));
+		if(((val >> 18) & 1) == 0)
+		{
+			if(remaining_pagesize)*remaining_pagesize = 0x100000 - (vaddr & 0xFFFFF);
+
+			return (u8*)((val & ~0xFFFFF) | (vaddr & 0xFFFFF));
+		}
+
+		if(remaining_pagesize)*remaining_pagesize = 0x1000000 - (vaddr & 0xFFFFFF);
+
 		return (u8*)((val & ~0xFFFFFF) | (vaddr & 0xFFFFFF));
 	}
 
@@ -118,8 +125,12 @@ u8 *mmutable_convert_vaddr2physaddr(u32 *mmutable, u32 vaddr)
 	if((val & 0x3) == 0)return NULL;
 	if((val & 0x2) == 0)
 	{
+		if(remaining_pagesize)*remaining_pagesize = 0x10000 - (vaddr & 0xFFFF);
+
 		return (u8*)((val & ~0xFFFF) | (vaddr & 0xFFFF));
 	}
+
+	if(remaining_pagesize)*remaining_pagesize = 0x1000 - (vaddr & 0xFFF);
 
 	return (u8*)((val & ~0xFFF) | (vaddr & 0xFFF));
 }
