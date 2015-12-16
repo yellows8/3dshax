@@ -727,7 +727,7 @@ void dump_arm11debuginfo()
 	#ifdef ARM11KERNEL_ENABLECMDLOG
 	if(debuginfo_ptr[1]==0x444d4344)//"DCMD"
 	{
-		procname = *((u64*)&debuginfo_ptr[0x10>>2]);
+		u64 procname = *((u64*)&debuginfo_ptr[0x10>>2]);
 		arm11debuginfo_convertcmd_vaddr2phys(procname, (u32*)&debuginfo_ptr[0x20>>2], (u32*)&debuginfo_ptr[0x220>>2]);
 
 		procname = *((u64*)&debuginfo_ptr[0x18>>2]);
