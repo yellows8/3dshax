@@ -430,7 +430,7 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 	//u32 *codebin_physaddr;
 	//u32 codebin_vaddr;
 	u32 total_codebin_size;
-	u32 *ptr, *ptr2;
+	u32 *ptr;
 	u32 *mmutable;
 	u32 pos, pos2;
 
@@ -525,6 +525,8 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 	#ifdef DISABLE_GAMECARDUPDATE//Patch the ns:s cmd7 code so that result-code 0xc821180b is always returned, indicating that no gamecard sysupdate installation is needed. This is required for launching gamecards from other regions.
 	if(procname==0x736e)//"ns"
 	{
+		u32 *ptr2;
+
 		ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x10000000, NULL);
 		if(ptr==NULL)return;
 
@@ -564,7 +566,7 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 	}
 	#endif
 
-	if(procname==0x45454154)//"TAEE", NES VC for TLoZ.
+	/*if(procname==0x45454154)//"TAEE", NES VC for TLoZ.
 	{
 		ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x1000e1bc, NULL);
 
@@ -573,7 +575,7 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 		ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x1000a920, NULL);//Patch the romfs mount code so that it opens the sdmc archive instead of using the actual romfs.
 		ptr[0] = 0xe3a01009;//"mov r1, #9"
 		ptr[3] = generate_branch(0x10a92c, 0x115a88, 1);
-
+*/
 		/*ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x10103ff6, NULL);
 		ptr[0] = 0x61746164;//Change the archive mount-point string used by the code which generates the config.ini and .patch paths, from "rom:" to "data:".
 		ptr[1] = 0x3a;
@@ -581,8 +583,8 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 		ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x10104028, NULL);
 		ptr[0] = 0x61746164;//Change the archive mount-point string used by the functions which generates "rom:/rom/" paths, from "rom:" to "data:".
 		ptr[1] = 0x3a;*/
-		return;
-	}
+/*		return;
+	}*/
 
 	#ifdef ENABLE_NIMURLS_PATCHES
 	if(procname==0x6D696E)// "nim"
@@ -1417,6 +1419,23 @@ void pxipmcmd1_getexhdr(u32 *exhdr)
 	#ifdef ADDEXHDR_SYSMODULE_DEPENDENCY_PADCHECK
 	}
 	#endif
+	#endif
+
+	#ifdef ENABLE_SPIDER_APPMEM
+	if(exhdr[0]==0x64697073)//"spid"
+	{
+		u32 *desc = &exhdr[(0x200+0x170)>>2];
+
+		exhdr8[0x200+0x16f] = 0;//"Resource Limit Category" = "APPLICATION".
+
+		for(pos=0; pos<28; pos++)
+		{
+			if((desc[pos] & (0x1ff<<23)) == (0x1fe<<23))//Based on the ctrtool code.
+			{
+				desc[pos] = (desc[pos] & ~0xf00) | 0x100;//memregion = APPLICATION.
+			}
+		}
+	}
 	#endif
 
 	#ifdef ENABLE_ARM11PROCLIST_OVERRIDE

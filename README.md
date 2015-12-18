@@ -49,6 +49,7 @@ By default the FIRM-launch code loads the plaintext FIRM from SD "/firm.bin", se
 * "ENABLE_ARM11PROCLIST_OVERRIDE=1" This enables overriding the exheader and/or the loaded code binary at process-start, for any process(see 3dshax_arm9.c).
 * "ADDEXHDR_SYSMODULE_DEPENDENCY=hexvalue" This adds sysmodules to the specified process exheader, so that ctrserver under dlp module gets loaded + is accessible over the network(only needed for getting ctrserver to load eariler than normal).
 * "ADDEXHDR_SYSMODULE_DEPENDENCY_PADCHECK=hexvalue" When used the code for ADDEXHDR_SYSMODULE_DEPENDENCY only gets executed when the specified PAD button(s) are pressed.
+* "ENABLE_SPIDER_APPMEM=1" Patch the spider exheader so that memregion=APPLICATION and reslimit=APPLICATION, this allows the spider process to allocate much more memory. The official spider code won't allocate additional memory with this. This was implemented for use with webkitdebug.s from here: https://github.com/yellows8/3ds_browserhax_common
 * "ENABLE_GAMECARD=1" Enables 3ds gamecard reading code(including ctrcard cmd 0xc6 code).
 * "ENABLE_ARM11CODELOAD_SERVACCESSCONTROL_OVERWRITE=1" Enable overwriting the exheader service-access-control for the arm11codeload with the get-exhdr-hook, with the list from 3dshax_arm9.c. This is only needed when the loaded arm11 binary is not the latest ctrserver binary which has access to all services.
 * "DISABLE_FSACCESSINFO_OVERWRITE=1" Disable exheader FS accessinfo overwrite with all 0xFF for the arm11code-load process.
