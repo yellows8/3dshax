@@ -1961,6 +1961,9 @@ void network_stuff(u32 *payloadptr, u32 payload_maxsize)
 {
 	struct sockaddr addr;
 	socklen_t addrlen;
+	struct linger so_linger;
+	so_linger.l_onoff = 1;
+	so_linger.l_linger = 0;
 
 	net_payloadptr = payloadptr;
 	net_payload_maxsize = payload_maxsize;
@@ -1991,6 +1994,8 @@ void network_stuff(u32 *payloadptr, u32 payload_maxsize)
 		
 		//process_clientconnection_test(net_server.sockfd);
 
+		// Make the socket not block if the client closes the connection first. Thanks to Lectem.
+		setsockopt(net_server.sockfd, SOL_SOCKET, SO_LINGER, &so_linger, sizeof(so_linger));
 		closesocket(net_server.sockfd);
 		net_server.sockfd = 0;
 	}
