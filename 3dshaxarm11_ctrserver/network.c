@@ -1919,14 +1919,19 @@ void network_initialize()
 	int ret=0;
 	struct sockaddr_in addr;
 
-	listen_sock = socket(AF_INET, SOCK_STREAM, 0);
+	listen_sock = -1;
+	while(listen_sock < 0)//socket() may fail with errno ENETDOWN @ system-boot in some cases, so loop until it succeeds with a 10-second delay after each failure.
+	{
+		listen_sock = socket(AF_INET, SOCK_STREAM, 0);
+		if(listen_sock < 0)svcSleepThread(10000000000LL);
+	}
 	//listen_sock = socket(AF_INET, SOCK_DGRAM, 0);
-	if(listen_sock<0)
+	/*if(listen_sock<0)
 	{
 		((u32*)0x84000000)[3] = errno;
 		socExit();
 		return;
-	}
+	}*/
 
 	/**((u32*)0x08050090) = fcntl(listen_sock, F_GETFL);
 	*((u32*)0x08050094) = fcntl(listen_sock, F_SETFL, *((u32*)0x08050090) | O_NONBLOCK);
