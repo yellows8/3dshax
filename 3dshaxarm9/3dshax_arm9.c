@@ -494,6 +494,7 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 			//this way 3dshax home menu will use its own set of theme cache extdata files and we avoid version mismatch issues or infinite hax loops !
 			char str[] = "theme:/";
 			int cur=0;
+			u8 *ptr8 = (u8*)ptr;
 			for(pos2=0; pos2<0x1000; pos2+=2)
 			{
 				if(cur==sizeof(str)-1){ptr8[pos2]='_'; cur=0;}
