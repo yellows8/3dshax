@@ -654,7 +654,7 @@ static int ctrserver_handlecmd_installcia(u32 *buf, u32 *bufsize)
 
 				if(!fail)
 				{
-					AM_CancelCIAInstall(&ciahandle);
+					AM_CancelCIAInstall(ciahandle);
 
 					fail = 1;
 					buf[1] = 0xf0f0f0f0;
@@ -668,7 +668,7 @@ static int ctrserver_handlecmd_installcia(u32 *buf, u32 *bufsize)
 			{
 				if(!fail)
 				{
-					AM_CancelCIAInstall(&ciahandle);
+					AM_CancelCIAInstall(ciahandle);
 
 					buf[1] = ret2;
 					fail = 1;
@@ -685,7 +685,7 @@ static int ctrserver_handlecmd_installcia(u32 *buf, u32 *bufsize)
 
 			if(!fail)
 			{
-				AM_CancelCIAInstall(&ciahandle);
+				AM_CancelCIAInstall(ciahandle);
 
 				buf[1] = 0xf4f4f4f4;
 				fail = 1;
@@ -700,7 +700,7 @@ static int ctrserver_handlecmd_installcia(u32 *buf, u32 *bufsize)
 
 	buf[0]++;
 
-	ret = AM_FinishCiaInstall(mediatype, &ciahandle);
+	ret = AM_FinishCiaInstall(ciahandle);
 	if(ret!=0)
 	{
 		buf[1] = ret;
@@ -1615,7 +1615,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 
 		buf[0] = AM_GetTitleCount(val, &buf[2]);
 		if(buf[2] > 512)buf[2] = 512;
-		if(buf[0]==0)buf[1] = AM_GetTitleIdList(val, buf[2], (u64*)&buf[4]);
+		if(buf[0]==0)buf[1] = AM_GetTitleList(NULL, val, buf[2], (u64*)&buf[4]);
 
 		*bufsize = 0x10;
 
