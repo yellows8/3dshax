@@ -361,6 +361,19 @@ void parse_debuginfo_command(unsigned int *debuginfo)
 
 			bufpos+= debuginfo[pos];
 		}
+
+		for(; bufpos < dstbufdata_size && pos < (0x414>>2); pos+=2)
+		{
+			if(debuginfo[pos]==0 || debuginfo[pos+1]==0)continue;
+
+			printf("cmd additional_buf[%u] = physaddr 0x%x filepos 0x%x size 0x%x", pos, debuginfo[pos+1], debuginfo_pos+srcbufdata_size+bufpos, debuginfo[pos]);
+			if(enable_hexdump)printf(":");
+			printf("\n");
+
+			if(enable_hexdump)hexdump(&dstbufdata[bufpos], debuginfo[pos]);
+
+			bufpos+= debuginfo[pos];
+		}
 	}
 
 	if(srcbufdata)
@@ -391,6 +404,19 @@ void parse_debuginfo_command(unsigned int *debuginfo)
 				continue;
 			}
 			printf("%s [%u] = vaddr 0x%x / physaddr 0x%x filepos 0x%x size 0x%x", type==1?"cmdreply":"cmd", i, debuginfo[base_wordpos+i+1], debuginfo[pos+1], debuginfo_pos+bufpos, debuginfo[pos]);
+			if(enable_hexdump)printf(":");
+			printf("\n");
+
+			if(enable_hexdump)hexdump(&srcbufdata[bufpos], debuginfo[pos]);
+
+			bufpos+= debuginfo[pos];
+		}
+
+		for(; bufpos < srcbufdata_size && pos < (0x314>>2); pos+=2)
+		{
+			if(debuginfo[pos]==0 || debuginfo[pos+1]==0)continue;
+
+			printf("%s additional_buf[%u] = physaddr 0x%x filepos 0x%x size 0x%x", type==1?"cmdreply":"cmd", pos, debuginfo[pos+1], debuginfo_pos+bufpos, debuginfo[pos]);
 			if(enable_hexdump)printf(":");
 			printf("\n");
 
