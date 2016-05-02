@@ -770,10 +770,10 @@ beq arm11kernel_sendpxisync_val_end
 
 bl arm11kernel_getpxiregbase_adr
 ldr r1, [r0]
-ldr r2, =0xf00
+ldr r2, =0xff00
 ldr r3, [sp, #0]
 bic r1, r1, r2
-and r3, r3, #0xf
+and r3, r3, #0xff
 lsl r3, r3, #8
 orr r1, r1, r3
 str r1, [r0]
@@ -794,7 +794,7 @@ ldr r1, [sp, #0]
 
 arm11kernel_waitpxisync_val_lp:
 ldr r2, [r0]
-and r2, r2, #0xf
+and r2, r2, #0xff
 
 cmp r2, r1
 bne arm11kernel_waitpxisync_val_lp

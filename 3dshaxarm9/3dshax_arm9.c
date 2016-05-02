@@ -677,7 +677,7 @@ void dump_arm11debuginfo()
 	debuginfo_ptr = (vu32*)((u32)get_arm11debuginfo_physaddr() + 0x200);
 	debuginfo_arm9flag = (vu32*)((u32)get_arm11debuginfo_physaddr() + 0x20);
 
-	debuginfo_arm9flag[4]++;
+	//debuginfo_arm9flag[4]++;
 
 	if(fileobj_debuginfo==NULL)
 	{
@@ -692,22 +692,26 @@ void dump_arm11debuginfo()
 		val = *ptrpxi;
 		if((val & 0xf) == 0xf)
 		{
-			val &= ~0xf00;
+			val &= ~0xff00;
 			val |= 0xf << 8;
 			*ptrpxi = val;
 		}
+		else
+		{
+			return;
+		}
 	}
-
-	if(*debuginfo_ptr != 0x58584148)return;
 
 	if(*debuginfo_arm9flag != 0x394d5241)
 	{
 		while(1)
 		{
 			val = *ptrpxi;
-			if(((val & 0xf) == 0xe) || *debuginfo_arm9flag == 0x394d5241)break;
+			if(((val & 0xff) == 0xe) || *debuginfo_arm9flag == 0x394d5241)break;
 		}
 	}
+
+	while(*debuginfo_ptr != 0x58584148);
 
 	if(debuginfo_ptr[1]==0x3131444c)//"LD11"
 	{
@@ -735,6 +739,12 @@ void dump_arm11debuginfo()
 
 		procname = *((u64*)&debuginfo_ptr[0x18>>2]);
 		arm11debuginfo_convertcmd_vaddr2phys(procname, (u32*)&debuginfo_ptr[0x120>>2], (u32*)&debuginfo_ptr[0x320>>2]);
+
+		//if(/*debuginfo_ptr[0x120>>2] == 0x80142 || debuginfo_ptr[0x120>>2] == 0x001E0044 ||*/ debuginfo_ptr[0x120>>2] == 0x00090042)//Dump mvdstd cmd8 input buffer.
+		/*{
+			debuginfo_ptr[(0x318>>2)+0] = 0x2EE00;//debuginfo_ptr[(0x120>>2)+3];
+			debuginfo_ptr[(0x318>>2)+1] = 0x2963a110;//debuginfo_ptr[(0x120>>2)+2];
+		}*/
 
 		//setfilesize(fileobj_debuginfo, debuginfo_pos + debuginfo_ptr[2]);
 		filewrite(fileobj_debuginfo, (u32*)debuginfo_ptr, debuginfo_ptr[2], debuginfo_pos);
@@ -780,8 +790,13 @@ void dump_arm11debuginfo()
 
 	if(*debuginfo_arm9flag != 0x394d5241)
 	{
-		val = *ptrpxi;
-		val &= ~0xf00;
+		while(1)
+		{
+			val = *ptrpxi;
+			if((val & 0xff) == 0xe)break;
+		}
+
+		val &= ~0xff00;
 		val |= 0xe << 8;
 		*ptrpxi = val;
 	}
