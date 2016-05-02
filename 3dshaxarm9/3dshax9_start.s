@@ -166,17 +166,6 @@ startcode_type3:
 @b startcode_type3
 push {r4, lr}
 
-/*ldr r0, =0xffff0000
-ldr r1, =0x18600000
-ldr r2, =0x10000
-sub r1, r1, r2
-sub r1, r1, r2
-startcode_type3_cpy:
-ldr r3, [r0], #4
-str r3, [r1], #4
-subs r2, r2, #4
-bgt startcode_type3_cpy*/
-
 mov r4, #0
 
 ldr r0, =RUNNINGFWVER

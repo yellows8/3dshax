@@ -6,7 +6,6 @@
 
 #include "arm9_svc.h"
 #include "arm9fs.h"
-#include "arm9_FS.h"
 #include "a9_memfs.h"
 #include "arm9_nand.h"
 #include "ctr-gamecard.h"
@@ -34,8 +33,6 @@ void writepatch_arm11kernel_svcaccess();
 
 void arm9_pxipmcmd1_getexhdr_writepatch(u32 addr);
 void arm9general_debughook_writepatch(u32 addr);
-
-void writearm11_firmlaunch_usrpatch();
 
 u32 *locate_cmdhandler_code(u32 *ptr, u32 size, u32 *pool_cmpdata, u32 pool_cmpdata_wordcount, u32 locate_ldrcc);
 
@@ -611,6 +608,8 @@ void handle_debuginfo_ld11(vu32 *debuginfo_ptr)
 		}
 
 		//physaddr[0x7d00>>2] = 0xe3a00000;//"mov r0, #0" Patch the NIM command code which returns whether a sysupdate is available.
+
+		return;
 	}
 	#endif
 }
@@ -846,14 +845,6 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 	u32 *mmutable;
 	u32 *buf = (u32*)pxibuf[0];
 
-	#ifdef ENABLE_OLDFS
-	u32 chunksize;
-	u64 tmpsize64=0;
-	u8 *buf8 = (u8*)buf;
-	u32 fsfile_ctx[8];
-	u16 filepath[0x100];
-	#endif
-
 	#ifdef ENABLE_DMA
 	u32 dmaconfig[24>>2];
 	#endif
@@ -1081,91 +1072,6 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 		return 0;
 	}
 
-	#ifdef ENABLE_OLDFS
-	if(cmdid==0xc1)
-	{
-		openflags = buf[0];
-		rw = 1;
-		if(openflags & 2)rw = 0;//rw=1 for reading, 0 for writing
-
-		memset(fsfile_ctx, 0, sizeof(fsfile_ctx));
-		memset(filepath, 0, sizeof(filepath));
-
-		for(pos=0; pos<0xff; pos++)
-		{
-			filepath[pos] = buf8[4 + (rw*4) + pos];
-			if(filepath[pos]==0)break;
-		}
-
-		pos+= 4 + (rw*4) + 1;
-		size = buf[1];
-		if(rw==0)size = *bufsize - pos;
-
-		if((ret = arm9_fopen(fsfile_ctx, (u8*)filepath, openflags))!=0)
-		{
-			*bufsize = 16;
-			buf[0] = 0;
-			buf[1] = (u32)ret;
-			buf[2] = 0;
-			buf[3] = 0;
-			return 0;
-		}
-
-		if(rw==1 && size==0)
-		{
-			tmpsize64 = 0;
-			ret = arm9_GetFSize(fsfile_ctx, &tmpsize64);
-			size = (u32)tmpsize64;
-
-			if(ret!=0)
-			{
-				arm9_fclose(fsfile_ctx);
-				*bufsize = 16;
-				buf[0] = 1;
-				buf[1] = (u32)ret;
-				buf[2] = 0;
-				buf[3] = 0;
-				return 0;
-			}
-		}
-
-		*bufsize = 16;
-		tmpsize = 0;
-		bufpos = 0;
-		chunksize = 0x200;
-		tmpsize2 = 0;
-
-		while(bufpos < size)
-		{
-			if(size - bufpos < chunksize)chunksize = size - bufpos;
-
-			tmpsize = 0;
-			if(rw==1)ret = arm9_fread(fsfile_ctx, &tmpsize, (u32*)&buf8[(4*4) + bufpos], chunksize);
-			if(rw==0)ret = arm9_fwrite(fsfile_ctx, &tmpsize, (u32*)&buf8[pos + bufpos], chunksize, 1);
-
-			bufpos+= tmpsize;
-			tmpsize2+= tmpsize;
-			if(ret!=0 || tmpsize==0)break;
-		}
-
-		buf[0] = 2;
-		buf[1] = (u32)ret;
-		if(tmpsize64==0)tmpsize64 = (u64)size;
-		memcpy(&buf[2], &tmpsize64, 8);
-
-		if(rw==1 && ret==0)*bufsize += tmpsize2;
-		if(rw==0)
-		{
-			*bufsize+= 4;
-			buf[4] = tmpsize2;
-		}
-
-		arm9_fclose(fsfile_ctx);
-
-		return 0;
-	}
-	#endif
-
 	if(cmdid==0xc2)
 	{
 		if(*bufsize < 12)
@@ -1184,7 +1090,7 @@ int ctrserver_processcmd(u32 cmdid, u32 *pxibuf, u32 *bufsize)
 		}
 
 		if(rw==0)*bufsize = (buf[1] * 0x200) + 4;
-		buf[0] = nand_rwsector(buf[0], &buf[1+(rw*2)], buf[1], rw);//buf[0]=sector#, buf[1]=sectorcount, buf[2]=rw
+		buf[0] = nand_rwsector(buf[0], &buf[1+(rw*2)], buf[1], rw);//buf[0]=sector#, buf[1]=sectorcount, buf[2]=rw(0 = read, 1 = write).
 		if(buf[0]!=0)*bufsize = 4;
 		if(rw && buf[0]==0)*bufsize = 0;
 
@@ -1406,11 +1312,11 @@ void pxipmcmd1_getexhdr(u32 *exhdr)
 		return;
 	}
 
-	if(exhdr[0]==0x45454154)//"TAEE" for NES VC for TLoZ
+	/*if(exhdr[0]==0x45454154)//"TAEE" for NES VC for TLoZ
 	{
 		for(pos=0x248; pos<0x248+0x7; pos++)exhdr8[pos] = 0xFF;//Set FS accessinfo to all 0xFF.
 		return;
-	}
+	}*/
 
 	#ifdef ADDEXHDR_SYSMODULE_DEPENDENCY
 	#ifdef ADDEXHDR_SYSMODULE_DEPENDENCY_PADCHECK
@@ -1570,55 +1476,6 @@ void arm9_pxipmcmd1_getexhdr_writepatch_autolocate(u32 *startptr, u32 size)
 }
 #endif
 
-/*void patch_nim(u32 *physaddr)
-{
-	char *ptr = (char*)physaddr;
-	char *targeturl0 = "https://nus.";
-	char *targeturl1 = "https://ecs.";
-	char *replaceurl0 = "http://yls8.mtheall.com/3ds-soap/NetUpdateSOAP.php";//"http://192.168.1.33/NetUpdateSOAP";
-	char *replaceurl1 = "http://yls8.mtheall.com/3ds-soap/ECommerceSOAP.php";//"http://192.168.1.33/ECommerceSOAP";
-	u32 pos, i, found0=0, found1=0;
-
-	for(pos=0; pos<0x60000; pos++)
-	{
-		for(i=0; i<12; i++)
-		{
-			if(ptr[pos+i] != targeturl0[i])break;
-
-			if(i==11)
-			{
-				found0 = 1;
-				break;
-			}
-		}
-
-		for(i=0; i<12; i++)
-		{
-			if(ptr[pos+i] != targeturl1[i])break;
-
-			if(i==11)
-			{
-				found1 = 1;
-				break;
-			}
-		}
-
-		if(found0)
-		{
-			for(i=0; i<strlen(replaceurl0)+1; i++)ptr[pos+i] = replaceurl0[i];
-			found0 = 0;
-		}
-
-		if(found1)
-		{
-			for(i=0; i<strlen(replaceurl1)+1; i++)ptr[pos+i] = replaceurl1[i];
-			found1 = 0;
-		}
-	}
-
-	//physaddr[0x7d00>>2] = 0xe3a00000;//"mov r0, #0" Patch the NIM command code which returns whether a sysupdate is available.
-}*/
-
 #ifdef ENABLE_LOADSD_AESKEYS
 void loadsd_aeskeys(u32 *buffer)//This is called from firmlaunch_hookpatches.s.
 {
@@ -1667,49 +1524,12 @@ void loadsd_aeskeys(u32 *buffer)//This is called from firmlaunch_hookpatches.s.
 	aes_mutexleave();
 }
 #endif
-void twlstuff();
+
 void thread_entry()
 {
-	u32 pos=0;
-	//u32 *axiwram = (u32*)0x1FF80000;
-	//u32 *menutextphys;// = (u32*)0x2696e000;
-	/*u32 *nwm_physaddr;// = (u32*)0x276cf000;
-	u32 *cecd_physaddr;
-	u32 *nim_physaddr;
-	u32 *ns_physaddr;
-	u32 *csnd_physaddr;
-	u32 *gsp_physaddr;*/
-	//u32 *ptr;
 	u32 debuginitialized = 0;
-	//u32 totalmenu_textoverwrite = 0;
-	//u32 *mmutable;
 
 	if(FIRMLAUNCH_RUNNINGTYPE==0)svcSleepThread(2000000000LL);
-
-	/*if(((u8)RUNNINGFWVER)==39)//v7.0
-	{
-		*((u16*)0x0805ed34) |= 1;
-		svcFlushProcessDataCache(0xffff8001, (u32*)0x0805ed34, 0x4);//Patch the code which reads the arm9 access-control mount flags, so that all of these archives are accessible.
-*/
-		//arm9general_debughook_writepatch(0x0802ea90);//Hook the gamecard v6.0 savegame keyY init code for debug.
-		//arm9general_debughook_writepatch(0x0807b49c);
-
-		//axiwram[0x1b6f8>>2] = ~0;
-
-		/*ptr = mmutable_convert_vaddr2physaddr(get_kprocessptr(0x707367, 0, 1), 0x10a474, NULL);//Patch the GSP module gxcmd4 code so that it uses the input addresses as the physical addresses, when the addresses are outside of the VRAM/LINEAR-mem range.
-		ptr[0x8>>2] = 0xe1a03001;//"mov r3, r1"
-		ptr[0x2C>>2] = 0xe1a01002;//"mov r1, r2"*/
-	/*}
-	else if(((u8)RUNNINGFWVER)==40)//v7.2
-	{
-		*((u16*)0x0805ed38) |= 1;
-		svcFlushProcessDataCache(0xffff8001, (u32*)0x0805ed38, 0x4);//Patch the code which reads the arm9 access-control mount flags, so that all of these archives are accessible.
-	}
-	else if(((u8)RUNNINGFWVER)==44)//v8.0
-	{
-		*((u16*)0x0805ef38) |= 1;
-		svcFlushProcessDataCache(0xffff8001, (u32*)0x0805ef38, 0x4);//Patch the code which reads the arm9 access-control mount flags, so that all of these archives are accessible.
-	}*/
 
 	patch_pxidev_cmdhandler_cmd0((u32*)proc9_textstartaddr, 0x080ff000-proc9_textstartaddr);
 	#ifdef ENABLE_GETEXHDRHOOK
@@ -1718,110 +1538,19 @@ void thread_entry()
 
 	writepatch_arm11kernel_kernelpanicbkpt((u32*)0x1FF80000, 0x80000);
 
-	//ns_physaddr = patch_mmutables(0x736e, 0, 0);
-
 	while(1)
 	{
-		//memset(framebuf_addr, pos, 0x46500*10);
 		if((*((vu16*)0x10146000) & 0x800) == 0 && !debuginitialized)//button Y
 		{
-			//menutextphys = patch_mmutables(0x756e656d, 0, 0);
-
-			//read_gamecard();
-
 			#ifdef ENABLE_DUMP_NANDIMAGE
 			dump_nandimage();
 			#endif
-			
-			/*mmutable = (u32*)get_kprocessptr(0x707041727443LL, 0, 1);
-			if(mmutable)
-			{
-				ptr = (u32*)mmutable_convert_vaddr2physaddr(mmutable, 0x2e772c, NULL);
-				if(ptr)*ptr = 0xE1200070;
-			}*/
-			//memset((u32*)0x18000000, pos | (pos<<8) | (pos<<16) | (pos<<24), 0x00600000);
-			////memset(&framebuf_addr[(0x46500)>>2], 0x88888888, 0x46500);
-
-			//sdcryptdata2();
-
-			//mountcontent_nandsd_writehookstub();
 
 			#ifdef ENABLE_ARM11KERNEL_DEBUG
 			if(FIRMLAUNCH_RUNNINGTYPE==0)write_arm11debug_patch();
 			#endif
 			debuginitialized = 1;
-			//launchcode_kernelmode(twlstuff);
-			//if(((u8)RUNNINGFWVER)==39)axiwram[0x14ab0>>2] = 0xE1200070;//Patch the start of the svc7c handler(at the push instruction) with: "bkpt #0".
-
-			//dumpmem((u32*)0x01ffb700, arm9_rsaengine_txtwrite_hooksz);
-
-			//patch_mmutables(0x7465736dLL, 1, 0);//patch the mset MMU tables so that .text is writable.
-
-			//axiwram[0x1C3D0>>2] = (axiwram[0x1C3D0>>2] & ~(0xff<<24)) | 0xea000000;//Change the conditional branch to an unconditional branch, for the arm11 kernel exheader "kernel release version" field. With this patch the kernel will not return an error because of this version field, in this function.
-
-			//menutextphys = patch_mmutables(0x756e656d, 0, 0);//"menu"
-			//nwm_physaddr = patch_mmutables(0x6d776e, 0, 0);//"nwm"
-			//cecd_physaddr = patch_mmutables(0x64636563, 0, 0);//"cecd"
-
-			/*menutextphys[0xe23e4>>2] = 0xe3a03000;//"mov r3, #0" These three patches modify menu code which calls read_logo(), so that the input params result in the gamecard logo being read.
-			menutextphys[0xe23e8>>2] = 0xe3a02000;//"mov r2, #0"
-			menutextphys[0xe23ec>>2] = 0xe3a01002;//"mov r1, #2"
-
-			menutextphys[0x1de6c>>2] = 0xe3a03000;//"mov r3, #0" These three patches do the same thing as above, except this is for a different read_logo() call.
-			menutextphys[0x1de70>>2] = 0xe3a02000;//"mov r2, #0"
-			menutextphys[0x1de74>>2] = 0xe3a01002;//"mov r1, #2"*/
-
-			//*((u32*)0x1FF84088) = ~0;
-
-			//nwm_physaddr[0xe844>>2] = ~0;//Patch the nwm psps EncryptDecryptAes() call.
-
-			//cecd_physaddr[0x18e8>>2] = ~0;
-			//*((u16*)&cecd_physaddr[0x1854>>2]) = 0x2000;
-
-			/*if(((u8)RUNNINGFWVER)==34)
-			{
-				nim_physaddr = patch_mmutables(0x6d696e, 0, 0);//"nim"
-				patch_nim(nim_physaddr);
-			}*/
-
-			//csnd_physaddr = patch_mmutables(0x646e7363, 0, 0);//"csnd"
-
-			//((u16*)csnd_physaddr)[0x104e>>1] = 0xBE00;//In the CSND function handling type0 shared-mem commands, patch the instruction immediately after the memcpy call which copies the command data to stack. "bkpt #0"
-
-			//gsp_physaddr = patch_mmutables(0x707367, 0, 0);//"gsp"
-
-			//gsp_physaddr[0xaaf0>>2] = 0xE1200070;//Patch the "mov r3, #0" at the start of the GSP module function for handling gxcmd3, with: "bkpt #0".
-
-			//*((u32*)0x808a944) = 0;//Patch the pxifs cmdhandler so that it always executes the code-path for invalid cmdid.
-			//svcFlushProcessDataCache(0xffff8001, (u32*)0x808a944, 0x4);
-			/**((u32*)0x808d81c) = 0xe3a05000;//"mov r5, #0"
-			svcFlushProcessDataCache(0xffff8001, (u32*)0x808d81c, 0x4);//Patch the pxipm cmdhandler so that it always executes the code-path for invalid cmdid.
-			*((u32*)0x8087a48) = 0;//Patch the pxi gamecard cmdhandler so that it always executes the code-path for invalid cmdid.
-			svcFlushProcessDataCache(0xffff8001, (u32*)0x8087a48, 0x4);
-			*((u32*)0x808ddf4) = 0;//Patch the pxiam9 cmdhandler so that it always executes the code-path for invalid cmdid.
-			svcFlushProcessDataCache(0xffff8001, (u32*)0x808ddf4, 0x4);
-			// *((u32*)0x808d98c) = 0;//Patch the pxips9 cmdhandler so that it always executes the code-path for invalid cmdid.
-			//svcFlushProcessDataCache(0xffff8001, (u32*)0x808d98c, 0x4);
-			*((u32*)0x808d58c) = 0;//Patch the pxidev cmdhandler so that it always executes the code-path for invalid cmdid.
-			svcFlushProcessDataCache(0xffff8001, (u32*)0x808d58c, 0x4);
-
-			*((u32*)0x808db1c) = 0xe3a00000;//"mov r0, #0"
-			svcFlushProcessDataCache(0xffff8001, (u32*)0x808db1c, 0x4);//Patch the bl used for calling the pxips9 RSA-verify func in the pxips9 cmdhandler, with the above instruction.
-			*/
 		}
-
-		pos+=0x20;
-
-		//if((*((vu16*)0x10146000) & 2) == 0)break;
-
-		/*if((*((vu16*)0x10146000) & 2) == 0 && totalmenu_textoverwrite < 2 && FIRMLAUNCH_RUNNINGTYPE==0)//button B
-		{
-			//menutextphys = patch_mmutables(0x756e656d, 0, 0);
-
-			memset(menutextphys, ~0, 0x106000);
-			while((*((vu16*)0x10146000) & 2) == 0);
-			totalmenu_textoverwrite++;
-		}*/
 
 		#ifdef ENABLE_ARM11KERNEL_DEBUG
 		dump_arm11debuginfo();
@@ -1829,7 +1558,6 @@ void thread_entry()
 
 		if((*((vu16*)0x10146000) & 0x40c) == 0)break;//button X, Select, and Start
 
-		//svcSleepThread(1000000000LL);
 	}
 
 	dump_fcramaxiwram();
@@ -1898,7 +1626,6 @@ int main(void)
 			patch_proc9_launchfirm();
 			load_arm11code(NULL, 0, 0x707041727443LL, arm11code_filepath);
 
-			writearm11_firmlaunch_usrpatch();
 			svcSleepThread(10000000000LL);
 		}
 

@@ -65,8 +65,7 @@ By default the FIRM-launch code loads the plaintext FIRM from SD "/firm.bin", se
 * "ENABLE_REGIONFREE={val}" Enables the homemenu SMDH icon region check patch. This does not affect the region-lock via gamecard sysupdates, see DISABLE_GAMECARDUPDATE. "ENABLE_REGIONFREE=2" is the same as "ENABLE_REGIONFREE=1", except this also uses the "DISABLE_GAMECARDUPDATE=1" option at the same time. Note that this(SMDH region patch) may cause SD titles which normally aren't displayed, to be shown as presents or black icons.
 * "DISABLE_GAMECARDUPDATE=1" Disables gamecard sysupdates, this is required for launching gamecards from other regions.
 
-* "ENABLE_OLDFS=1" Enables old arm9 FS cmd-handling code(used via ctrserver), for the FS code only supported on old FIRM.
-* "ENABLE_OLDFS_AUTOLOCATE=1" Enable auto-locating FS code with very old FIRM, not related to "ENABLE_OLDFS=1".
+* "ENABLE_OLDFS_AUTOLOCATE=1" Enable auto-locating FS code with very old FIRM.
 
 * "ENABLE_DMA=1" Enables the cmd for use via ctrserver for the DMA SVCs.
 

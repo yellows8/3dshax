@@ -104,11 +104,13 @@ ldr r7, [r0, #0x18] @ r7 = Process9 .text size
 add r0, r0, #0xa00 @ r0/r5 = addr of Process9 .code
 mov r5, r0
 
-/*ldr r1, =firmpatch_begin
-ldr r2, =firmpatch_end
-sub r2, r2, r1
-sub r2, r2, #4
-ldr r3, [r1], #4*/
+#ifdef ENABLE_FIRMPARTINSTALL_STRS_PATCH
+mov r0, r4
+mov r1, r5
+mov r2, r7
+bl proc9_autolocate_patch_firminstallstrs
+b patchfirm_arm9section_finish
+#endif
 
 /*ldr r3, =0x08078a90
 sub r3, r3, r4
@@ -274,7 +276,7 @@ add r3, r3, r0
 strh r2, [r3] @ Same as above.*/
 
 /*ldr r3, =0x8032a74 @ twlfirm v6704 patches:
-sub r3, r3, r4 @ r3 = first word @ firmpatch_begin / etc, subtracted by the .text addr
+sub r3, r3, r4 @ r3 = first word @ <target addr>, subtracted by the .text addr
 add r3, r3, r0 @ r3+= .code addr
 
 mov r2, #0
@@ -631,6 +633,41 @@ firm_gethwtype_end:
 bx lr
 .pool
 #endif
+
+/*@ Locate the two "firmX:" strings used for FIRM-partition installation.
+proc9_autolocate_patch_firminstallstrs: @ r0 = Process9 .text addr, r1 = addr of Process9 .code, r2 = Process9 .text size.
+push {r4, r5, r6, lr}
+mov r4, r1
+mov r5, r2
+add r4, r4, r5
+sub r5, r5, #0x1c
+sub r4, r4, #0x1c
+
+proc9_autolocate_patch_firminstallstrs_lp:
+mov r0, r4
+ldr r1, =proc9_autolocate_patch_firminstallstrs_patterndata
+mov r2, #0x1c
+bl memcmp
+cmp r0, #0
+bne proc9_autolocate_patch_firminstallstrs_lpnext
+
+@ Overwrite "firm0:" with "firm1:".
+mov r0, #0x31
+strb r0, [r4, #8]
+
+b proc9_autolocate_patch_firminstallstrs_end
+
+proc9_autolocate_patch_firminstallstrs_lpnext:
+sub r4, r4, #1
+sub r5, r5, #1
+cmp r5, #0
+bcs proc9_autolocate_patch_firminstallstrs_lp
+
+proc9_autolocate_patch_firminstallstrs_end:
+pop {r4, r5, r6, pc}
+
+proc9_autolocate_patch_firminstallstrs_patterndata:
+.byte 66 00 69 00 72 00 6D 00 30 00 3A 00 00 00 66 00 69 00 72 00 6D 00 31 00 3A 00 00 00*/
 
 //patchfirm_arm11section_additionalmodulesize:
 //.word 0
