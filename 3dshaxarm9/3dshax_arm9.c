@@ -15,10 +15,8 @@
 #include "ctrclient.h"
 
 void changempu_memregions();
-u32 init_arm9patchcode3(u32 *ptr0, u32 *ptr1, u32 *ptr2);
+u32 init_firmlaunch_hook1(u32 *ptr0, u32 *ptr1, u32 *ptr2);
 void arm9_launchfirm();
-u32 getsp();
-u32 getcpsr();
 
 u32 generate_branch(u32 branchaddr, u32 targetaddr, u32 flag);//branchaddr = addr of branch instruction, targetaddr = addr to branch to, flag = 0 for regular branch, non-zero for bl. (ARM-mode)
 u32 parse_branch(u32 branchaddr, u32 branchval);
@@ -36,9 +34,7 @@ void arm9general_debughook_writepatch(u32 addr);
 
 u32 *locate_cmdhandler_code(u32 *ptr, u32 size, u32 *pool_cmpdata, u32 pool_cmpdata_wordcount, u32 locate_ldrcc);
 
-extern u32 arm9_stub[];
-extern u32 arm9_stub2[];
-extern u32 arm9dbs_stub[];
+extern u32 firmlaunch_hook0_stub[];
 extern u32 arm11_stub[];
 extern u8 rsamodulo_slot0[];
 extern u32 FIRMLAUNCH_RUNNINGTYPE;
@@ -199,15 +195,6 @@ void load_arm11code(u32 *mmutable, u32 codebin_vaddr, u32 maxloadsize, u64 procn
 	}*/
 }
 
-/*void rsaengine_setpubk(u32 keyslot, u32 bitsize, u8* modulo, u32 pubexponent)
-{
-	void (*funcptr)(u32, u32, u8*, u32) = (void*)0x802d439;//FW1F
-
-	if(RUNNINGFWVER>=0x2E)funcptr = (void*)0x0802d6c5;
-
-	funcptr(keyslot, bitsize, modulo, pubexponent);
-}*/
-
 u32 *proc9_locate_main_endaddr()//Returns a ptr to the last instruction in Process9 main().
 {
 	u32 *ptr;
@@ -298,9 +285,9 @@ void patch_proc9_launchfirm()
 	}
 	arm9_patchaddr = (u32*)&ptr[pos];
 
-	arm9_patchaddr[0] = arm9_stub[0];
-	arm9_patchaddr[1] = arm9_stub[1];
-	arm9_patchaddr[2] = arm9_stub[2];
+	arm9_patchaddr[0] = firmlaunch_hook0_stub[0];
+	arm9_patchaddr[1] = firmlaunch_hook0_stub[1];
+	arm9_patchaddr[2] = firmlaunch_hook0_stub[2];
 
 	while(1)
 	{
@@ -393,14 +380,8 @@ void patch_proc9_launchfirm()
 
 	svcFlushProcessDataCache(0xffff8001, ptr, 0x630);
 
-	init_arm9patchcode3((u32*)val0, (u32*)val1, (u32*)ptr[pos2]);
+	init_firmlaunch_hook1((u32*)val0, (u32*)val1, (u32*)ptr[pos2]);
 }
-
-/*void get_kernelmode_sp()
-{
-	*((u32*)(0x08028000+0)) = getsp();
-	*((u32*)(0x08028000+4)) = getcpsr();
-}*/
 
 u32 *get_framebuffers_addr()
 {
@@ -721,7 +702,6 @@ void dump_arm11debuginfo()
 	else if(debuginfo_ptr[1]==0x35375653)//"SV75"
 	{
 		//procname = ((u64)debuginfo_ptr[3]) | (((u64)debuginfo_ptr[4])<<32);
-		//if(procname==ARM11CODELOAD_PROCNAME)patch_mmutables(procname, 1, 1);//Only enable this when loading arm11-code which doesn't change mem-permissions itself, etc.
 	}
 	else if(debuginfo_ptr[1]!=0x444d4344)
 	{

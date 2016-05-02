@@ -4,12 +4,8 @@
 .fpu softvfp
 
 .global _start
-.global ioDelay
 
 .global changempu_memregions
-.global getsp
-.global getcpsr
-.global arm9dbs_stub
 .global arm11_stub
 .global pxidev_cmdhandler_cmd0
 .global mountcontent_nandsd_writehookstub
@@ -50,7 +46,6 @@
 .global NEW3DS_sigword0_array
 .global NEW3DS_totalversions
 
-.type ioDelay STT_FUNC
 .type changempu_memregions STT_FUNC
 .type mountcontent_nandsd_writehookstub STT_FUNC
 .type arm9_pxipmcmd1_getexhdr_writepatch STT_FUNC
@@ -67,9 +62,6 @@
 .type new3ds_hookloader_entrypoint STT_FUNC
 
 .type call_arbitaryfuncptr STT_FUNC
-
-.type getsp STT_FUNC
-.type getcpsr STT_FUNC
 
 .section .init
 
@@ -486,12 +478,6 @@ new3ds_plaintextbin_entrypoint_stub_arm11code_end:
 new3ds_plaintextbin_entrypoint_stubend:
 .word 0
 
-ioDelay:
-  subs r0, #1
-  bgt ioDelay
-  bx lr
-.pool
-
 changempu_memregions:
 mov r0, #0
 mcr 15, 0, r0, cr6, cr4, 0
@@ -602,14 +588,6 @@ initialize_proc9_textstartaddr_end:
 add sp, sp, #0x20
 pop {r4, r5, r6, pc}
 .pool
-
-getsp:
-mov r0, sp
-bx lr
-
-getcpsr:
-mrs r0, CPSR
-bx lr
 
 call_arbitaryfuncptr:
 push {r4, r5, r6, r7, r8, lr}
@@ -889,20 +867,10 @@ bx lr
 proc9_fsdeviceinit_hook_fail_lp:
 b proc9_fsdeviceinit_hook_fail_lp*/
 
-//.thumb
-
-.thumb
-arm9dbs_stub:
-ldr r5, =arm9dbs_debugcode
-blx r5
-.pool
-
 /*arm9_rsaengine_txtwrite_stub:
 ldr r2, =arm9_rsaengine_txtwrite_hook
 bx r2
 .pool*/
-
-.arm
 
 arm9general_debugstub:
 ldr pc, =arm9general_debughook
@@ -927,34 +895,6 @@ blx r0
 
 arm11_stub:
 ldr pc, =0x00100000
-.pool
-
-arm9dbs_debugcode:
-add lr, lr, #4
-
-ldr	r1, [r0, #0]
-add	r2, sp, #0x74
-ldr	r4, [r1, #0x6c]
-add	r1, sp, #0x94
-
-push {r0, r1, r2, r3, r4, r5, r6, r7, lr}
-mov r0, sp
-mov r1, #0x20
-bl dumpmem
-/*ldr r0, =0x20703000
-mov r1, #0x20
-str r1, [r0], #4
-mov r3, sp
-
-arm9dbs_debugcode_cpylp:
-ldr r2, [r3], #4
-str r2, [r0], #4
-subs r1, r1, #4
-bgt arm9dbs_debugcode_cpylp*/
-
-pop {r0, r1, r2, r3, r4, r5, r6, r7, lr}
-
-bx lr
 .pool
 
 /*arm9_rsaengine_txtwrite_hook:
@@ -1035,26 +975,6 @@ arm9_pxipmcmd1_getexhdr_hook_begin:
 push {r0, r1, r2, r3, r4, r5, lr}
 ldr r0, [sp, #32]
 bl pxipmcmd1_getexhdr
-/*ldr r1, [r0, #0]
-ldr r2, =0x706c64 @ "dlp"
-cmp r1, r2
-bne arm9_pxipmcmd1_getexhdr_hookend @ Only handle exheaders where the exheader-name field matches the above value.
-
-ldr r1, =0x250
-add r4, r0, r1
-mov r5, #0
-ldr r1, =pxipm_getexhdrhook_servlist
-mov r2, #0xa8
-mov r3, #0x100
-
-arm9_pxipmcmd1_getexhdr_hook_cpylp:
-cmp r5, r2
-ldrlt r0, [r1, r5]
-movge r0, #0
-str r0, [r4, r5]
-add r5, r5, #4
-cmp r5, r3
-blt arm9_pxipmcmd1_getexhdr_hook_cpylp*/
 
 arm9_pxipmcmd1_getexhdr_hookend:
 pop {r0, r1, r2, r3, r4, r5, lr}

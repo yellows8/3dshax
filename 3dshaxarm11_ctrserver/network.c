@@ -5,6 +5,7 @@
 
 #include <3ds.h>
 
+#include <arpa/inet.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
@@ -975,28 +976,6 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 		return 0;
 	}
 
-	/*if(cmdid==0x4f)
-	{
-		size = *bufsize;
-		*bufsize = 4;
-
-		ret = srv_initialize(1);
-		if(ret!=0)
-		{
-			buf[0] = (u32)ret;
-			return 0;
-		}
-
-		if(size==0)ret = srvpm_replace_servaccesscontrol_default();
-		if(size)ret = srvpm_replace_servaccesscontrol((char*)buf, size);
-
-		srv_shutdown();
-
-		buf[0] = (u32)ret;
-
-		return 0;
-	}*/
-
 	if(cmdid==0x50)
 	{
 		if(*bufsize <= 8)return 0;
@@ -1938,7 +1917,7 @@ void network_initialize()
 	*((u32*)0x08050098) = fcntl(listen_sock, F_GETFL);*/
 
 	addr.sin_family = AF_INET;
-	addr.sin_port = 0x8d20;// 0x3905 = big-endian 1337. 0x8d20 = big-endian 8333.
+	addr.sin_port = htons(8333);
 	addr.sin_addr.s_addr = INADDR_ANY;
 	//addr.sin_addr.s_addr= 0x2401a8c0;//0x2301a8c0 = 192.168.1.35. 0x0102a8c0 = 192.168.2.1
 	//ret = connect(listen_sock, (struct sockaddr *)&addr, sizeof(addr));
