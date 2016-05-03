@@ -3,10 +3,10 @@ $(error "The CTRCLIENT Makefile param is required, this should be: <localdir for
 endif
 
 LIBS = 
-OBJS = ctrclient-yls8.o $(CTRCLIENT)/ctrclient.o 
+OBJS = 3dshaxclient.o $(CTRCLIENT)/ctrclient.o 
 CXXFLAGS = -Wall -Os -I. -I$(CTRCLIENT)
 CFLAGS = $(CXXFLAGS)
-OUTPUT = ctrclient-yls8
+OUTPUT = 3dshaxclient
 CC = gcc 
 
 ifneq ($(strip $(NIX)),)

@@ -1349,7 +1349,7 @@ int parsecmd_memoryrw(ctrclient *client, char *customcmd)
 		}
 		else
 		{
-			f = fopen("ctrclientyls8_tmpcode.bin", "wb");
+			f = fopen("3dshaxclient_tmpcode.bin", "wb");
 			if(f==NULL)
 			{
 				printf("Failed to open tmp file for writing.\n");
@@ -1362,11 +1362,11 @@ int parsecmd_memoryrw(ctrclient *client, char *customcmd)
 				memset(cmdstr, 0, 256);
 				snprintf(cmdstr, 255, "arm-none-eabi-objdump -D -b binary -m arm --adjust-vma=0x%0x", start_address);
 				if(disasm_mode)strncat(cmdstr, " -M force-thumb", 255);
-				strncat(cmdstr, " ctrclientyls8_tmpcode.bin", 255);
+				strncat(cmdstr, " 3dshaxclient_tmpcode.bin", 255);
 
 				system(cmdstr);
 
-				unlink("ctrclientyls8_tmpcode.bin");
+				unlink("3dshaxclient_tmpcode.bin");
 			}
 		}
 	}
@@ -1932,9 +1932,9 @@ int parsecmd_getdebuginfoblk(ctrclient *client, char *customcmd)
 		printf("\nCaught exception/debuginfo-block.\n");
 	}
 
-	printf("Writing response data to ctrclientyls8_debuginfotmp.bin...\n");
+	printf("Writing response data to tmp file...\n");
 
-	f = fopen("ctrclientyls8_debuginfotmp.bin", "wb");
+	f = fopen("3dshaxclient_debuginfotmp.bin", "wb");
 	if(f)
 	{
 		fwrite(buf, 1, size, f);
@@ -1950,7 +1950,7 @@ int parsecmd_getdebuginfoblk(ctrclient *client, char *customcmd)
 
 	if(ret==0)
 	{
-		ret = system("3dshax_parsedebug ctrclientyls8_debuginfotmp.bin --hexdump");
+		ret = system("3dshax_parsedebug 3dshaxclient_debuginfotmp.bin --hexdump");
 	}
 
 	return ret;
