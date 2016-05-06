@@ -206,10 +206,17 @@ beq patchfirm_arm9section_L3
 
 #ifdef ENABLENANDREDIR
 #ifdef ENABLE_LOADA9_x01FFB800
+#ifndef LOADA9_x01FFB800_INCFILEPATH
 adr r0, filepath_x01ffb800
 ldr r1, =0x01ffb800
 ldr r2, =0x4800
 bl loadfile_charpath
+#else
+ldr r0, =0x01ffb800
+ldr r1, =LOADA9_x01FFB800_DATA
+mov r2, #0x100
+bl memcpy
+#endif
 #endif
 #endif
 
@@ -595,4 +602,9 @@ proc9_autolocate_patch_firminstallstrs_patterndata:
 filepath_x01ffb800:
 .string "/x01ffb800.bin"
 .align 2
+
+#ifdef LOADA9_x01FFB800_INCFILEPATH
+LOADA9_x01FFB800_DATA:
+.incbin LOADA9_x01FFB800_INCFILEPATH
+#endif
 
