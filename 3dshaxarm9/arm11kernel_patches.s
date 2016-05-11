@@ -182,9 +182,16 @@ add r0, r0, #16
 ldr r1, [r1, #16]
 bl parse_branch
 
-add r0, r0, #8
+add r0, r0, #4
 sub r1, r0, r4
 add r5, r5, r1
+
+ldr r3, =0xe1a05000 @ Check for "mov r5, r0" at push_instruction+4. This instruction is at push_instruction+8 with FIRM pre-v11.0, +4 starting with v11.0.
+ldr r2, [r5]
+cmp r2, r3
+addne r0, r0, #4
+addne r5, r5, #4
+
 mov r1, r6
 mov r2, #1
 bl generate_branch
