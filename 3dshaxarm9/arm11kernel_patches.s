@@ -93,6 +93,34 @@ writepatch_arm11kernel_svcaccess_end:
 pop {r4, r5, pc}
 .pool
 
+writepatch_arm11kernel_svc7b:
+push {r4, lr}
+
+mov r0, #0
+bl writepatch_arm11kernel_getsvctableadr
+mov r1, #0x7b
+lsl r1, r1, #2
+add r0, r0, r1 @ r0 = physaddr of the svc7b entry in the svc jumptable.
+ldr r1, [r0]
+cmp r1, #0
+bne writepatch_arm11kernel_svc7b_end @ If the jump addr is already set like with <v11.0 FIRM, immediately return.
+
+ldr r4, =arm11kernel_textvaddr
+ldr r4, [r4]
+ldr r2, =0x1800
+add r4, r4, r2
+
+adr r1, arm11kernel_patch
+adr r3, arm11kernel_patch_newsvc7b
+sub r3, r3, r1
+add r4, r4, r3
+
+str r4, [r0] @ Write the vaddr of arm11kernel_patch_newsvc7b into the svc jumptable.
+
+writepatch_arm11kernel_svc7b_end:
+pop {r4, pc}
+.pool
+
 #ifdef ENABLE_ARM11KERNEL_DEBUG
 
 #ifdef ENABLE_ARM11KERNEL_PROCSTARTHOOK
@@ -504,6 +532,8 @@ str r0, [r5, r6]*/
 
 #ifndef DISABLE_ARM11KERNEL_SVCHANDLER_PATCH
 bl writepatch_arm11kernel_svcaccess
+
+bl writepatch_arm11kernel_svc7b
 #endif
 
 #ifdef ENABLE_ARM9DEBUGGING
@@ -658,6 +688,9 @@ b arm11kernel_getdebugstateptr
 
 arm11kernel_patch_killprocessaddr:
 .word 0
+
+arm11kernel_patch_newsvc7b: @ Used for the addr in the svc jump-table on when it was 0x0(like with >=v11.0 FIRM).
+bx r0
 
 arm11_undefhandler_start:
 sub lr, lr, #4
