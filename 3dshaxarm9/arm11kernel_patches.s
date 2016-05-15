@@ -112,8 +112,8 @@ ldr r4, [r4]
 ldr r2, =0x1800
 add r4, r4, r2
 
-adr r1, arm11kernel_patch
-adr r3, arm11kernel_patch_newsvc7b
+ldr r1, =arm11kernel_patch
+ldr r3, =arm11kernel_patch_newsvc7b
 sub r3, r3, r1
 add r4, r4, r3
 
