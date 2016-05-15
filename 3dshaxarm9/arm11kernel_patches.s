@@ -65,6 +65,8 @@ mov r0, r1
 pop {r4, r5, pc}
 .pool
 
+#ifdef ENABLE_ARM11KERNEL_DEBUG
+#ifndef DISABLE_ARM11KERNEL_SVCHANDLER_PATCH
 writepatch_arm11kernel_svcaccess:
 push {r4, r5, lr}
 mov r1, #0
@@ -120,6 +122,8 @@ str r4, [r0] @ Write the vaddr of arm11kernel_patch_newsvc7b into the svc jumpta
 writepatch_arm11kernel_svc7b_end:
 pop {r4, pc}
 .pool
+#endif
+#endif
 
 #ifdef ENABLE_ARM11KERNEL_DEBUG
 
