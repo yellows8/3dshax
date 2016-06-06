@@ -12,8 +12,6 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#include "am.h"
-
 #include "ctrclient.h"
 
 #include "armdebug.h"
@@ -42,7 +40,6 @@ static u32 net_thread_paramblock[4];
 static u32 arm9access_available = 0;
 
 static u32 amserv_available = 0;
-static Handle amlockhandle;
 
 extern Handle srvHandle;
 extern Handle aptLockHandle;
@@ -69,22 +66,15 @@ void kernelmode_cachestuff();
 
 void get_armcfgregs(u32 *out);
 
-Result am_init()//This is based on code by smea.
+Result am_init(void)
 {
 	Result ret;
-	Handle *tmphandle=0;
 
 	if(amserv_available)return 0;
 
 	ret = amInit();
 	if(ret!=0)return ret;
 
-	tmphandle = amGetSessionHandle();
-
-	ret = AM_Initialize(*tmphandle, &amlockhandle);
-	if(ret!=0)return ret;
-
-	ret = svcWaitSynchronization(amlockhandle, 0xffffffffffffffff);
 	if(ret==0)amserv_available = 1;
 
 	return ret;
@@ -731,7 +721,9 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 	u64 *val64ptr;
 	u32 *cmdbuf = getThreadCommandBuffer();
 	GSPGPU_FramebufferInfo framebufinfo;
+	FS_ArchiveID archiveid;
 	FS_Archive archive;
+	FS_Path archiveLowPath;
 	FS_Path fileLowPath;
 	char namebuf[8];
 	u32 dmaconfig[24>>2];
@@ -1359,10 +1351,9 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 
 		pos = (((buf[2] + 3) & ~3)>>2);
 
-		archive.id = buf[0];
-		archive.lowPath.type = buf[1];
-		archive.lowPath.size = buf[2];
-		archive.lowPath.data = (u8*)&buf[6];
+		archiveLowPath.type = buf[1];
+		archiveLowPath.size = buf[2];
+		archiveLowPath.data = (u8*)&buf[6];
 
 		fileLowPath.type = buf[3];
 		fileLowPath.size = buf[4];
@@ -1370,7 +1361,9 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 
 		openflags = buf[5];
 
-		ret = FSUSER_OpenArchive(&archive);
+		archiveid = buf[0];
+
+		ret = FSUSER_OpenArchive(&archive, archiveid, archiveLowPath);
 		ret2 = ret;
 
 		if(ret==0)ret = FSUSER_OpenFile(&filehandle, archive, fileLowPath, openflags, 0);
@@ -1403,7 +1396,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 
 			if(openflags & 2)
 			{
-				if(archive.id==4 || archive.id==8 || archive.id==0x1234567C || archive.id==0x567890B1 || archive.id==0x567890B2)
+				if(archiveid==4 || archiveid==8 || archiveid==0x1234567C || archiveid==0x567890B1 || archiveid==0x567890B2)
 				{
 					val = 0;
 					FSUSER_ControlArchive(archive, ARCHIVE_ACTION_COMMIT_SAVE_DATA, &val, 1, &val, 1);
@@ -1411,7 +1404,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 			}
 		}
 
-		if(ret2==0)FSUSER_CloseArchive(&archive);
+		if(ret2==0)FSUSER_CloseArchive(archive);
 
 		if(ret!=0)
 		{
@@ -1426,16 +1419,17 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 	{
 		pos = (((buf[2] + 3) & ~3)>>2);
 
-		archive.id = buf[0];
-		archive.lowPath.type = buf[1];
-		archive.lowPath.size = buf[2];
-		archive.lowPath.data = (u8*)&buf[6];
+		archiveLowPath.type = buf[1];
+		archiveLowPath.size = buf[2];
+		archiveLowPath.data = (u8*)&buf[6];
 
 		fileLowPath.type = buf[3];
 		fileLowPath.size = buf[4];
 		fileLowPath.data = (u8*)&buf[6 + pos];
 
-		ret = FSUSER_OpenArchive( &archive);
+		archiveid = buf[0];
+
+		ret = FSUSER_OpenArchive(&archive, archiveid, archiveLowPath);
 		ret2 = ret;
 
 		if(ret==0)
@@ -1449,10 +1443,9 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 			ret = FSDIR_Read(filehandle, &buf[1], buf[5], (FS_DirectoryEntry*)&buf[2]);
 			ret3 = ret;
 			FSDIR_Close(filehandle);
-			svcCloseHandle(filehandle);
 		}
 
-		if(ret2==0)FSUSER_CloseArchive(&archive);
+		if(ret2==0)FSUSER_CloseArchive(archive);
 
 		buf[0] = (u32)ret;
 		*bufsize = 4;
