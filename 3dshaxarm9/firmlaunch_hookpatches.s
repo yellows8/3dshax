@@ -445,7 +445,11 @@ pop {r4, r5, r6, r7, r8, pc}
 .pool
 
 firmbin_filepath:
+#ifndef ALTSD_FIRMPATH
 .hword 0x2F, 0x66, 0x69, 0x72, 0x6D, 0x2E, 0x62, 0x69, 0x6E, 0x00 //UTF-16 "/firm.bin"
+#else
+.string16 "/3dshax_firm.bin"
+#endif
 .align 2
 
 twlfirmbin_filepath:

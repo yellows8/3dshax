@@ -1323,8 +1323,8 @@ void pxipmcmd1_getexhdr(u32 *exhdr)
 	#endif
 	#endif
 
-	#ifdef ENABLE_SPIDER_APPMEM
-	if(exhdr[0]==0x64697073)//"spid"
+	#ifdef ENABLE_BROWSER_APPMEM
+	if(exhdr[0]==0x64697073 || exhdr[0]==0x54414b53)//"spid" / "SKAT"
 	{
 		u32 *desc = &exhdr[(0x200+0x170)>>2];
 

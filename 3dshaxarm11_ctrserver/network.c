@@ -42,7 +42,7 @@ static u32 arm9access_available = 0;
 static u32 amserv_available = 0;
 
 extern Handle srvHandle;
-extern Handle aptLockHandle;
+//extern Handle aptLockHandle;
 extern Handle aptuHandle;
 extern Handle gspGpuHandle;
 extern Handle cfgnorHandle;
@@ -993,11 +993,11 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 			{
 				buf[0] = iruGetServHandle();
 			}
-			else if(handletype==4 && aptLockHandle)
+			/*else if(handletype==4 && aptLockHandle)
 			{
-				aptOpenSession();
+				//aptOpenSession();
 				buf[0] = aptuHandle;
-			}
+			}*/
 			else if(handletype==5)
 			{
 				handleptr = fsGetSessionHandle();
@@ -1040,7 +1040,7 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 
 		ret = svcSendSyncRequest(buf[0]);
 
-		if(handletype==4)aptCloseSession();
+		//if(handletype==4)aptCloseSession();
 
 		if(ret!=0)
 		{
@@ -1596,13 +1596,6 @@ static int ctrserver_handlecmd(u32 cmdid, u32 *buf, u32 *bufsize)
 			*bufsize += buf[2]*0x8;
 		}
 
-		return 0;
-	}
-
-	if(cmdid==0xc9)
-	{
-		buf[0] = APT_LaunchLibraryApplet(buf[0], 0, NULL, 0);
-		*bufsize = 4;
 		return 0;
 	}
 
