@@ -1,21 +1,28 @@
-Codebase for 3ds arm9 stuff + arm11 kernel/userland patches etc. This also includes ctrserver, which is a network server which runs on the 3ds.
+Codebase for Nintendo 3DS modded-FIRM("CFW"), for both Old3DS/New3DS. This also includes ctrserver, which is a network server which runs on the 3DS. This codebase originally started at roughly December 2012 - January 2013.
+
+You *must* build this yourself. This codebase is *only* intended for those that can build this codebase themselves. Built binaries will+should not be released(hence the below build options).
+
+Kind of like other "CFW", use at your own risk if you do anything (semi-)dangerous on physnand without nandredir & without a way to restore a nandimage.
 
 # Building
-To build just the non-ctrserver codebase: make -f Makefile.arm9 {other optional makefile parameters}  
-To build just ctrserver: make -f Makefile_ctrserver.arm11 {other optional makefile parameters}  
-To build arm9code+ctrserver: make {other optional makefile parameters}  
+To build: make {optional makefile parameters listed below}  
+You will likely want to have your own script(s) for the default build command(s) you use.
 
-Building ctrserver requires "3dshaxarm11_ctrserver_data/auth.bin", this is the "auth.txt" which would be used on the client-side.
+Building ctrserver requires "3dshaxarm11_ctrserver_data/auth.bin", this is the "auth.txt" which would be used on the client-side. This is a <=0x100-byte file, the contents can be anything(random data for example).
 
 The end result of building both of these is "3dshax_arm9.bin" and "3dshax_arm11_ctrserver.bin". After building, each .bin is copied to OUTPATH, for the latter .bin it's copied to OUTPATH/3dshax_arm11.bin.
 
-The arm9 codebase will handle launching the sdcard "/3dshax_arm11.bin", when enabled(which is the default). By default this arm11code is loaded into the "dlp" process, this can be overridden with "spider" by holding down the "Up" D-Pad button when main() is executed, or the "Down" D-Pad button there instead for running under the Miiverse applet.
-
-Running the arm9 binary requires 3ds arm9haxx which can handle loading it. The first u32 is the load-address for the following data, for offset+4 see 3dshax9_start.s for the rest of the structure. With the default PRAM settings near the start of the .bin, the arm9code uses FW1F(system-version v4.1-v4.5) settings. The arm9 code loader must setup the PRAM parameter fields to the correct values, when not running on FW1F. The code-loader can ignore the PRAM structure when running on FW1F.
+# Usage
 
 By default NAND-redir is enabled, see below for disabling it. When NAND-redir is enabled, the base sector-num must be specified via Makefile parameter NANDREDIR_SECTORNUM.
 
 By default the FIRM-launch code loads the plaintext FIRM from SD "/firm.bin", see the below *_FIRMLAUNCH_LOAD* options. The FWVER values used by the arm9code is automatically determined via the arm11kernel configmem init code in the FIRM being loaded.
+
+The arm9 codebase will handle launching the sdcard "/3dshax_arm11.bin", when enabled(which is the default). By default this arm11code is loaded into the "dlp" process, this can be overridden with "spider" by holding down the "Up" D-Pad button when main() is executed, or the "Down" D-Pad button there instead for running under the Miiverse applet. The server must not be running under dlp when trying to boot into \*hax payload with Old3DS.
+
+If you press buttons X, Select, and Start, while the arm9-thread is running, the thread will dump FCRAM+AXIWRAM to SD then terminate the thread. You should shutdown the system soon after using this.
+
+When DISABLE_ARM11KERNEL_DEBUG isn't(?) used, 3dshax may randomly fail to boot. When this happens just reboot and try again. This is probably related to the arm9<>arm11 IPC sync done by the arm9-thread/etc?
 
 # Makefile parameters  
 * "OUTPATH={path to sdcard root}" Optional, this can be used to copy the built binaries to the specified path.
@@ -44,7 +51,7 @@ By default the FIRM-launch code loads the plaintext FIRM from SD "/firm.bin", se
 * "CMDLOGGING_CMDHDR_FILTER=value" Optional command-request header value, when used only comand requests with this header will be logged.
 * "ENABLE_ARM11KERNEL_SVCBREAKPATCH=1" This enables writing a bkpt instruction to the start of the ARM11-kernel code handling svcBreak.
 
-* "DISABLE_GETEXHDRHOOK=1" Disables the arm9 get-exheader hook. This option must be used when DISABLE_ARM11KERNEL_DEBUG or DISABLE_ARM11KERNEL_PROCSTARTHOOK is set, with ENABLE_ARM11CODELOAD_SERVACCESSCONTROL_OVERWRITE used, otherwise when doing a firm-launch the system will eventually trigger a fatal-error when dlp-module fails to get service-handles.
+* "DISABLE_GETEXHDRHOOK=1" Disables the arm9 get-exheader hook. This option must be used when DISABLE_ARM11KERNEL_DEBUG or DISABLE_ARM11KERNEL_PROCSTARTHOOK is set.
 * "ENABLE_LOADA9_x01FFB800=1" This enables arm9 code which loads the 0x4800-byte SD file @ "/x01ffb800.bin" to arm9-mem 0x01ffb800. This should only be used when NAND-redir is enabled, and when the SD nandimage is originally from another 3ds, converted for usage on another 3ds. This is broken on New3DS(openfile() in loadfile_charpath() never returns), LOADA9_x01FFB800_INCFILEPATH must be used here due to this.
 * "LOADA9_x01FFB800_INCFILEPATH={filepath relative to the 3dshaxarm9 directory}" When ENABLE_LOADA9_x01FFB800 is specified, this does a 0x100-byte memcpy for writing to 0x01ffb800 with the specified file(which gets included in the 3dshax_arm9.bin), instead of loading from a file on SD.
 * "ENABLE_ARM11PROCLIST_OVERRIDE=1" This enables overriding the exheader and/or the loaded code binary at process-start, for any process(see 3dshax_arm9.c).
@@ -55,7 +62,7 @@ By default the FIRM-launch code loads the plaintext FIRM from SD "/firm.bin", se
 * "ENABLE_ARM11CODELOAD_SERVACCESSCONTROL_OVERWRITE=1" Enable overwriting the exheader service-access-control for the arm11codeload with the get-exhdr-hook, with the list from 3dshax_arm9.c. This is only needed when the loaded arm11 binary is not the latest ctrserver binary which has access to all services.
 * "DISABLE_FSACCESSINFO_OVERWRITE=1" Disable exheader FS accessinfo overwrite with all 0xFF for the arm11code-load process.
 * "DISABLE_A9THREAD=1" Disables creation of the arm9 thread.
-* "ENABLE_CONFIGMEM_DEVUNIT=1" Enables writing val0 to configmem UNITINFO. This can be used to enable dev-mode for ErrDisp.
+* "ENABLE_CONFIGMEM_DEVUNIT=1" Enables writing val0 to configmem UNITINFO. This can be used to enable dev-mode for ErrDisp. This should not be used normally(breaks eShop for example).
 
 * "ENABLE_FIRMLAUNCH_HOOK=1" Enables hooking Process9 FIRM-launch once the system finishes fully booting after previous FIRM-launch(es). FIRM-launch parameters won't be cleared with this, so that launching titles with this works.
 * "DISABLE_FIRMLAUNCH_LOADSD=1" Disable loading FIRM from SD from the firmlaunch hook. If this is used, then the ENABLE_FIRMLAUNCH_LOADNAND=1 option must be used.
@@ -100,26 +107,54 @@ Supported NATIVE_FIRM system-versions(versions where NATIVE_FIRM wasn't updated 
 * v10.0 The LOADA9_NEW3DSMEM option is currently not usable starting with this version on new3ds, due to the baseaddr for the relocated Process9 NCCH(the tmp one used for loading) being moved from 0x080fffe0 to 0x0817ffe0(this mem-copy is done by kernel9). Using this again would require implementing a workaround.
 * v10.4
 * v11.0 Something related to the svcBackdoor code might be broken or something?(The getdebuginfoblk network cmd works fine usually but sometimes returns nothing)
+* {Versions that work fine as-is due to auto-location}
 
-Booting pre-v9.0 NATIVE_FIRM is broken currently, unknown why.
+Basically all of the codebase automatically determines what addresses to patch/etc on-the-fly(besides some structure/etc stuff which use FWVER instead / minor stuff).
 
-The above doesn't really apply for functionality where addresses are located on-the-fly, unless specificly mentioned otherwise.
+The codebase also determines the version of the FIRM being loaded on-the-fly, hence the only time this codebase needs updated for newer FIRM is when auto-location breaks / certain structures change.
 
-Most of the codebase automatically determines what addresses to patch on-the-fly. Some minor/commented-out patch(es) still uses hard-coded addresses for each FIRM version.
+Note: when using nandredir where you also want to use old NATIVE_FIRM, you should use ALTSD_FIRMPATH. The SD firm.bin should contain a FIRM compatible with physnand, while 3dshax_firm.bin should contain the actual FIRM you want to run under nandredir.
 
-The codebase also determines the version of the FIRM being loaded on-the-fly, hence the only time this codebase needs updated for newer FIRM is when auto-patching breaks / arm11kernel structure(s) change. The former is basically rather rare anymore, unlike the latter.
+# Debugging
 
-## Code and patches which use hard-coded addresses
-* ...
+Debug data is always written to SD "/3dshax_debug.bin" unless "DISABLE_ARM11KERNEL_DEBUG=1" is used. The contents can be parsed with the 3dshax_parsedebug tool. This contains exception dumps, and cmdlog data if enabled via the build options. By default a process will not terminate at crash until a continue/kill command is used by 3dshaxclient, if the server is active(see the DISABLE_NETDEBUG option).
 
-## Code and patches where the addresses are automatically determined on-the-fly
-* NAND->SD redirection
-* Process9 patch for hooking code called from Process9 main(), for getting code execution after FIRM-launch under Process9.
-* Process9 FIRM-launch patches(for the function called by main() + addresses near the end of arm9mem).
-* Process9 PxiFS code + state/vtable ptrs
-* Process9 RSA sigcheck patches: certs(including tmd/tik), and the main RSA padding check func.
-* Process9 AES mutex enter/leave functions
-* CTRCARD cmd 0xc6 code/state ptrs
-* ARM11-kernel patch addrs/etc
-* ARM11-kernel cmd-logging patch addresses/etc
-* ...
+The cmdlogs are logs of IPC commands' request and reply data, with dumps of the data buffers(when --hexdump is passed to 3dshax_parsedebug). Note that in some cases some of the dumped data is invalid: it just gets the physaddr of buf+0 then writes the whole buffer size with that to SD. The result is invalid data when the physmem for a buffer isn't linear, in particular 0x04000000+ memory after the first page.
+
+Cmdlogging will slow down the system, unless it's logging barely anything.
+
+NOTE: It's extremely rare that anything is affected on NAND(probably not to the point of brick) due to cmdlogging, but you should probably avoid cmdlogging on physnand without a way to restore a nandimage.
+
+# Networking
+
+This includes ctrserver and 3dshaxclient. The former is a RPC server which runs under dlp-sysmodule by default, see the Usage section. The protocol is based on [ctrclient](https://github.com/neimod/ctr/tree/master/ramtracer/ctrclient), some code is used from that as well. 3dshaxclient is built with that(unless you build with ctr-cryptotool for the CTRCLIENT build option from 3dscrypto-tools). Among other things, this allows doing debugging and AES-engine crypto over the network.
+
+You can use the running server with [3dscrypto-tools](https://github.com/yellows8/3dscrypto-tools). DO NOT use network AES crypto without nandredir / a way to restore a nandimage: it's known to cause NAND corruption. In some rare(?) cases the decrypted data may be junk, just rerun the tool if that happens.
+
+For accessing the server you can use 3dshaxclient. The commands for the client/server are not documented. See 3dshaxclient.c, network.c, and 3dshax_arm9.c.
+
+The network debugging is done with the custom client commands for 3dshaxclient.
+
+# Setup
+
+## sighax
+
+TODO: Add actual instructions for this. Signature not included of course.
+
+NOTE: Prior to broken attempts at using the 3dsbootldr repos mentioned in the arm9loaderhax section, from the beginning they(and others) were originally used with sighax.
+
+## Public arm9loaderhax
+
+This is currently not usable due to crashes with 3dsbootldr_fatfs. 3dshax was *never* used with any form of arm9loaderhax until some attempts in Jan-2017(with the previously mentioned issues).
+
+* Setup [3dsbootldr_fatfs](https://github.com/yellows8/3dsbootldr_fatfs), where the output binary is used as your "arm9loaderhax.bin" or equivalent, on SD. "ALTARM11BOOT=1" must be used when building this. Do not use ENABLE_RETURNFROMCRT0.
+* Setup [3dsbootldr_firm](https://github.com/yellows8/3dsbootldr_firm). At offset 0x0 in 3dsbootldr_firm.bin, insert(not overwrite) raw bytes "00 80 0E 08" then write it to SD "/load9.bin". Likewise for 3dsbootldr_firm_arm11.bin, except use raw bytes "00 E7 FF 1F" then write to SD "/load11.bin". The binaries on SD must be run with the build_hashedbin.sh script from 3dsbootldr_fatfs, unless you used "DISABLE_BINVERIFY=1" for 3dsbootldr_fatfs. Do not use the rawdevice/NAND build options.
+
+After building 3dshax with OUTPATH={sd root}, you must run the build_hashedbin.sh script from 3dsbootldr_firm with 3dshax_arm9.bin on SD, unless you built 3dsbootldr_firm with "DISABLE_BINVERIFY=1".
+
+NOTE: If you use this with DISABLENANDREDIR=1, you MUST avoid triggering any FIRM-partition-installation(downloadplay, sysupdate, ...). A brick will occur otherwise. While there's some disabled code for some form of FIRM-protection, it was never really finished.
+
+## 3ds-totalcontrolhaxx
+
+If you are on a compatible FIRM version, you can also use [3ds-totalcontrolhaxx](https://github.com/yellows8/3ds-totalcontrolhaxx). Just setup the .3dsx on SD(or even use the payload binary directly if you want) + the actual 3dshax, and that's all. The firm.bin on SD should match the physnand version. If you want to boot a different FIRM version, use 3dshax build option ALTSD_FIRMPATH.
+
