@@ -123,8 +123,6 @@ The cmdlogs are logs of IPC commands' request and reply data, with dumps of the 
 
 Cmdlogging will slow down the system, unless it's logging barely anything.
 
-NOTE: It's extremely rare that anything is affected on NAND(probably not to the point of brick) due to cmdlogging, but you should probably avoid cmdlogging on physnand without a way to restore a nandimage.
-
 # Networking
 
 This includes ctrserver and 3dshaxclient. The former is a RPC server which runs under dlp-sysmodule by default, see the Usage section. The protocol is based on [ctrclient](https://github.com/neimod/ctr/tree/master/ramtracer/ctrclient), some code is used from that as well. 3dshaxclient is built with that(unless you build with ctr-cryptotool for the CTRCLIENT build option from 3dscrypto-tools). Among other things, this allows doing debugging and AES-engine crypto over the network.
