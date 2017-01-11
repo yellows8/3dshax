@@ -1,11 +1,12 @@
 Codebase for Nintendo 3DS modded-FIRM("CFW"), for both Old3DS/New3DS. This also includes ctrserver, which is a network server which runs on the 3DS. This codebase originally started at roughly December 2012 - January 2013.
 
-You *must* build this yourself. This codebase is *only* intended for those that can build this codebase themselves. Built binaries will+should not be released(hence the below build options).
+You *must* build this yourself. This codebase is *only* intended for those that can build this codebase themselves. Built binaries will+should not be released(hence the below build options). Hence, this is mainly for developers.
 
 Kind of like other "CFW", use at your own risk if you do anything (semi-)dangerous on physnand without nandredir & without a way to restore a nandimage.
 
 # Building
 To build: make {optional makefile parameters listed below}  
+You have to use various "DISABLE" build options if you don't use the "LOADA9_NEW3DSMEM=1" build option, otherwise 3dshax will fail to build.
 You will likely want to have your own script(s) for the default build command(s) you use.
 
 Building ctrserver requires "3dshaxarm11_ctrserver_data/auth.bin", this is the "auth.txt" which would be used on the client-side. This is a <=0x100-byte file, the contents can be anything(random data for example).
