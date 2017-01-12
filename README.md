@@ -138,7 +138,9 @@ The network debugging is done with the custom client commands for 3dshaxclient.
 
 ## sighax
 
-TODO: Add actual instructions for this. Signature not included of course.
+* Build [bootldr9_rawdevice](https://github.com/yellows8/bootldr9_rawdevice). Use build options "ENABLE_RETURNFROMCRT0=1" and "ENABLE_CONTINUEWHEN_PAYLOADCALLFAILS=1". You can use whatever device/padcheck build options you want if any.
+* Build [firm_payload_bootstrap](https://github.com/yellows8/firm_payload_bootstrap) with the above built binary for bootldr9_rawdevice. Manually replace the signature in the built FIRM with your own signature.
+* TODO
 
 NOTE: Prior to broken attempts at using the 3dsbootldr repos mentioned in the arm9loaderhax section, from the beginning they(and others) were originally used with sighax.
 
