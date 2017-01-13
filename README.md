@@ -157,7 +157,7 @@ Stage2, NAND Setup:
 * Write "3dsbootldr_firm.customfirmfmt" to the raw sectors in NAND starting at sector 8.
 * Write the official unmodified FIRM(ideally unmodified at least) that you want to boot from NAND, to NAND offset 0x0B430000(sector 0x5A180).
 
-Stage3, sighax FIRM Setup:
+Stage3, custom FIRM Setup:
 * Write the FIRM built from firm_payload_bootstrap with the previously updated signature, to your system's NAND firm0 partition, using whatever method you want. If writing it raw, remember to encrypt it properly. If you want to use it with non-NAND FIRM boot instead, you'll have to manually encrypt the FIRM sections following the FIRM header + use a signature for non-NAND.
 
 Note that "firm.bin" on SD is required with this, when booting 3dshax from SD with the above.
@@ -165,6 +165,8 @@ Note that "firm.bin" on SD is required with this, when booting 3dshax from SD wi
 After building 3dshax with OUTPATH={sd root}, you must run the build_hashedbin.sh script from 3dsbootldr_firm with 3dshax_arm9.bin on SD, unless you built 3dsbootldr_firm with "DISABLE_BINVERIFY=1".
 
 NOTE: Prior to broken attempts at using the 3dsbootldr repos mentioned in the arm9loaderhax section, from the beginning they(and others) were originally used with sighax.
+
+NOTE: You MUST avoid triggering any FIRM-partition-installation on physnand(downloadplay, sysupdate, ...). Otherwise, official FIRM will overwrite the FIRM installed to NAND firm0(system will still boot fine but you would have to reinstall the custom FIRM).
 
 ## Public arm9loaderhax
 
