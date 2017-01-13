@@ -138,8 +138,11 @@ The network debugging is done with the custom client commands for 3dshaxclient.
 
 ## sighax
 
-* Build [bootldr9_rawdevice](https://github.com/yellows8/bootldr9_rawdevice). Use build options "ENABLE_RETURNFROMCRT0=1" and "ENABLE_CONTINUEWHEN_PAYLOADCALLFAILS=1". You can use whatever device/padcheck build options you want if any.
+* Build [bootldr9_rawdevice](https://github.com/yellows8/bootldr9_rawdevice). Use at least build options "ENABLE_RETURNFROMCRT0=1" and "ENABLE_CONTINUEWHEN_PAYLOADCALLFAILS=1". You can use whatever device/padcheck build options you want if any.
 * Build [firm_payload_bootstrap](https://github.com/yellows8/firm_payload_bootstrap) with the above built binary for bootldr9_rawdevice. Manually replace the signature in the built FIRM with your own signature.
+* Build [3dsbootldr_fatfs](https://github.com/yellows8/3dsbootldr_fatfs) with at least build option "ENABLE_RETURNFROMCRT0=1".
+* Build payloadbuilder from [bootldr9_rawdevice](https://github.com/yellows8/bootldr9_rawdevice), then run: <code>payloadbuilder 3dsbootldr_fatfs.customfirmfmt 3dsbootldr_fatfs.bin 0x080F4000</code>
+* Build [3dsbootldr_firm](https://github.com/yellows8/3dsbootldr_firm), with at least build option "ENABLE_RETURNFROMCRT0=1".
 * TODO
 
 NOTE: Prior to broken attempts at using the 3dsbootldr repos mentioned in the arm9loaderhax section, from the beginning they(and others) were originally used with sighax.
