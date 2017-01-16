@@ -170,7 +170,9 @@ NOTE: You MUST avoid triggering any FIRM-partition-installation on physnand(down
 
 ## Public arm9loaderhax
 
-This is currently not usable due to crashes with 3dsbootldr_fatfs. 3dshax was *never* used with any form of arm9loaderhax until some attempts in Jan-2017(with the previously mentioned issues).
+Currently 3dshax can only be used with a9lh on Old3DS, not New3DS due to New3DS keys not being setup properly. If you run 3dsbootldr_fatfs as a Luma payload, your build of Luma *must* include [this](https://github.com/AuroraWright/Luma3DS/commit/f03e232b90ed3e2e8545c5abb4c489ca4f1e0b7d) commit.
+
+3dshax was *never* used with any form of arm9loaderhax until some broken attempts in Jan-2017.
 
 * Setup [3dsbootldr_fatfs](https://github.com/yellows8/3dsbootldr_fatfs), where the output binary is used as your "arm9loaderhax.bin" or equivalent, on SD. "ALTARM11BOOT=1" must be used when building this. Do not use ENABLE_RETURNFROMCRT0.
 * Setup [3dsbootldr_firm](https://github.com/yellows8/3dsbootldr_firm). At offset 0x0 in 3dsbootldr_firm.bin, insert(not overwrite) raw bytes "00 80 0E 08" then write it to SD "/load9.bin". Likewise for 3dsbootldr_firm_arm11.bin, except use raw bytes "00 E7 FF 1F" then write to SD "/load11.bin". The binaries on SD must be run with the build_hashedbin.sh script from 3dsbootldr_fatfs, unless you used "DISABLE_BINVERIFY=1" for 3dsbootldr_fatfs. Do not use the rawdevice/NAND build options.
