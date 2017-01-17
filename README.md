@@ -141,24 +141,28 @@ The network debugging is done with the custom client commands for 3dshaxclient.
 Remember, be *very* *careful* with this since NAND writing is done here. And of course, backup your NAND image first.
 
 Stage0, Building:
-* Build [bootldr9_rawdevice](https://github.com/yellows8/bootldr9_rawdevice). Use at least build options "ENABLE_RETURNFROMCRT0=1" and "ENABLE_CONTINUEWHEN_PAYLOADCALLFAILS=1". You can use whatever device/padcheck build options you want if any.
-* Build [firm_payload_bootstrap](https://github.com/yellows8/firm_payload_bootstrap) with the above built binary for bootldr9_rawdevice. Manually replace the signature in the built FIRM with your own signature.
-* Build [3dsbootldr_fatfs](https://github.com/yellows8/3dsbootldr_fatfs) with at least build option "ENABLE_RETURNFROMCRT0=1".
-* Build payloadbuilder from [bootldr9_rawdevice](https://github.com/yellows8/bootldr9_rawdevice), then run: <code>payloadbuilder 3dsbootldr_fatfs.customfirmfmt 3dsbootldr_fatfs.bin 0x080F4000</code>
-* Build [3dsbootldr_firm](https://github.com/yellows8/3dsbootldr_firm), with at least build option "ENABLE_RETURNFROMCRT0=1". Do not use the rawdevice/NAND build options.
+
+1. Build [bootldr9_rawdevice](https://github.com/yellows8/bootldr9_rawdevice). Use at least build options "ENABLE_RETURNFROMCRT0=1" and "ENABLE_CONTINUEWHEN_PAYLOADCALLFAILS=1". You can use whatever device/padcheck build options you want if any.
+2. Build [firm_payload_bootstrap](https://github.com/yellows8/firm_payload_bootstrap) with the above built binary for bootldr9_rawdevice. Manually replace the signature in the built FIRM with your own signature.
+3. Build [3dsbootldr_fatfs](https://github.com/yellows8/3dsbootldr_fatfs) with at least build option "ENABLE_RETURNFROMCRT0=1".
+4. Build payloadbuilder from [bootldr9_rawdevice](https://github.com/yellows8/bootldr9_rawdevice), then run: <code>payloadbuilder 3dsbootldr_fatfs.customfirmfmt 3dsbootldr_fatfs.bin 0x080F4000</code>
+5. Build [3dsbootldr_firm](https://github.com/yellows8/3dsbootldr_firm), with at least build option "ENABLE_RETURNFROMCRT0=1". Do not use the rawdevice/NAND build options.
 
 Stage1, SD Setup:
-* On the SD card, write "3dsbootldr_fatfs.customfirmfmt" to the raw sectors starting at sector 8. Make sure the area that would be written here is empty / not used.
-* Setup the built 3dsbootldr_firm on SD the same way described in the below arm9loaderhax section.
+
+1. On the SD card, write "3dsbootldr_fatfs.customfirmfmt" to the raw sectors starting at sector 8. Make sure the area that would be written here is empty / not used.
+2. Setup the built 3dsbootldr_firm on SD the same way described in the below arm9loaderhax section.
 
 Stage2, NAND Setup:
-* Rebuild 3dsbootldr_firm with at least the following build options: "ENABLE_RETURNFROMCRT0=1", "BINLOAD_DISABLE=1", "USE_RAWDEVICE=1", "USEDEVICE_NAND=1", "RAWDEVICE_STARTSECTOR={0x5A180}", and "RAWDEVICE_NUMSECTORS={0x800}".
-* Then run payloadbuilder from [bootldr9_rawdevice](https://github.com/yellows8/bootldr9_rawdevice): <code>payloadbuilder 3dsbootldr_firm.customfirmfmt 3dsbootldr_firm.bin 0x080F4000</code>
-* Write "3dsbootldr_firm.customfirmfmt" to the raw sectors in NAND starting at sector 8.
-* Write the official unmodified FIRM(ideally unmodified at least) that you want to boot from NAND, to NAND offset 0x0B430000(sector 0x5A180).
+
+1. Rebuild 3dsbootldr_firm with at least the following build options: "ENABLE_RETURNFROMCRT0=1", "BINLOAD_DISABLE=1", "USE_RAWDEVICE=1", "USEDEVICE_NAND=1", "RAWDEVICE_STARTSECTOR={0x5A180}", and "RAWDEVICE_NUMSECTORS={0x800}".
+2. Then run payloadbuilder from [bootldr9_rawdevice](https://github.com/yellows8/bootldr9_rawdevice): <code>payloadbuilder 3dsbootldr_firm.customfirmfmt 3dsbootldr_firm.bin 0x080F4000</code>
+3. Write "3dsbootldr_firm.customfirmfmt" to the raw sectors in NAND starting at sector 8.
+4. Write the official unmodified FIRM(ideally unmodified at least) that you want to boot from NAND, to NAND offset 0x0B430000(sector 0x5A180).
 
 Stage3, custom FIRM Setup:
-* Write the FIRM built from firm_payload_bootstrap with the previously updated signature, to your system's NAND firm0 partition, using whatever method you want. If writing it raw, remember to encrypt it properly. If you want to use it with non-NAND FIRM boot instead, you'll have to manually encrypt the FIRM sections following the FIRM header + use a signature for non-NAND.
+
+1. Write the FIRM built from firm_payload_bootstrap with the previously updated signature, to your system's NAND firm0 partition, using whatever method you want. If writing it raw, remember to encrypt it properly. If you want to use it with non-NAND FIRM boot instead, you'll have to manually encrypt the FIRM sections following the FIRM header + use a signature for non-NAND.
 
 Note that "firm.bin" on SD is required with this, when booting 3dshax from SD with the above.
 
@@ -174,8 +178,8 @@ Currently 3dshax can only be used with a9lh on Old3DS, not New3DS due to New3DS 
 
 3dshax was *never* used with any form of arm9loaderhax until some broken attempts in Jan-2017.
 
-* Setup [3dsbootldr_fatfs](https://github.com/yellows8/3dsbootldr_fatfs), where the output binary is used as your "arm9loaderhax.bin" or equivalent, on SD. "ALTARM11BOOT=1" must be used when building this. Do not use ENABLE_RETURNFROMCRT0.
-* Setup [3dsbootldr_firm](https://github.com/yellows8/3dsbootldr_firm). At offset 0x0 in 3dsbootldr_firm.bin, insert(not overwrite) raw bytes "00 80 0E 08" then write it to SD "/load9.bin". Likewise for 3dsbootldr_firm_arm11.bin, except use raw bytes "00 E7 FF 1F" then write to SD "/load11.bin". The binaries on SD must be run with the build_hashedbin.sh script from 3dsbootldr_fatfs, unless you used "DISABLE_BINVERIFY=1" for 3dsbootldr_fatfs. Do not use the rawdevice/NAND build options.
+1. Setup [3dsbootldr_fatfs](https://github.com/yellows8/3dsbootldr_fatfs), where the output binary is used as your "arm9loaderhax.bin" or equivalent, on SD. "ALTARM11BOOT=1" must be used when building this. Do not use ENABLE_RETURNFROMCRT0.
+2. Setup [3dsbootldr_firm](https://github.com/yellows8/3dsbootldr_firm). At offset 0x0 in 3dsbootldr_firm.bin, insert(not overwrite) raw bytes "00 80 0E 08" then write it to SD "/load9.bin". Likewise for 3dsbootldr_firm_arm11.bin, except use raw bytes "00 E7 FF 1F" then write to SD "/load11.bin". The binaries on SD must be run with the build_hashedbin.sh script from 3dsbootldr_fatfs, unless you used "DISABLE_BINVERIFY=1" for 3dsbootldr_fatfs. Do not use the rawdevice/NAND build options.
 
 After building 3dshax with OUTPATH={sd root}, you must run the build_hashedbin.sh script from 3dsbootldr_firm with 3dshax_arm9.bin on SD, unless you built 3dsbootldr_firm with "DISABLE_BINVERIFY=1".
 
