@@ -1,4 +1,4 @@
-Codebase for Nintendo 3DS modded-FIRM("CFW"), for both Old3DS/New3DS. This also includes ctrserver, which is a network server which runs on the 3DS. This codebase originally started at roughly December 2012 - January 2013.
+Codebase for Nintendo 3DS modded-FIRM("CFW"), for both Old3DS/New3DS. This also includes ctrserver, which is a network server which runs on the 3DS. This codebase originally started at roughly December 2012 - January 2013, which was finally released in January 2017.
 
 You *must* build this yourself. This codebase is *only* intended for those that can build this codebase themselves. Built binaries will+should not be released(hence the below build options). Hence, this is mainly for developers.
 
@@ -179,7 +179,7 @@ Currently 3dshax can only be used with a9lh on Old3DS, not New3DS due to New3DS 
 
 After building 3dshax with OUTPATH={sd root}, you must run the build_hashedbin.sh script from 3dsbootldr_firm with 3dshax_arm9.bin on SD, unless you built 3dsbootldr_firm with "DISABLE_BINVERIFY=1".
 
-NOTE: If you use this with DISABLENANDREDIR=1, you MUST avoid triggering any FIRM-partition-installation(downloadplay, sysupdate, ...). A brick will occur otherwise. While there's some disabled code for some form of FIRM-protection, it was never really finished.
+**NOTE: If you use this with DISABLENANDREDIR=1, you MUST avoid triggering any FIRM-partition-installation(downloadplay, sysupdate, ...). A brick(on New3DS at least) will occur otherwise. While there's some disabled code for some form of FIRM-protection, it was never really finished.**
 
 ## 3ds-totalcontrolhaxx
 
