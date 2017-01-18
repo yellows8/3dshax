@@ -136,9 +136,13 @@ The network debugging is done with the custom client commands for 3dshaxclient.
 
 # Setup
 
-## sighax
+Note: this entire Setup section of the README didn't exist in the README until 3dshax release.
+
+## sighax / Custom FIRM
 
 Remember, be *very* *careful* with this since NAND writing is done here. And of course, backup your NAND image first.
+
+This could(not tested) also be used with non-BootROM FIRM-boot methods(from "CFW"/whatever), in that case you can skip/ignore the NAND-related info in this section.
 
 Stage0, Building:
 
