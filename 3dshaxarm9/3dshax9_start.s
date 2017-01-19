@@ -158,6 +158,25 @@ startcode_type3:
 @b startcode_type3
 push {r4, lr}
 
+#ifdef MEMDUMPBOOT_SRCADDR
+ldr r0, =MEMDUMPBOOT_DSTADDR
+ldr r1, [r0]
+ldr r2, =0x504d5544
+cmp r1, r2
+beq startcode_type3_begin
+str r2, [r0], #4
+
+ldr r1, =MEMDUMPBOOT_SRCADDR
+ldr r2, =MEMDUMPBOOT_SIZE
+
+startcode_type3_dumpcpylp:
+ldr r3, [r1], #4
+str r3, [r0], #4
+subs r2, r2, #4
+bgt startcode_type3_dumpcpylp
+#endif
+
+startcode_type3_begin:
 mov r4, #0
 
 ldr r0, =RUNNINGFWVER

@@ -94,6 +94,10 @@ When DISABLE_ARM11KERNEL_DEBUG isn't(?) used, 3dshax may randomly fail to boot. 
 * "NEW3DS_ARM9BINLDR_CLRMEM=address" Clear the memory starting at address with size from NEW3DS_ARM9BINLDR_CLRMEM_SIZE, from the new3ds arm9bin loader entrypoint hook.
 * "NEW3DS_ARM9BINLDR_CLRMEM_SIZE=val"
 
+* "MEMDUMPBOOT_SRCADDR=address" Copies memory from the specified address to the dst with the configured size, the first time 3dshax runs with RUNNINGTYPE 3. This could be used to dump memory which would be overwritten / no longer available later in boot. Once 3dshax boots, you could then use 3dshaxclient to read the memory from the dst addr(see below).
+* "MEMDUMPBOOT_DSTADDR=address" Override the default(0x08001000) dst address used with the above. The dst memory starts with magicnum "DUMP" followed by the actual data. The dump code only runs with RUNNINGTYPE 3 when the data at dst+0 doesn't match this magicnum.
+* "MEMDUMPBOOT_SIZE=val" Override the default(0x200) size used with the above.
+
 # FIRM Compatibility
 Supported NATIVE_FIRM system-versions(versions where NATIVE_FIRM wasn't updated don't apply here):
 * v4.1
