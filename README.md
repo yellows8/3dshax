@@ -114,7 +114,7 @@ Supported NATIVE_FIRM system-versions(versions where NATIVE_FIRM wasn't updated 
 * v11.0 Something related to the svcBackdoor code might be broken or something?(The getdebuginfoblk network cmd works fine usually but sometimes returns nothing)
 * v11.1
 * v11.2
-* v11.3 Broken
+* v11.3 Broken. This can be fixed by just changing this(https://github.com/yellows8/3dshax/blob/940c684c3f8787750c71f322a3702d8edb91be49/3dshaxarm9/firmlaunch_hookpatches.s#L302) from "[r2]" to "[r2, #1]" - code needs implemented to properly determine the offset for this FIRM and older ones. +0 here would overwrite the safefirm flag.
 * {Versions that work fine as-is due to auto-location}
 
 Basically all of the codebase automatically determines what addresses to patch/etc on-the-fly(besides some structure/etc stuff which use FWVER instead / minor stuff).
