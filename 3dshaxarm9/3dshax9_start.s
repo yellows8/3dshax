@@ -231,6 +231,11 @@ ldr r0, =FIRMLAUNCH_FWVER
 str r4, [r0]
 
 startcode_type3_patchfirm_end:
+
+#ifdef LOADA9_NEW3DSMEM
+bl patchfirm_setup_tmpaddr_bincopy
+#endif
+
 pop {r4, r5, pc}
 .pool
 

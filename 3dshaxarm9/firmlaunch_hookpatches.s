@@ -280,6 +280,10 @@ ldr r0, =0x20F00000
 bl loadsd_aeskeys
 #endif
 
+#ifdef LOADA9_NEW3DSMEM
+bl patchfirm_setup_tmpaddr_bincopy
+#endif
+
 add sp, sp, #12
 pop {r0, r1, r2, r3, r4, r5, lr}
 add lr, lr, #4

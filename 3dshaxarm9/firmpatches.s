@@ -8,11 +8,17 @@
 .global patchfirm_arm11section_kernel
 .global firm_arm11kernel_getminorversion_firmimage
 .global firm_gethwtype
+.global patchfirm_setup_tmpaddr_bincopy
 .type patch_firm STT_FUNC
 .type patchfirm_arm9section STT_FUNC
 .type patchfirm_arm11section_kernel STT_FUNC
 .type firm_arm11kernel_getminorversion_firmimage STT_FUNC
 .type firm_gethwtype STT_FUNC
+.type patchfirm_setup_tmpaddr_bincopy STT_FUNC
+
+#ifdef LOADA9_NEW3DSMEM
+#define NEW3DSMEM_TMPADDR_END 0x1ff80000
+#endif
 
 patch_firm: @ r0 = addr of entire FIRM
 push {r4, r5, r6, lr}
@@ -60,6 +66,7 @@ patchfirm_arm9section: @ r0 = address of FIRM section in memory, in the FIRM bin
 push {r4, r5, r6, r7, lr}
 sub sp, sp, #4
 
+mov r7, r0
 mov r4, r1
 
 cmp r3, #0
@@ -83,26 +90,39 @@ blx r4
 b patchfirm_arm9section_finish
 
 patchfirm_arm9section_begin:
+#ifdef LOADA9_NEW3DSMEM
+mov r0, r7
+mov r1, r4
+bl patchfirm_arm9kernel_mpuconfig
+#endif
+
 ldr r1, =0x636f7250 @ "Process9"
 ldr r2, =0x39737365
 
 patchfirm_arm9section_locateprocess9: @ Locate the "Process9" exheader.
-ldr r3, [r0, #0]
+ldr r3, [r7, #0]
 cmp r3, r1
-ldreq r3, [r0, #4]
+ldreq r3, [r7, #4]
 cmpeq r3, r2
 beq patchfirm_arm9section_locateprocess9_finish
 sub r4, r4, #8
-add r0, r0, #8
+add r7, r7, #8
 cmp r4, #0
 bgt patchfirm_arm9section_locateprocess9
 b patchfirm_arm9section_finish
 
 patchfirm_arm9section_locateprocess9_finish:
+mov r0, r7
 ldr r4, [r0, #0x10] @ r4 = Process9 .text addr
 ldr r7, [r0, #0x18] @ r7 = Process9 .text size
 add r0, r0, #0xa00 @ r0/r5 = addr of Process9 .code
 mov r5, r0
+
+#ifdef LOADA9_NEW3DSMEM
+mov r0, r4
+mov r1, r5
+bl patchfirm_setup_proc9entryhook
+#endif
 
 #ifdef ENABLE_FIRMPARTINSTALL_STRS_PATCH
 mov r0, r4
@@ -276,6 +296,101 @@ patchfirm_arm9section_finish:
 add sp, sp, #4
 pop {r4, r5, r6, r7, pc}
 .pool
+
+#ifdef LOADA9_NEW3DSMEM
+patchfirm_arm9kernel_mpuconfig: @ r0 = address of FIRM section in memory, in the FIRM binary. r1 = FIRM section size.
+push {r4, r5, r6, r7, lr}
+
+@ This patches the mpu region config setup by the arm9kernel in crt0.
+
+patchfirm_arm9kernel_mpuconfig_lpstart:
+ldr r2, [r0, #0x0]
+ldr r3, =0x10000000
+cmp r2, r3
+bne patchfirm_arm9kernel_mpuconfig_lpnext
+
+ldr r2, [r0, #0x4]
+mov r3, #0x1
+cmp r2, r3
+bne patchfirm_arm9kernel_mpuconfig_lpnext
+
+ldr r2, [r0, #0x8]
+ldr r3, =0x00240003
+cmp r2, r3
+bne patchfirm_arm9kernel_mpuconfig_lpnext
+
+ldr r2, [r0, #0xc]
+ldr r3, =0x10100000
+cmp r2, r3
+bne patchfirm_arm9kernel_mpuconfig_lpnext
+
+@ Disable the region for 0x10100000 in the kernel mpu-config.
+mov r2, #0
+strb r2, [r0, #0x4]
+
+@ Set the size of the mpuregion at 0x10000000 to 256MB, so that it covers 0x10000000 - 0x20000000.
+sub r0, r0, #0x8
+mov r2, #0x37
+strb r2, [r0, #6]
+
+@ Set the instruction permissions for the mpuregion at 0x10000000, to priv/usr = RO(executable).
+mov r2, #0x6
+strb r2, [r0, #5]
+b patchfirm_arm9kernel_mpuconfig_end
+
+patchfirm_arm9kernel_mpuconfig_lpnext:
+add r0, r0, #4
+sub r1, r1, #4
+cmp r1, #0
+bgt patchfirm_arm9kernel_mpuconfig_lpstart
+
+patchfirm_arm9kernel_mpuconfig_end:
+pop {r4, r5, r6, r7, pc}
+.pool
+
+patchfirm_setup_proc9entryhook: @ r0 = Process9 .text addr. r1 = addr of Process9 .code.
+push {r4, r5, r6, r7, lr}
+
+mov r4, r0
+mov r5, r1
+
+add r0, r5, #0x20
+
+@ Write the jump-stub into proc9 .text, with the jump-addr relocated into the binary based at NEW3DSMEM_TMPADDR_END - <binary size>.
+ldr r1, =0xe51ff004 @ "ldr pc, [pc, #-4]"
+ldr r2, =firmpatches_proc9entryhook_codestub
+ldr r3, =__text_start
+sub r2, r2, r3
+ldr r6, =_end
+ldr r3, =__text_start
+sub r6, r6, r3
+ldr r3, =NEW3DSMEM_TMPADDR_END
+sub r3, r3, r6
+add r2, r2, r3
+str r1, [r0, #0x0]
+str r2, [r0, #0x4]
+
+add r0, r4, #0x28
+ldr r2, =firmpatches_proc9entryhook_codestub_retaddr
+str r0, [r2]
+
+pop {r4, r5, r6, r7, pc}
+.pool
+
+patchfirm_setup_tmpaddr_bincopy:
+@ Copy the running binary to NEW3DSMEM_TMPADDR_END - <binary size>. Nothing should be changed anywhere in the binary after this, until firmpatches_proc9entryhook_codestub is executed.
+ldr r1, =_end
+ldr r0, =__text_start
+sub r1, r1, r0
+ldr r0, =NEW3DSMEM_TMPADDR_END
+sub r0, r0, r1
+
+ldr r1, =__text_start
+ldr r2, =_end
+sub r2, r2, r1
+b memcpy
+.pool
+#endif
 
 patchfirm_arm11section_modules: @ r0 = address of FIRM section in memory, in the FIRM binary. r1 = FIRM section size. r2 = FIRM header address.
 push {r4, r5, r6, r7, r8, lr}
@@ -598,6 +713,38 @@ proc9_autolocate_patch_firminstallstrs_patterndata:
 
 //patchfirm_arm11section_additionalmodulesize:
 //.word 0
+
+#ifdef LOADA9_NEW3DSMEM
+firmpatches_proc9entryhook_codestub:
+@ Executed from the proc9 .bss clearing func hook. This code is executed from the binary at NEW3DSMEM_TMPADDR_END - <binary size>.
+@ Copy the binary from NEW3DSMEM_TMPADDR_END - <binary size> to the original binary location, then return to proc9.
+
+ldr r0, =_end
+ldr r1, =__text_start
+sub r0, r0, r1
+ldr r1, =NEW3DSMEM_TMPADDR_END
+sub r1, r1, r0
+
+ldr r0, =__text_start
+ldr r2, =_end
+sub r2, r2, r0
+
+firmpatches_proc9entryhook_codestub_cpylp:
+ldr r3, [r1], #4
+str r3, [r0], #4
+sub r2, r2, #4
+cmp r2, #0
+bgt firmpatches_proc9entryhook_codestub_cpylp
+
+ldr r3, firmpatches_proc9entryhook_codestub_retaddr
+ldr r0, [r3, #0x14]
+ldr r1, [r3, #0x18]
+bx r3
+.pool
+
+firmpatches_proc9entryhook_codestub_retaddr:
+.word 0
+#endif
 
 filepath_x01ffb800:
 .string "/x01ffb800.bin"

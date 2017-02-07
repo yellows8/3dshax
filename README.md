@@ -109,9 +109,11 @@ Supported NATIVE_FIRM system-versions(versions where NATIVE_FIRM wasn't updated 
 * v9.3
 * v9.5
 * v9.6
-* v10.0 The LOADA9_NEW3DSMEM option is currently not usable starting with this version on new3ds, due to the baseaddr for the relocated Process9 NCCH(the tmp one used for loading) being moved from 0x080fffe0 to 0x0817ffe0(this mem-copy is done by kernel9). Using this again would require implementing a workaround.
+* v10.0
 * v10.4
 * v11.0 Something related to the svcBackdoor code might be broken or something?(The getdebuginfoblk network cmd works fine usually but sometimes returns nothing)
+* v11.1
+* v11.2
 * {Versions that work fine as-is due to auto-location}
 
 Basically all of the codebase automatically determines what addresses to patch/etc on-the-fly(besides some structure/etc stuff which use FWVER instead / minor stuff).
