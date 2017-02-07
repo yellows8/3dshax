@@ -114,6 +114,7 @@ Supported NATIVE_FIRM system-versions(versions where NATIVE_FIRM wasn't updated 
 * v11.0 Something related to the svcBackdoor code might be broken or something?(The getdebuginfoblk network cmd works fine usually but sometimes returns nothing)
 * v11.1
 * v11.2
+* v11.3 Broken
 * {Versions that work fine as-is due to auto-location}
 
 Basically all of the codebase automatically determines what addresses to patch/etc on-the-fly(besides some structure/etc stuff which use FWVER instead / minor stuff).
