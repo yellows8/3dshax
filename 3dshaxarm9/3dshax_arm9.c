@@ -15,7 +15,7 @@
 #include "ctrclient.h"
 
 void changempu_memregions();
-u32 init_firmlaunch_hook1(u32 *ptr0, u32 *ptr1, u32 *ptr2);
+u32 init_firmlaunch_hook1(u32 *ptr0, u32 *ptr1, u32 *ptr2, u32 pos);
 void arm9_launchfirm();
 
 u32 generate_branch(u32 branchaddr, u32 targetaddr, u32 flag);//branchaddr = addr of branch instruction, targetaddr = addr to branch to, flag = 0 for regular branch, non-zero for bl. (ARM-mode)
@@ -224,6 +224,7 @@ void patch_proc9_launchfirm()
 	u32 *arm9_patchaddr;
 	u32 pos, pos2;
 	u32 val0, val1;
+	u32 val2;
 
 	ptr = proc9_locate_main_endaddr();
 
@@ -352,6 +353,16 @@ void patch_proc9_launchfirm()
 	pos++;
 	ptr[pos] = 0xe1a00000;//patch out the func-call which is immediately after the fs_closefile call. (FS shutdown stuff)
 
+	while(1)
+	{
+		if((ptr[pos] & 0xffc00000) == 0xe5c00000)break;//"strb <reg>, [other_reg]"
+		pos--;
+
+		if(pos==0)while(1);
+	}
+
+	val2 = ptr[pos] & 0xff;
+
 	while(1)//This will not work with pre-FW0B FIRM(<2.1.0), since those FIRM do not have PXI-word 0xaee97647 in the .pool.
 	{
 		if(ptr[pos]==0xaee97647)break;
@@ -380,7 +391,7 @@ void patch_proc9_launchfirm()
 
 	svcFlushProcessDataCache(0xffff8001, ptr, 0x630);
 
-	init_firmlaunch_hook1((u32*)val0, (u32*)val1, (u32*)ptr[pos2]);
+	init_firmlaunch_hook1((u32*)val0, (u32*)val1, (u32*)ptr[pos2], val2);
 }
 
 u32 *get_framebuffers_addr()

@@ -299,7 +299,7 @@ mov r4, r0
 mov r6, r1
 
 mov r0, #2
-strb r0, [r2]
+strb r0, [r2, r3]
 ldr r0, [r2, #8]
 mov r1, r0
 lsr r1, r1, #24
