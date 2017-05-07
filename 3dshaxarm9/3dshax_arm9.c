@@ -221,6 +221,7 @@ u32 *proc9_locate_main_endaddr()//Returns a ptr to the last instruction in Proce
 void patch_proc9_launchfirm()
 {
 	u32 *ptr;
+	u32 *ptr2 = NULL;
 	u32 *arm9_patchaddr;
 	u32 pos, pos2;
 	u32 val0, val1;
@@ -234,7 +235,15 @@ void patch_proc9_launchfirm()
 	}
 	else
 	{
-		ptr = (u32*)ptr[5];//Load launch_firm func address from main() .pool.
+		ptr2 = ptr - 6;
+		if(*ptr2 >> 16 == 0xe59f)//Load the word used by "ldr <reg>, [pc, #X]".
+		{
+			ptr = (u32*)ptr2[((*ptr2 & 0xff)>>2) + 2];
+		}
+		else
+		{
+			ptr = (u32*)ptr[5];//Load launch_firm func address from main() .pool.
+		}
 	}
 
 	pos = 0;

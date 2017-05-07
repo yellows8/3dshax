@@ -115,6 +115,7 @@ Supported NATIVE_FIRM system-versions(versions where NATIVE_FIRM wasn't updated 
 * v11.1
 * v11.2
 * v11.3
+* v11.4 Broken
 * {Versions that work fine as-is due to auto-location}
 
 Basically all of the codebase automatically determines what addresses to patch/etc on-the-fly(besides some structure/etc stuff which use FWVER instead / minor stuff).
