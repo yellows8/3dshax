@@ -46,16 +46,37 @@ u32 parse_branch(u32 branchaddr, u32 branchval);
 void aes_mutex_ptrsinitialize()
 {
 	u32 *ptr = (u32*)proc9_textstartaddr;
+	u32 *ptr2;
 	u32 pos;
+	u32 pos2;
 
 	for(pos=0; pos<(0x080ff000-proc9_textstartaddr)>>2; pos++)
 	{
 		if(ptr[pos]==0xe8bd8008 && ptr[pos+1]==0x10011000)//"pop {r3, pc}" + reg addr
 		{
 			pos--;
+
+			for(pos2=0; pos2<0x40; pos2++)//Find the push instruction.
+			{
+				if(ptr[pos-pos2] == 0xe92d4008)break;
+				if(pos2==0x3f)return;
+			}
+
+			for(; pos2>0; pos2--)//Find the first blx instruction.
+			{
+				if((ptr[pos-pos2] >> 24) == 0xfa)break;
+				if(pos2==0)return;
+			}
+			pos2--;
+			if((ptr[pos-pos2] >> 24) != 0xfa)return;
+
+			ptr2 = (u32*)(parse_branch((u32)&ptr[pos-pos2], 0) | 1);
+
 			ptr = (u32*)(parse_branch((u32)&ptr[pos], 0) | 1);
+
 			funcptr_aesmutex_leave = (void*)ptr;
-			funcptr_aesmutex_enter = (void*)(((u32)ptr)-0x18);
+
+			funcptr_aesmutex_enter = (void*)((u32)ptr2);
 			return;
 		}
 	}

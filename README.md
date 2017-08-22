@@ -122,8 +122,6 @@ Basically all of the codebase automatically determines what addresses to patch/e
 
 The codebase also determines the version of the FIRM being loaded on-the-fly, hence the only time this codebase needs updated for newer FIRM is when auto-location breaks / certain structures change.
 
-aes_mutex_ptrsinitialize() is broken with recent FIRM?
-
 Note: when using nandredir where you also want to use old NATIVE_FIRM, you should use ALTSD_FIRMPATH. The SD firm.bin should contain a FIRM compatible with physnand, while 3dshax_firm.bin should contain the actual FIRM you want to run under nandredir.
 
 # Debugging
